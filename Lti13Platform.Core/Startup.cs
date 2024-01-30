@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,31 +8,26 @@ namespace NP.Lti13Platform.Core
 {
     public static class Startup
     {
-        public static IServiceCollection AddLti13Platform(this IServiceCollection services)
+        public static IServiceCollection AddLti13Platform(this IServiceCollection services, Action<Lti13PlatformConfig> configure = null)
         {
+            var config = new Lti13PlatformConfig();
+
+            configure?.Invoke(config);
+
+            services.AddSingleton(config);
+            services.AddTransient<AuthenticationHandler>();
+
             return services;
         }
 
-        public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformConfig>? config = null)
+        public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformEndpointsConfig>? configure = null)
         {
-            var obj = new Lti13PlatformConfig();
+            var config = new Lti13PlatformEndpointsConfig();
 
-            config?.Invoke(obj);
+            configure?.Invoke(config);
 
-            app.MapGet(obj.AuthorizationUrl, ([FromQuery] object qs) =>
-            {
-                return "";
-            });
-
-            app.MapPost(obj.AuthorizationUrl, ([FromForm] object body) =>
-            {
-                return "";
-            });
-
-            app.Use(async (context, next) =>
-            {
-                await next();
-            });
+            app.MapGet(config.AuthorizationUrl, async ([AsParameters] AuthenticationRequest qs, AuthenticationHandler handler) => await handler.HandleAsync(qs));
+            app.MapPost(config.AuthorizationUrl, async ([FromForm] AuthenticationRequest body, AuthenticationHandler handler) => await handler.HandleAsync(body)).DisableAntiforgery();
 
             return app;
         }

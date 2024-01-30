@@ -22,7 +22,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13Platform(config => { config.AuthorizationUrl });
+app.UseLti13Platform();
 
 app.MapControllerRoute(
     name: "default",
