@@ -1,9 +1,11 @@
+using NP.Lti13Platform.Web;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddLti13Platform();
+builder.Services.AddLti13PlatformWeb();
 
 var app = builder.Build();
 
@@ -22,7 +24,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13Platform();
+app.UseLti13PlatformWeb();
 
 app.MapControllerRoute(
     name: "default",

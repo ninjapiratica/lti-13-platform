@@ -5,9 +5,11 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Core", "Lti13Platform.Core\NP.Lti13Platform.Core.csproj", "{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.Test", "Lti13Platform.Test\NP.Lti13Platform.Test.csproj", "{FFA6228F-50F4-4D72-A644-CD64A7F549FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Test", "Lti13Platform.Test\NP.Lti13Platform.Test.csproj", "{FFA6228F-50F4-4D72-A644-CD64A7F549FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.WebExample", "Lti13Platform.WebExample\NP.Lti13Platform.WebExample.csproj", "{EA964601-16BF-447B-B4B1-AE510F1E3A94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.WebExample", "Lti13Platform.WebExample\NP.Lti13Platform.WebExample.csproj", "{EA964601-16BF-447B-B4B1-AE510F1E3A94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.Web", "NP.Lti13Platform.Web\NP.Lti13Platform.Web.csproj", "{D6160BAE-5B1B-43C9-965A-1D0EDE67C29E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6160BAE-5B1B-43C9-965A-1D0EDE67C29E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6160BAE-5B1B-43C9-965A-1D0EDE67C29E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6160BAE-5B1B-43C9-965A-1D0EDE67C29E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6160BAE-5B1B-43C9-965A-1D0EDE67C29E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

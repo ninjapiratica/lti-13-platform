@@ -1,6 +1,6 @@
 ﻿namespace NP.Lti13Platform.Core
 {
-    public class Lti13PlatformConfig
+    public class Lti13PlatformCoreConfig
     {
         private const string INVALID_ISSUER = "Issuer must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
         private const string HTTPS = "https";
@@ -23,7 +23,5 @@
                 throw new UriFormatException(INVALID_ISSUER);
             }
         }
-
-        public int IdTokenExpirationMinutes { get; set; } = 5;
     }
 }
