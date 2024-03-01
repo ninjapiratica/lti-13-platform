@@ -2,14 +2,12 @@
 {
     public class LtiDeepLinkingRequestMessage : ILti13Message
     {
-        public static string MessageType => "LtiDeepLinkingRequest";\
+        public static string MessageType => "LtiDeepLinkingRequest";
 
-        // REQUIRED
-        public string Deep_Link_Return_Url { get; set; } = string.Empty;
-        public List<string> Accept_Types { get; set; } = [];
-        public List<string> Accept_Presentation_Document_Targets { get; set; } = [];
+        public required string Deep_Link_Return_Url { get; set; }
+        public required List<string> Accept_Types { get; set; }
+        public required List<string> Accept_Presentation_Document_Targets { get; set; }
 
-        // OPTIONAL
         public IEnumerable<string> Accept_Media_Types { get; set; } = [];
         public bool? Accept_Multiple { get; set; }
         public bool? Accept_LineItem { get; set; }
@@ -37,32 +35,5 @@
 
             yield return ("https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings", dict);
         }
-
-        //public async Task<Uri> GetUrlAsync(string clientId, string deploymentId)
-        //{
-        //    var iss = config.Issuer;
-        //    var login_hint = "";
-        //    var target_link_uri = "";
-
-        //    var lti_message_hint = "";
-        //    var lti_deployment_id = deploymentId;
-        //    var client_id = clientId;
-
-        //    var client = await GetClientAsync(clientId);
-
-        //    var uriBuilder = new UriBuilder(client.OidcInitiationUrl);
-        //    var queryString = HttpUtility.ParseQueryString(uriBuilder.Query);
-
-        //    queryString.Add("iss", iss);
-        //    queryString.Add("login_hint", login_hint);
-        //    queryString.Add("target_link_uri", target_link_uri);
-        //    queryString.Add("lti_message_hint", lti_message_hint);
-        //    queryString.Add("lti_deployment_id", lti_deployment_id);
-        //    queryString.Add("client_id", client_id);
-
-        //    uriBuilder.Query = queryString.ToString();
-
-        //    return uriBuilder.Uri;
-        //}
     }
 }

@@ -23,5 +23,10 @@
                 throw new UriFormatException(INVALID_ISSUER);
             }
         }
+
+        public void CopyTo(Lti13PlatformCoreConfig config)
+        {
+            config._issuer = _issuer;
+        }
     }
 }

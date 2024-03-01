@@ -13,9 +13,18 @@ namespace NP.Lti13Platform.Web
         {
             services = services.AddLti13PlatformCore(c =>
             {
-                var config = new Lti13PlatformWebConfig { Core = c };
-                configure?.Invoke(config);
+                var config = new Lti13PlatformWebConfig();
+
+                c.CopyTo(config);
+
+                if (configure != null)
+                {
+                    config = configure.Invoke(config);
+                }
+                
                 services.AddSingleton(config);
+
+                return config;
             });
 
             services.AddTransient<AuthenticationHandler>();

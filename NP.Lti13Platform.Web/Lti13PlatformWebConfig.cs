@@ -2,10 +2,8 @@
 
 namespace NP.Lti13Platform.Web
 {
-    public class Lti13PlatformWebConfig
+    public class Lti13PlatformWebConfig : Lti13PlatformCoreConfig
     {
         public int IdTokenExpirationMinutes { get; set; } = 5;
-
-        public required Lti13PlatformCoreConfig Core { get; set; }
     }
 }

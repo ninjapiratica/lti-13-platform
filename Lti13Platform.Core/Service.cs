@@ -19,11 +19,11 @@
             yield return ("https://purl.imsglobal.org/spec/lti/claim/version", LTI_VERSION);
             yield return ("https://purl.imsglobal.org/spec/lti/claim/deployment_id", deploymentId);
 
-            foreach (var claim1 in new ILti13Claim?[] { message, roles, context, platform, roleScopeMentor, launchPresentation, custom })
+            foreach (var ltiClaim in new ILti13Claim?[] { message, roles, context, platform, roleScopeMentor, launchPresentation, custom })
             {
-                if (claim1 != null)
+                if (ltiClaim != null)
                 {
-                    foreach (var claim in claim1.GetClaims())
+                    foreach (var claim in ltiClaim.GetClaims())
                     {
                         yield return claim;
                     }
