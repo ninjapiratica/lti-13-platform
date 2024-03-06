@@ -2,6 +2,6 @@
 {
     public interface ILti13Claim
     {
-        IEnumerable<(string Key, object Value)> GetClaims();
+        IDictionary<string, object> GetClaims();
     }
 }

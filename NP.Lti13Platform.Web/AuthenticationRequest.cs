@@ -21,7 +21,5 @@
         public string? Login_Hint { get; set; }
 
         public string? Lti_Message_Hint { get; set; }
-
-        public string? Lti_Deployment_Id { get; set; }
     }
 }

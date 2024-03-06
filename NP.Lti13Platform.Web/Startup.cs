@@ -21,7 +21,7 @@ namespace NP.Lti13Platform.Web
                 {
                     config = configure.Invoke(config);
                 }
-                
+
                 services.AddSingleton(config);
 
                 return config;

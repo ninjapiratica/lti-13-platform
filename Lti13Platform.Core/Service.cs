@@ -1,35 +1,201 @@
-﻿namespace NP.Lti13Platform.Core
+﻿using System.Text;
+using System.Text.Json;
+using System.Web;
+
+namespace NP.Lti13Platform.Core
 {
-    public class Service
+    public class Service(IDataService dataService, Lti13PlatformCoreConfig config)
     {
         private const string LTI_VERSION = "1.3.0";
 
-        public IEnumerable<(string Key, object Value)> GetClaims<T>(
-            T message,
+        /// <summary>
+        /// Gets the LTI specific claims that can be added to the base OpenID user claims.
+        /// </summary>
+        /// <param name="messageType"></param>
+        /// <param name="deploymentId"></param>
+        /// <param name="message"></param>
+        /// <param name="roles"></param>
+        /// <param name="context"></param>
+        /// <param name="platform"></param>
+        /// <param name="roleScopeMentor"></param>
+        /// <param name="launchPresentation"></param>
+        /// <param name="custom"></param>
+        /// <returns></returns>
+        public IDictionary<string, object> GetClaims(
+            Lti13MessageType messageType,
             string deploymentId,
+            ILti13Message message,
             Lti13RolesClaim roles,
             Lti13Context? context = null,
             Lti13PlatformClaim? platform = null,
             Lti13RoleScopeMentorClaim? roleScopeMentor = null,
             Lti13LaunchPresentationClaim? launchPresentation = null,
             Lti13CustomClaim? custom = null)
-            where T : ILti13Message
         {
-            yield return ("https://purl.imsglobal.org/spec/lti/claim/message_type", T.MessageType);
-            yield return ("https://purl.imsglobal.org/spec/lti/claim/version", LTI_VERSION);
-            yield return ("https://purl.imsglobal.org/spec/lti/claim/deployment_id", deploymentId);
+            IEnumerable<KeyValuePair<string, object>> claims = new Dictionary<string, object>
+            {
+                { "https://purl.imsglobal.org/spec/lti/claim/message_type", messageType.ToString() },
+                { "https://purl.imsglobal.org/spec/lti/claim/version", LTI_VERSION },
+                { "https://purl.imsglobal.org/spec/lti/claim/deployment_id", deploymentId },
+            };
 
             foreach (var ltiClaim in new ILti13Claim?[] { message, roles, context, platform, roleScopeMentor, launchPresentation, custom })
             {
                 if (ltiClaim != null)
                 {
-                    foreach (var claim in ltiClaim.GetClaims())
-                    {
-                        yield return claim;
-                    }
+                    claims = claims.Concat(ltiClaim.GetClaims());
                 }
             }
+
+            return claims.ToDictionary(c => c.Key, c => c.Value);
         }
+
+        public async Task<(ILti13Message?, Lti13Context?)> ParseResourceLinkRequestHintAsync(string hint)
+        {
+            var resourceLink = await dataService.GetResourceLinkAsync(hint);
+            if (resourceLink == null)
+            {
+                return (null, null);
+            }
+
+            var context = await dataService.GetContextAsync(resourceLink.ContextId);
+            if (context == null)
+            {
+                return (null, null);
+            }
+
+            return (new LtiResourceLinkRequestMessage
+            {
+                Resource_Link_Id = resourceLink.Id,
+
+                Target_Link_Uri = ""
+                // TODO: Figure this out
+                //Target_Link_Uri = resourceLink.Uri,
+                //Resource_Link_Description = resourceLink.Description,
+                //Resource_Link_Title = resourceLink.Title
+            },
+            context);
+        }
+
+        public Uri GetDeepLinkInitiationUrlAsync(
+            Lti13Client client,
+            Lti13Deployment deployment,
+            Lti13Context context,
+            string userId,
+            string? title = default,
+            string? text = default,
+            string? data = default,
+            string? documentTarget = default,
+            double? height = default,
+            double? width = default,
+            string? locale = default,
+            string? returnUrl = default)
+        {
+            var builder = new UriBuilder(client.OidcInitiationUrl);
+
+            var query = HttpUtility.ParseQueryString(builder.Query);
+            query.Add("iss", config.Issuer);
+            query.Add("login_hint", userId);
+            query.Add("target_link_uri", client.DeepLinkUri);
+            query.Add("client_id", client.Id);
+            query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{context.Id},{Base64Encode(title)},{Base64Encode(text)},{Base64Encode(data)}");
+            query.Add("lti_deployment_id", deployment.Id);
+            builder.Query = query.ToString();
+
+            return builder.Uri;
+        }
+
+        public Uri GetResourceLinkInitiationUrlAsync(
+            Lti13Client client,
+            Lti13Deployment deployment,
+            Lti13ResourceLink resourceLink,
+            string userId,
+            string? documentTarget = default,
+            double? height = default,
+            double? width = default,
+            string? locale = default,
+            string? returnUrl = default)
+        {
+            var builder = new UriBuilder(client.OidcInitiationUrl);
+
+            var query = HttpUtility.ParseQueryString(builder.Query);
+            query.Add("iss", config.Issuer);
+            query.Add("login_hint", userId);
+            query.Add("target_link_uri", client.DeepLinkUri);
+            query.Add("client_id", client.Id);
+            query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{resourceLink.Id}");
+            query.Add("lti_deployment_id", deployment.Id);
+            builder.Query = query.ToString();
+
+            return builder.Uri;
+        }
+
+        public async Task<(ILti13Message?, Lti13Context?)> ParseDeepLinkRequestHintAsync(string hint)
+        {
+            if (hint.Split(',', 4) is not [var contextId, var title, var text, var data])
+            {
+                return (null, null);
+            }
+
+            var context = await dataService.GetContextAsync(contextId);
+            if (context == null)
+            {
+                return (null, null);
+            }
+
+            return (new LtiDeepLinkingRequestMessage
+            {
+                Accept_LineItem = config.DeepLink.AcceptLineItem,
+                Accept_Media_Types = config.DeepLink.AcceptMediaTypes,
+                Accept_Multiple = config.DeepLink.AcceptMultiple,
+                Accept_Presentation_Document_Targets = config.DeepLink.AcceptPresentationDocumentTargets,
+                Accept_Types = config.DeepLink.AcceptTypes,
+                Auto_Create = config.DeepLink.AutoCreate,
+                Data = Base64Decode(data),
+                Deep_Link_Return_Url = config.DeepLink.DeepLinkReturnUrl,
+                Text = Base64Decode(text),
+                Title = Base64Decode(title)
+            },
+            context);
+        }
+
+        public Lti13LaunchPresentationClaim ParseLaunchPresentationHint(string hint)
+        {
+            var parts = hint.Split([','], 5);
+            return new Lti13LaunchPresentationClaim
+            {
+                Document_Target = parts.Length > 0 ? parts[0] : null,
+                Height = parts.Length > 1 && double.TryParse(parts[1], out var h) ? h : null,
+                Width = parts.Length > 2 && double.TryParse(parts[2], out var w) ? w : null,
+                Locale = parts.Length > 3 ? parts[3] : null,
+                Return_Url = parts.Length > 4 ? Base64Decode(parts[4]) : null,
+            };
+        }
+
+        private string CreateLaunchPresentationHint(string? documentTarget = default, double? height = default, double? width = default, string? locale = default, string? returnUrl = default) =>
+            $"{documentTarget},{height},{width},{locale},{Base64Encode(returnUrl)}";
+
+        private string? Base64Decode(string? input) => input == null ? null : Encoding.UTF8.GetString(Convert.FromBase64String(input));
+        private string? Base64Encode(string? input) => input == null ? null : Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+    }
+
+    public enum Lti13MessageType
+    {
+        Unknown = 0,
+        LtiResourceLinkRequest = 1,
+        LtiDeepLinkingRequest = 2
+    }
+
+    public interface IDataService
+    {
+        Task<Lti13Client?> GetClientAsync(string clientId);
+        Task<Lti13Deployment?> GetDeploymentAsync(string deploymentId);
+        Task<Lti13Context?> GetContextAsync(string contextId);
+        Task<Lti13ResourceLink?> GetResourceLinkAsync(string resourceLinkId);
+        Task<IEnumerable<string>> GetRolesAsync(string userId, Lti13Client client, Lti13Context? context);
+        Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Lti13Client client, Lti13Context? context);
+        Task<Lti13OpenIdUser?> GetUserAsync(Lti13Client client, string userId);
+        // TODO: Figure out custom
     }
 
     public class Lti13Client
@@ -39,6 +205,8 @@
         public required string OidcInitiationUrl { get; set; }
 
         public required IEnumerable<string> RedirectUris { get; set; }
+
+        public string? DeepLinkUri { get; set; }
 
         public Jwks? Jwks { get; set; }
     }
@@ -90,20 +258,39 @@
 
         public IEnumerable<string> Types { get; set; } = Enumerable.Empty<string>();
 
-        public IEnumerable<(string Key, object Value)> GetClaims()
+        public IDictionary<string, object> GetClaims()
         {
             var dict = new Dictionary<string, object>();
 
             if (Id != null) dict.Add("id", Id);
-            if (Types.Any()) dict.Add("type", Types);
+            if (Types.Any()) dict.Add("type", JsonSerializer.SerializeToElement(Types));
             if (Label != null) dict.Add("label", Label);
             if (Title != null) dict.Add("title", Title);
 
             if (dict.Count > 0)
             {
-                yield return ("https://purl.imsglobal.org/spec/lti/claim/context", dict);
+                return new Dictionary<string, object>
+                {
+                    { "https://purl.imsglobal.org/spec/lti/claim/context", dict }
+                };
             }
+
+            return new Dictionary<string, object>();
         }
+    }
+
+    public class Lti13ResourceLink
+    {
+        public required string Id { get; set; }
+
+        public required string ContextId { get; set; }
+
+        // TODO: Figure this out
+        //public string? Uri { get; set; }
+
+        //public string? Description { get; set; }
+
+        //public string? Title { get; set; }
     }
 
     public class Lti13PlatformClaim : ILti13Claim
@@ -116,7 +303,7 @@
         public string? Product_Family_Code { get; set; }
         public string? Version { get; set; }
 
-        public IEnumerable<(string Key, object Value)> GetClaims()
+        public IDictionary<string, object> GetClaims()
         {
             if (Guid != null)
             {
@@ -132,43 +319,54 @@
                 if (Product_Family_Code != null) dict.Add("product_family_code", Product_Family_Code);
                 if (Version != null) dict.Add("version", Version);
 
-                yield return ("https://purl.imsglobal.org/spec/lti/claim/tool_platform", dict);
+                return new Dictionary<string, object>
+                {
+                    { "https://purl.imsglobal.org/spec/lti/claim/tool_platform", dict }
+                };
             }
+
+            return new Dictionary<string, object>();
         }
     }
 
     public class Lti13RolesClaim : ILti13Claim
     {
-        public List<string> Roles { get; set; } = [];
+        public IEnumerable<string> Roles { get; set; } = [];
 
-        public IEnumerable<(string Key, object Value)> GetClaims()
+        public IDictionary<string, object> GetClaims()
         {
-            yield return ("https://purl.imsglobal.org/spec/lti/claim/roles", Roles);
+            return new Dictionary<string, object> { { "https://purl.imsglobal.org/spec/lti/claim/roles", JsonSerializer.SerializeToElement(Roles) } };
         }
     }
 
     public class Lti13RoleScopeMentorClaim : ILti13Claim
     {
-        public List<string> UserIds { get; set; } = [];
+        public IEnumerable<string> UserIds { get; set; } = [];
 
-        public IEnumerable<(string Key, object Value)> GetClaims()
+        public IDictionary<string, object> GetClaims()
         {
-            if (UserIds.Count > 0)
+            var userIds = UserIds.ToList();
+            if (userIds.Count > 0)
             {
-                yield return ("https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor", UserIds);
+                return new Dictionary<string, object> { { "https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor", JsonSerializer.SerializeToElement(UserIds) } };
             }
+
+            return new Dictionary<string, object>();
         }
     }
 
     public class Lti13LaunchPresentationClaim : ILti13Claim
     {
+        /// <summary>
+        /// <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values.
+        /// </summary>
         public string? Document_Target { get; set; }
         public double? Height { get; set; }
         public double? Width { get; set; }
         public string? Return_Url { get; set; }
         public string? Locale { get; set; }
 
-        public IEnumerable<(string Key, object Value)> GetClaims()
+        public IDictionary<string, object> GetClaims()
         {
             var dict = new Dictionary<string, object>();
 
@@ -180,8 +378,10 @@
 
             if (dict.Count > 0)
             {
-                yield return ("https://purl.imsglobal.org/spec/lti/claim/launch_presentation", dict);
+                return new Dictionary<string, object> { { "https://purl.imsglobal.org/spec/lti/claim/launch_presentation", dict } };
             }
+
+            return new Dictionary<string, object>();
         }
     }
 
@@ -189,12 +389,14 @@
     {
         public Dictionary<string, string> CustomClaims { get; set; } = [];
 
-        public IEnumerable<(string Key, object Value)> GetClaims()
+        public IDictionary<string, object> GetClaims()
         {
             if (CustomClaims.Count != 0)
             {
-                yield return ("http://imsglobal.org/custom", CustomClaims);
+                return new Dictionary<string, object> { { "http://imsglobal.org/custom", CustomClaims } };
             }
+
+            return new Dictionary<string, object>();
         }
     }
 
@@ -279,12 +481,5 @@
         public static readonly string Embed = "embed";
         public static readonly string Window = "window";
         public static readonly string Iframe = "iframe";
-    }
-
-    public class Lti13ResourceLink
-    {
-        public required string Id { get; set; }
-
-        public required string ContextId { get; set; }
     }
 }

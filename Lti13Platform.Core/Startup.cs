@@ -13,6 +13,7 @@ namespace NP.Lti13Platform.Core
             }
 
             services.AddSingleton(config);
+            services.AddTransient<Service>();
 
             return services;
         }
