@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Core
+﻿namespace NP.Lti13Platform
 {
     public class Lti13OpenIdUser : ILti13Claim
     {

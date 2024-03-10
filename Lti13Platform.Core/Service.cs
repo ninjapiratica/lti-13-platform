@@ -1,10 +1,12 @@
-﻿using System.Text;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Web;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform
 {
-    public class Service(IDataService dataService, Lti13PlatformCoreConfig config)
+    public class Service(IDataService dataService, Lti13PlatformConfig config)
     {
         private const string LTI_VERSION = "1.3.0";
 
@@ -50,34 +52,7 @@ namespace NP.Lti13Platform.Core
             return claims.ToDictionary(c => c.Key, c => c.Value);
         }
 
-        public async Task<(ILti13Message?, Lti13Context?)> ParseResourceLinkRequestHintAsync(string hint)
-        {
-            var resourceLink = await dataService.GetResourceLinkAsync(hint);
-            if (resourceLink == null)
-            {
-                return (null, null);
-            }
-
-            var context = await dataService.GetContextAsync(resourceLink.ContextId);
-            if (context == null)
-            {
-                return (null, null);
-            }
-
-            return (new LtiResourceLinkRequestMessage
-            {
-                Resource_Link_Id = resourceLink.Id,
-
-                Target_Link_Uri = ""
-                // TODO: Figure this out
-                //Target_Link_Uri = resourceLink.Uri,
-                //Resource_Link_Description = resourceLink.Description,
-                //Resource_Link_Title = resourceLink.Title
-            },
-            context);
-        }
-
-        public Uri GetDeepLinkInitiationUrlAsync(
+        public Uri GetDeepLinkInitiationUrl(
             Lti13Client client,
             Lti13Deployment deployment,
             Lti13Context context,
@@ -105,7 +80,7 @@ namespace NP.Lti13Platform.Core
             return builder.Uri;
         }
 
-        public Uri GetResourceLinkInitiationUrlAsync(
+        public Uri GetResourceLinkInitiationUrl(
             Lti13Client client,
             Lti13Deployment deployment,
             Lti13ResourceLink resourceLink,
@@ -130,6 +105,33 @@ namespace NP.Lti13Platform.Core
             return builder.Uri;
         }
 
+        public async Task<(ILti13Message?, Lti13Context?)> ParseResourceLinkRequestHintAsync(string hint)
+        {
+            var resourceLink = await dataService.GetResourceLinkAsync(hint);
+            if (resourceLink == null)
+            {
+                return (null, null);
+            }
+
+            var context = await dataService.GetContextAsync(resourceLink.ContextId);
+            if (context == null)
+            {
+                return (null, null);
+            }
+
+            return (new LtiResourceLinkRequestMessage
+            {
+                Resource_Link_Id = resourceLink.Id,
+
+                Target_Link_Uri = ""
+                // TODO: Figure this out
+                //Target_Link_Uri = resourceLink.Uri,
+                //Resource_Link_Description = resourceLink.Description,
+                //Resource_Link_Title = resourceLink.Title
+            },
+            context);
+        }
+
         public async Task<(ILti13Message?, Lti13Context?)> ParseDeepLinkRequestHintAsync(string hint)
         {
             if (hint.Split(',', 4) is not [var contextId, var title, var text, var data])
@@ -152,7 +154,7 @@ namespace NP.Lti13Platform.Core
                 Accept_Types = config.DeepLink.AcceptTypes,
                 Auto_Create = config.DeepLink.AutoCreate,
                 Data = Base64Decode(data),
-                Deep_Link_Return_Url = config.DeepLink.DeepLinkReturnUrl,
+                Deep_Link_Return_Url = "https://localhost:44318/lti13/deeplink",
                 Text = Base64Decode(text),
                 Title = Base64Decode(title)
             },
@@ -172,7 +174,7 @@ namespace NP.Lti13Platform.Core
             };
         }
 
-        private string CreateLaunchPresentationHint(string? documentTarget = default, double? height = default, double? width = default, string? locale = default, string? returnUrl = default) =>
+        public string CreateLaunchPresentationHint(string? documentTarget = default, double? height = default, double? width = default, string? locale = default, string? returnUrl = default) =>
             $"{documentTarget},{height},{width},{locale},{Base64Encode(returnUrl)}";
 
         private string? Base64Decode(string? input) => input == null ? null : Encoding.UTF8.GetString(Convert.FromBase64String(input));
@@ -214,11 +216,31 @@ namespace NP.Lti13Platform.Core
     public class JwtPublicKey : Jwks
     {
         public required string PublicKey { get; set; }
+
+        public override Task<IEnumerable<SecurityKey>> GetKeysAsync()
+        {
+            return Task.FromResult<IEnumerable<SecurityKey>>([new JsonWebKey(PublicKey)]);
+        }
     }
 
     public class JwksUri : Jwks
     {
+        private static readonly HttpClient httpClient = new();
+
         public required string Uri { get; set; }
+
+        public override async Task<IEnumerable<SecurityKey>> GetKeysAsync()
+        {
+            var httpResponse = await httpClient.GetAsync(Uri);
+            var result = await httpResponse.Content.ReadFromJsonAsync<JsonWebKeySet>();
+
+            if (result != null)
+            {
+                return result.Keys;
+            }
+
+            return Enumerable.Empty<SecurityKey>();
+        }
     }
 
     public abstract class Jwks
@@ -231,6 +253,8 @@ namespace NP.Lti13Platform.Core
         static Jwks Create(string keyOrUri) => Uri.IsWellFormedUriString(keyOrUri, UriKind.Absolute) ?
                 new JwksUri { Uri = keyOrUri } :
                 new JwtPublicKey { PublicKey = keyOrUri };
+
+        public abstract Task<IEnumerable<SecurityKey>> GetKeysAsync();
 
         public static implicit operator Jwks(string keyOrUri) => Create(keyOrUri);
     }

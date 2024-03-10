@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using NP.Lti13Platform.Core;
 
-namespace NP.Lti13Platform.Web
+namespace NP.Lti13Platform
 {
     public static class Startup
     {
@@ -28,6 +28,8 @@ namespace NP.Lti13Platform.Web
             });
 
             services.AddTransient<AuthenticationHandler>();
+            services.AddTransient<DeepLinkHandler>();
+            services.AddTransient<JwksHandler>();
 
             return services;
         }
@@ -38,8 +40,12 @@ namespace NP.Lti13Platform.Web
 
             configure?.Invoke(config);
 
+            app.MapGet(config.JwksUrl, async (JwksHandler handler) => await handler.HandleAsync());
+
             app.MapGet(config.AuthorizationUrl, async ([AsParameters] AuthenticationRequest qs, AuthenticationHandler handler) => await handler.HandleAsync(qs));
             app.MapPost(config.AuthorizationUrl, async ([FromForm] AuthenticationRequest body, AuthenticationHandler handler) => await handler.HandleAsync(body)).DisableAntiforgery();
+
+            app.MapPost(config.DeepLinkResponseUrl, async ([FromForm] DeepLinkResponseRequest body, DeepLinkHandler handler) => await handler.HandleAsync(body)).DisableAntiforgery();
 
             return app;
         }

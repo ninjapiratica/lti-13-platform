@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Web
+﻿namespace NP.Lti13Platform
 {
     public class AuthenticationRequest
     {

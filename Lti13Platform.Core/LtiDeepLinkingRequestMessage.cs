@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform
 {
     public class LtiDeepLinkingRequestMessage : ILti13Message
     {

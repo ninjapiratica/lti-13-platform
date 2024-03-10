@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using NP.Lti13Platform.Core;
+using System.Net.Mime;
 using System.Security.Cryptography;
-using System.Text.Json;
 
-namespace NP.Lti13Platform.Web
+namespace NP.Lti13Platform
 {
     public class AuthenticationHandler(
-        Lti13PlatformWebConfig config,
+        Lti13PlatformConfig config,
         Service service,
         IDataService dataService)
     {
@@ -20,7 +19,9 @@ namespace NP.Lti13Platform.Web
         private const string INVALID_REQUEST = "invalid_request";
         private const string INVALID_CLIENT = "invalid_client";
         private const string INVALID_GRANT = "invalid_grant";
+        private const string UNAUTHORIZED_CLIENT = "unauthorized_client";
         private const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request";
+        private const string LTI_SPEC_URI = "https://www.imsglobal.org/spec/lti/v1p3/#lti_message_hint-login-parameter";
         private const string SCOPE_REQUIRED = "scope must be 'openid'.";
         private const string RESPONSE_TYPE_REQUIRED = "response_type must be 'id_token'.";
         private const string RESPONSE_MODE_REQUIRED = "response_mode must be 'form_post'.";
@@ -30,9 +31,9 @@ namespace NP.Lti13Platform.Web
         private const string UNKNOWN_CLIENT_ID = "client_id is unknown";
         private const string INVALID_CLIENT_ID = "client_id is invalid";
         private const string UNKNOWN_REDIRECT_URI = "redirect_uri is unknown";
-        private const string LTI_MESSAGE_HINT_MALFORMED = "lti_message_hint is malformed";
         private const string LTI_MESSAGE_HINT_INVALID = "lti_message_hint is invalid";
         private const string LOGIN_HINT_REQUIRED = "login_hint is required";
+        private const string USER_CLIENT_MISMATCH = "client is not authorized for user";
 
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
@@ -93,7 +94,15 @@ namespace NP.Lti13Platform.Web
             if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint) ||
                 request.Lti_Message_Hint.Split('!', 3) is not [var messageTypeHint, var launchPresentationHint, var messageHint])
             {
-                return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_MALFORMED, Error_Uri = AUTH_SPEC_URI });
+                return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = UNAUTHORIZED_CLIENT, Error_Uri = LTI_SPEC_URI });
+            }
+
+            var userId = request.Login_Hint;
+            var user = await dataService.GetUserAsync(client, userId);
+
+            if (user == null)
+            {
+                return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
             }
 
             _ = Enum.TryParse(messageTypeHint, out Lti13MessageType messageType);
@@ -107,16 +116,14 @@ namespace NP.Lti13Platform.Web
 
             if (ltiMessage == null || context == null)
             {
-                return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = AUTH_SPEC_URI });
+                return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
             }
 
             var deployment = await dataService.GetDeploymentAsync(context.DeploymentId);
             if (deployment?.ClientId != client.Id)
             {
-                return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = INVALID_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
+                return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = INVALID_CLIENT_ID, Error_Uri = LTI_SPEC_URI });
             }
-
-            var userId = request.Login_Hint;
 
             var roles = await dataService.GetRolesAsync(userId, client, context);
             var mentoredUserIds = await dataService.GetMentoredUserIdsAsync(userId, client, context);
@@ -134,37 +141,33 @@ namespace NP.Lti13Platform.Web
                 service.ParseLaunchPresentationHint(launchPresentationHint),
                 new Lti13CustomClaim());
 
-            var user = await dataService.GetUserAsync(client, userId);
-
             using var rsaProvider = RSA.Create();
             // Test key
-            rsaProvider.ImportFromPem("-----BEGIN RSA PRIVATE KEY-----\r\nMIIEowIBAAKCAQEAl019/w1CjGtqDUn8Ozz63NEfSXK0WdawD3KUnOlDh4kGoRaR\r\nVIrfg/FLEraJewdSMAvTQnLzGDQFuPyI1FYmyFEHahHs/h8LJIyiy7pd9KhUsuP3\r\nKeYvd32bHGVz/u2gySOSRAZy88evvMGrFTtaqLeRUxW5BnyZut3tbpwqViXLizZq\r\nk5XfEVgbqx7V2QV9PVJf0a4u3exp72tAbQezF0q0Kipc13VfXYTZvexcrQuSWGcU\r\nzBNFOIKoETLcFK8wVbhTfo2Q0MBCMoEJogunTsZrrdEiCrF1XPIq7EFxM+JBWG1a\r\n1eDvxWnjQTqK0VVl2LfCMoRN/rD7rfDibQc0YQIDAQABAoIBAAMljnBGg1LOTRdX\r\nqZJF02XSR5dMdmnD6Ed595NH2qqv895XzM/4T2u8EfaiqztOzKvJIyynnVysgE33\r\nmpTn8ciKvt+63bXvSVkKP7yC9L9I3PIXgaVybxxKFXbCuWXc5VIpljop9CwTxBjl\r\n4jv/zwPhRXl34zA6WSwkv3JkdxDxkgTOxyoaHkbMre0CdP9Dl4AQiKyaf36IbXfh\r\nsIBOYvX5oP5Od5Y+Ug+s0aq2hjoglxImgZDyBlGCe+I+JDUPW+OvgsttFya8c3M9\r\nxJRW7BxiMoHqe+cd9EEl1nWXHqtamTPD54rmuqoVuwNM3KaLdq/dLZI/62mKlDIF\r\nHSa/TwECgYEA4m5Ivh3HjLjU3C1lG0E3WMbtxqbB5mG8n+Yogytj7POSEz0ul2JF\r\nUm2cvFnNUdWe6OSRG73QkRntJIofQAAOWSlOEFFDM1DdLRg9kLMStEo2JoNPjDAM\r\n+TSk3R1zkJNeDzNtkZO1f+WejTVcupN3qEsuTF+g+o8rAE8P73YuQdECgYEAqw+h\r\nnISXOBD2DudllXTyn7zRxXe1m98u2ZE2pZd+uRypO7PMpfVMiscsCrJoHbBkXE6J\r\n9Wb9KQgVKHxdtuaxkOuKqk1t8VjlHQyC/VO88yXwFE+yQ9nrCTEcu2o2Eb9Ey7a6\r\nbCLApgBmpU0QWLYM1wj18GP7PiATpfzHL3f7XZECgYAVJswwxkNfx9xKfQsW0q7C\r\n4kJP7j/qr3KZVTyvlBwPhGk+1tZFWe6z1n1vssvVOylPBBryBnc3Nr7KTQTCS78L\r\nYSpjp9OpNYKTtdH6dF/o643HZzjFFbAAj4RfC2NCPCHrNZikorGvstluw29YFnJ1\r\nDCDVDZHSFhGkQ75vVhDYIQKBgFlxG+R144eaPr3+ObxS4MWq+dgRRrEQmjOCXRtq\r\nQgVSOh6QXZHs16+8goe5Tv0vDNrC6hmZVweMRVvc4zdOGkwXDHMNd035WBq/PwJs\r\nNWDBVm2YWjJmECHHPymzWEAhTTxi98iwxyBFF2aZC9IGpmINOmMONAEAzqU8rX1h\r\nc9oxAoGBAIzUwcmOWndLyL9swO8TIqRODE4NuHjwmc6SyrGMAaSZZvPnP8AOO7AE\r\nXFhNjuWFaQn/zTwkNKPzWxWyuDQp/0Sk3pGV6XteV0ShuJrOSAFSR0h9GdTMH6ZK\r\nv+8h7srC/8nHogRvbhYbA7ffAvvVP0wkJRz0jaMkVeY9cMZStJzT\r\n-----END RSA PRIVATE KEY-----\r\n");
-
-            JsonSerializer.Serialize(new { });
+            rsaProvider.ImportFromPem("-----BEGIN RSA PRIVATE KEY-----\r\nMIIEpAIBAAKCAQEArSpqDfXwj0ZYB0yQTL967oaTiOI35kaudwkF2NFRPKkxF43o\r\nqtlzdX7TuTzvhVmIW8iY9ZqDVcH9av+MfA5D3YYMPnRws2+b2DE16cN+qKqonuMt\r\naj9RERLYrC2Gz2fDB612L8TZi7KV/AFESeVt3rAGGSeXc8PLRvPz/WU0o4JGnsbq\r\naY2morgcHssHWurAWlrNHM4cYnz5ku9BM2OsT3vTKjQCW9pcEfGtBuPPOhVUK879\r\n9GOZTeIsU4Uvjv+l+FoINJwRqeaoisA5nh2MxbP2CyCiAW9b0oWFRCoJwDz6HKUG\r\nVZWsclLmLosjrKK1nxHmWyy5jxxak7YNCyhfmQIDAQABAoIBAAtgblKie35+PvRO\r\necCBEquEbexKqHou30bKHKHlBp2h+Va0fQ+/H5By7P1jh9JOp+BtKmzLDPaKZdgs\r\nwpG37N+AmgyptmnOMFf2IQui9g77af6eVZ0rBxbEZ+B6ppEOc8gXrlxvELfWhiIQ\r\nrJLfnuXy0e5pz8/MPO5ZbV3oKJrWrYP1XYQ3op3y9m55mveuuxKjjOg86Jool4Zb\r\n9jTJLQnW02PeFyIoKV5IBlWvzxSKsTqFcxW4YBcIoR3/OaCq5W8DnAf7QHQn+yaU\r\nbhMipa5iBUADd/MF8CdZKbuMaqaazyheH4s/EnbMi7s/neaZ7S313asVWMTMhCp7\r\nxyDxxbECgYEA5F1EUN+jCfiwct2E2/HY7k0jG9/ETsGxA6QHds4w76NzuKiV2f/D\r\n1f3F4/DJ/GpMCXi3Lz6j8b7qm8ypPYNRhOhCPx0F3LJLWLKw7nW5oiwM9zp1LMHC\r\na6Y7ZlAWd68fqlqegG9EEXFrCGR3nOk9Xpgwc/mNFecLsrzWNzNNWJ0CgYEAwh8X\r\nh6rJcfCM8Kf0Dbl5CCKVuFieBJ8UrM36Ky+LscVPCpcXufQ9UVCED8cI86FxjDAr\r\nRe4WCUztcq6YbNl80FiWce7w+J1JQ3GU5KQTj9kSDwtzCTTwv2vjogNExNdqEHIt\r\nsLnePMXJGIZaugWKpuxhUfsFQmCAiPs+ymeHPC0CgYEAm17tdQzDE6y0+GHI3BAu\r\n5OtsgLF9EYxs0CpQvb9JwjF2MWPaGKkQZ86yTgRsmKUFuMf98lHvHzIi0v+rAeQP\r\nmZqgP+qSK3bPFrj08jj8pN7Nr4OBZ4MosS83aMQClUl8BN6EyqNpL2j4Rox8aTCz\r\nhWGMTcuy9vzsk54xLPtlm20CgYB2IYmmK86PIf4C7ZJdT8NRqgpGttbipRRl3Ksi\r\n4Lo4IoRpQ21S4kj2VPMozsypxlNdJmsPEUYjvsa5BXsIsol8GIzlJK1L/ht5iYM8\r\naITnAwg0U5lbvvXK55MNIsQUraqD+5fGdjXB8fLgk9JeZcTss+i9hO68aBGQSqT5\r\nc2seuQKBgQDgzT9ZlxqR4JLhWsmQnu6aPt+74bxJBDvoMixFGbk3DFSQgS7Ym+Jc\r\nioRRsOZhEPkO+du8QCp86Xgga075YU0HsmHMxbFkJfUrpiwIZgcB92qk+bY/u41g\r\noSkWC32K2DuZpdLuegfjmQZo0FgDlZH6bKze0liafaioEGMGalhx9Q==\r\n-----END RSA PRIVATE KEY-----\r\n");
 
             var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
             {
                 Issuer = config.Issuer,
                 Audience = request.Client_Id,
                 Expires = DateTime.UtcNow.AddMinutes(config.IdTokenExpirationMinutes),
-                SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsaProvider) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY }, SecurityAlgorithms.RsaSha256),
-                Claims = user.GetClaims().Concat(ltiClaims).ToDictionary(c => c.Key, c => c.Value)
+                SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsaProvider) { KeyId = "asdf", CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY }, SecurityAlgorithms.RsaSha256),
+                Claims = user.GetClaims().Concat(ltiClaims).Append(new KeyValuePair<string, object>("nonce", request.Nonce)).ToDictionary(c => c.Key, c => c.Value)
             });
 
-            return Results.Ok(token);
+            //return Results.Ok(token);
 
-            //            return Results.Content(@$"<!DOCTYPE html>
-            //<html>
-            //<body>
-            //<form method=""post"" action=""{request.Redirect_Uri}"">
-            //<input type=""hidden"" name=""id_token"" value=""{token}""/>
-            //{(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
-            //</form>
-            //<script type=""text/javascript"">
-            //document.getElementsByTagName('form')[0].submit();
-            //</script>
-            //</body>
-            //</html>", MediaTypeNames.Text.Html);
+            return Results.Content(@$"<!DOCTYPE html>
+            <html>
+            <body>
+            <form method=""post"" action=""{request.Redirect_Uri}"">
+            <input type=""hidden"" name=""id_token"" value=""{token}""/>
+            {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
+            </form>
+            <script type=""text/javascript"">
+            document.getElementsByTagName('form')[0].submit();
+            </script>
+            </body>
+            </html>", MediaTypeNames.Text.Html);
         }
     }
 }

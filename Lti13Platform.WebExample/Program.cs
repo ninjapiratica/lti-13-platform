@@ -1,11 +1,18 @@
-using NP.Lti13Platform.Web;
+using NP.Lti13Platform;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddLti13PlatformWeb();
+builder.Services.AddLti13Platform(x =>
+{
+    x.Issuer = "https://mytest.com";
+    x.DeepLink.AcceptMultiple = true;
+    x.DeepLink.AcceptLineItem = true;
+    x.DeepLink.AutoCreate = true;
+    return x;
+});
 builder.Services.AddTransient<IDataService, DataService>();
 
 
@@ -26,7 +33,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13PlatformWeb();
+app.UseLti13Platform();
 
 app.MapControllerRoute(
     name: "default",
@@ -34,11 +41,11 @@ app.MapControllerRoute(
 
 app.Run();
 
-internal class DataService : IDataService
+public class DataService : IDataService
 {
     public Task<Lti13Client?> GetClientAsync(string clientId)
     {
-        return Task.FromResult<Lti13Client?>(new Lti13Client { Id = "asdf", OidcInitiationUrl = "", RedirectUris = ["https://www.test.com"], Jwks = "" });
+        return Task.FromResult<Lti13Client?>(new Lti13Client { Id = "asdf", OidcInitiationUrl = "https://saltire.lti.app/tool", DeepLinkUri = "https://saltire.lti.app/tool", RedirectUris = ["https://saltire.lti.app/tool"], Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
     }
 
     public Task<Lti13Context?> GetContextAsync(string contextId)

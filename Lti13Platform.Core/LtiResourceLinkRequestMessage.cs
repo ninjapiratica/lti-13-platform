@@ -1,5 +1,5 @@
 ﻿
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform
 {
     public class LtiResourceLinkRequestMessage : ILti13Message
     {
