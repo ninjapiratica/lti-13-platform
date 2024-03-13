@@ -55,45 +55,17 @@ namespace NP.Lti13Platform
                 return Results.BadRequest("BAD VERSION");
             }
 
-            var data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value;
-            var message = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/msg", out var messageClaim) ? (string)messageClaim : default;
-            var log = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/log", out var logClaim) ? (string)logClaim : default;
-            var errorMessage = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg", out var errorMessageClaim) ? (string)errorMessageClaim : default;
-            var errorLog = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog", out var errorLogClaim) ? (string)errorLogClaim : default;
-
-            try
+            var deepLinkResponseMessage = new DeepLinkResponseMessage
             {
-                //var contentItems = validatedToken.Claims.TryGetValue(, out var contentItemsClaim) ? (IList<object>)contentItemsClaim : default;
+                Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
+                Message = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/msg", out var messageClaim) ? (string)messageClaim : default,
+                Log = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/log", out var logClaim) ? (string)logClaim : default,
+                ErrorMessage = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg", out var errorMessageClaim) ? (string)errorMessageClaim : default,
+                ErrorLog = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog", out var errorLogClaim) ? (string)errorLogClaim : default,
+                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => JsonSerializer.Deserialize<ContentItem>(x.Value)!),
+            };
 
-                validatedToken.Claims.TryGetValue("", out var val);
-
-                var x = ((JsonElement)val).Deserialize<Test>();
-                var y = (IList<object>)val;
-
-
-                //var y = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => JsonSerializer.Deserialize<Test>(x.Value));
-
-                //var items = contentItems.Select(x => );
-                return Results.Ok(new
-                {
-                    jwt = request.Jwt,
-                    y
-                });
-            }
-            catch (Exception ex)
-            {
-                return Results.Ok(new
-                {
-                    jwt = request.Jwt,
-                    exception = ex.Message
-                });
-            }
-        }
-
-        public class Test
-        {
-            public string type { get; set; }
-            public string title { get; set; }
+            return Results.Ok(deepLinkResponseMessage);
         }
     }
 }
