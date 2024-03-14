@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 
 namespace NP.Lti13Platform
 {
-    public class DeepLinkHandler(IDataService dataService, Lti13PlatformConfig config)
+    public class DeepLinkHandler(IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IServiceProvider serviceProvider)
     {
         public async Task<IResult> HandleAsync(DeepLinkResponseRequest request)
         {
@@ -36,7 +38,7 @@ namespace NP.Lti13Platform
             var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
             {
                 IssuerSigningKeys = await client.Jwks.GetKeysAsync(),
-                ValidAudience = config.Issuer,
+                ValidAudience = config.CurrentValue.Issuer,
                 ValidIssuer = client.Id
             });
 
@@ -55,45 +57,21 @@ namespace NP.Lti13Platform
                 return Results.BadRequest("BAD VERSION");
             }
 
-            var data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value;
-            var message = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/msg", out var messageClaim) ? (string)messageClaim : default;
-            var log = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/log", out var logClaim) ? (string)logClaim : default;
-            var errorMessage = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg", out var errorMessageClaim) ? (string)errorMessageClaim : default;
-            var errorLog = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog", out var errorLogClaim) ? (string)errorLogClaim : default;
-
-            try
+            return await serviceProvider.GetRequiredService<IDeepLinkContentHandler>().HandleAsync(serviceProvider, new DeepLinkResponse
             {
-                //var contentItems = validatedToken.Claims.TryGetValue(, out var contentItemsClaim) ? (IList<object>)contentItemsClaim : default;
-
-                validatedToken.Claims.TryGetValue("", out var val);
-
-                var x = ((JsonElement)val).Deserialize<Test>();
-                var y = (IList<object>)val;
-
-
-                //var y = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => JsonSerializer.Deserialize<Test>(x.Value));
-
-                //var items = contentItems.Select(x => );
-                return Results.Ok(new
-                {
-                    jwt = request.Jwt,
-                    y
-                });
-            }
-            catch (Exception ex)
-            {
-                return Results.Ok(new
-                {
-                    jwt = request.Jwt,
-                    exception = ex.Message
-                });
-            }
+                Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
+                Message = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/msg")?.Value,
+                Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
+                ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
+                ErrorLog = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog")?.Value,
+                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => JsonSerializer.Deserialize<ContentItem>(x.Value)!)
+            });
         }
+    }
 
-        public class Test
-        {
-            public string type { get; set; }
-            public string title { get; set; }
-        }
+    public class ContentItem
+    {
+        public string type { get; set; }
+        public string title { get; set; }
     }
 }

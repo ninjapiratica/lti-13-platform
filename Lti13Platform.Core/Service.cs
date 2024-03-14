@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -6,7 +7,7 @@ using System.Web;
 
 namespace NP.Lti13Platform
 {
-    public class Service(IDataService dataService, Lti13PlatformConfig config)
+    public class Service(IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config)
     {
         private const string LTI_VERSION = "1.3.0";
 
@@ -69,7 +70,7 @@ namespace NP.Lti13Platform
             var builder = new UriBuilder(client.OidcInitiationUrl);
 
             var query = HttpUtility.ParseQueryString(builder.Query);
-            query.Add("iss", config.Issuer);
+            query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
             query.Add("target_link_uri", client.DeepLinkUri);
             query.Add("client_id", client.Id);
@@ -94,7 +95,7 @@ namespace NP.Lti13Platform
             var builder = new UriBuilder(client.OidcInitiationUrl);
 
             var query = HttpUtility.ParseQueryString(builder.Query);
-            query.Add("iss", config.Issuer);
+            query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
             query.Add("target_link_uri", client.DeepLinkUri);
             query.Add("client_id", client.Id);
@@ -147,12 +148,12 @@ namespace NP.Lti13Platform
 
             return (new LtiDeepLinkingRequestMessage
             {
-                Accept_LineItem = config.DeepLink.AcceptLineItem,
-                Accept_Media_Types = config.DeepLink.AcceptMediaTypes,
-                Accept_Multiple = config.DeepLink.AcceptMultiple,
-                Accept_Presentation_Document_Targets = config.DeepLink.AcceptPresentationDocumentTargets,
-                Accept_Types = config.DeepLink.AcceptTypes,
-                Auto_Create = config.DeepLink.AutoCreate,
+                Accept_LineItem = config.CurrentValue.DeepLink.AcceptLineItem,
+                Accept_Media_Types = config.CurrentValue.DeepLink.AcceptMediaTypes,
+                Accept_Multiple = config.CurrentValue.DeepLink.AcceptMultiple,
+                Accept_Presentation_Document_Targets = config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets,
+                Accept_Types = config.CurrentValue.DeepLink.AcceptTypes,
+                Auto_Create = config.CurrentValue.DeepLink.AutoCreate,
                 Data = Base64Decode(data),
                 Deep_Link_Return_Url = "https://localhost:44318/lti13/deeplink",
                 Text = Base64Decode(text),

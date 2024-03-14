@@ -5,13 +5,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddLti13Platform(x =>
+builder.Services.AddLti13Platform(config =>
 {
-    x.Issuer = "https://mytest.com";
-    x.DeepLink.AcceptMultiple = true;
-    x.DeepLink.AcceptLineItem = true;
-    x.DeepLink.AutoCreate = true;
-    return x;
+    config.Issuer = "https://mytest.com";
+    config.DeepLink.AcceptMultiple = true;
+    config.DeepLink.AcceptLineItem = true;
+    config.DeepLink.AutoCreate = true;
 });
 builder.Services.AddTransient<IDataService, DataService>();
 

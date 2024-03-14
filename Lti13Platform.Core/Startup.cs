@@ -8,15 +8,10 @@ namespace NP.Lti13Platform
 {
     public static class Startup
     {
-        public static IServiceCollection AddLti13Platform(this IServiceCollection services, Func<Lti13PlatformConfig, Lti13PlatformConfig>? configure = null)
+        public static IServiceCollection AddLti13Platform(this IServiceCollection services, Action<Lti13PlatformConfig> configure)
         {
-            var config = new Lti13PlatformConfig();
-            if (configure != null)
-            {
-                config = configure.Invoke(config);
-            }
+            services.Configure(configure);
 
-            services.AddSingleton(config);
             services.AddTransient<Service>();
             services.AddTransient<AuthenticationHandler>();
             services.AddTransient<DeepLinkHandler>();
@@ -28,7 +23,6 @@ namespace NP.Lti13Platform
         public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformEndpointsConfig>? configure = null)
         {
             var config = new Lti13PlatformEndpointsConfig();
-
             configure?.Invoke(config);
 
             app.MapGet(config.JwksUrl, async (JwksHandler handler) => await handler.HandleAsync());
