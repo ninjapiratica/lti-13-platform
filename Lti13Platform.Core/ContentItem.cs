@@ -6,33 +6,56 @@ namespace NP.Lti13Platform
 {
     public abstract class ContentItem(JsonElement element, IEnumerable<string> knownKeys) : IReadOnlyDictionary<string, JsonElement>
     {
-        protected static JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true, };
+        protected const string URL = "url";
+        protected const string TITLE = "title";
+        protected const string TEXT = "text";
+        protected const string ICON = "icon";
+        protected const string THUMBNAIL = "thumbnail";
+        protected const string WIDTH = "width";
+        protected const string HEIGHT = "height";
+        protected const string HTML = "html";
+        protected const string EXPIRES_AT = "expiresAt";
+        protected const string WINDOW = "window";
+        protected const string IFRAME = "iframe";
+        protected const string EMBED = "embed"; 
+        protected const string CUSTOM = "custom";
+        protected const string LINE_ITEM = "lineItem";
+        protected const string AVAILABLE = "available";
+        protected const string SUBMISSION = "submission";
+        protected const string TYPE = "type";
+        
+        private const string LINK = "link";
+        private const string LTI_RESOURCE_LINK = "ltiResourceLink";
+        private const string FILE = "file";
+        private const string IMAGE = "image";
+
+        protected readonly static JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true, };
 
         public static ContentItem Parse(JsonElement element)
         {
-            var type = element.GetProperty("type").GetString();
+            var type = element.GetProperty(TYPE).GetString();
 
             return type switch
             {
-                "link" => new LinkContentItem(element),
-                "ltiResourceLink" => new ResourceLinkContentItem(element),
-                "file" => new FileContentItem(element),
-                "html" => new HtmlContentItem(element),
-                "image" => new ImageContentItem(element),
+                LINK => new LinkContentItem(element),
+                LTI_RESOURCE_LINK => new ResourceLinkContentItem(element),
+                FILE => new FileContentItem(element),
+                HTML => new HtmlContentItem(element),
+                IMAGE => new ImageContentItem(element),
                 _ => new CustomContentItem(element),
             };
         }
 
-        private readonly IEnumerable<string> knownKeys = knownKeys.Append("type");
+        private readonly IEnumerable<string> knownKeys = knownKeys.Append(TYPE);
 
-        public string Type => element.GetProperty("type").GetString()!;
+        public string Type => element.GetProperty(TYPE).GetString()!;
 
         public IDictionary<string, JsonElement> AdditionalProperties => element.EnumerateObject().Where(x => !knownKeys.Contains(x.Name)).ToDictionary(x => x.Name, x => x.Value);
 
         #region IDictionary
         public bool ContainsKey(string key) => element.TryGetProperty(key, out _);
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out JsonElement value) => element.TryGetProperty(key, out value);
-        public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator() => element.EnumerateObject().ToDictionary(x => x.Name, x => x.Value).GetEnumerator();
+        public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator() => new ContentItemEnumerator(element.EnumerateObject().GetEnumerator());
         IEnumerator IEnumerable.GetEnumerator() => element.EnumerateObject();
         public IEnumerable<string> Keys => element.EnumerateObject().Select(e => e.Name);
         public IEnumerable<JsonElement> Values => element.EnumerateObject().Select(e => e.Value);
@@ -44,6 +67,7 @@ namespace NP.Lti13Platform
     public class ContentItemEnumerator(JsonElement.ObjectEnumerator enumerator) : IEnumerator<KeyValuePair<string, JsonElement>>
     {
         public KeyValuePair<string, JsonElement> Current => new(enumerator.Current.Name, enumerator.Current.Value);
+
         object IEnumerator.Current => this.Current;
 
         public void Dispose() => enumerator.Dispose();
@@ -53,59 +77,59 @@ namespace NP.Lti13Platform
         public void Reset() => enumerator.Reset();
     }
 
-    public class LinkContentItem(JsonElement element) : ContentItem(element, ["url", "title", "text", "icon", "thumbnail", "window", "iframe", "embed"])
+    public class LinkContentItem(JsonElement element) : ContentItem(element, [URL, TITLE, TEXT, ICON, THUMBNAIL, WINDOW, IFRAME, EMBED])
     {
-        public string Url => this["url"].GetString()!;
-        public string? Title => TryGetValue("title", out var x) ? x.GetString() : null;
-        public string? Text => TryGetValue("text", out var x) ? x.GetString() : null;
-        public ContentItemIcon? Icon => TryGetValue("icon", out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
-        public ContentItemThumbnail? Thumbnail => TryGetValue("thumbnail", out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
-        public ContentItemWindow? Window => TryGetValue("window", out var x) ? x.Deserialize<ContentItemWindow>(Options) : null;
-        public ContentItemLInkIframe? Iframe => TryGetValue("iframe", out var x) ? x.Deserialize<ContentItemLInkIframe>(Options) : null;
-        public ContentItemEmbed? Embed => TryGetValue("embed", out var x) ? x.Deserialize<ContentItemEmbed>(Options) : null;
+        public string Url => this[URL].GetString()!;
+        public string? Title => TryGetValue(TITLE, out var x) ? x.GetString() : null;
+        public string? Text => TryGetValue(TEXT, out var x) ? x.GetString() : null;
+        public ContentItemIcon? Icon => TryGetValue(ICON, out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
+        public ContentItemThumbnail? Thumbnail => TryGetValue(THUMBNAIL, out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
+        public ContentItemWindow? Window => TryGetValue(WINDOW, out var x) ? x.Deserialize<ContentItemWindow>(Options) : null;
+        public ContentItemLInkIframe? Iframe => TryGetValue(IFRAME, out var x) ? x.Deserialize<ContentItemLInkIframe>(Options) : null;
+        public ContentItemEmbed? Embed => TryGetValue(EMBED, out var x) ? x.Deserialize<ContentItemEmbed>(Options) : null;
     }
 
-    public class ResourceLinkContentItem(JsonElement element) : ContentItem(element, ["url", "title", "text", "icon", "thumbnail", "window", "iframe", "custom", "lineItem", "available", "submission"])
+    public class ResourceLinkContentItem(JsonElement element) : ContentItem(element, [URL, TITLE, TEXT, ICON, THUMBNAIL, WINDOW, IFRAME, CUSTOM, LINE_ITEM, AVAILABLE, SUBMISSION])
     {
-        public string? Url => TryGetValue("url", out var x) ? x.GetString() : null;
-        public string? Title => TryGetValue("title", out var x) ? x.GetString() : null;
-        public string? Text => TryGetValue("text", out var x) ? x.GetString() : null;
-        public ContentItemIcon? Icon => TryGetValue("icon", out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
-        public ContentItemThumbnail? Thumbnail => TryGetValue("thumbnail", out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
-        public ContentItemWindow? Window => TryGetValue("window", out var x) ? x.Deserialize<ContentItemWindow>(Options) : null;
-        public ContentItemResourceLinkIframe? Iframe => TryGetValue("iframe", out var x) ? x.Deserialize<ContentItemResourceLinkIframe>(Options) : null;
-        public IDictionary<string, string>? Custom => TryGetValue("custom", out var x) ? x.EnumerateObject().ToDictionary(x => x.Name, x => x.Value.GetString()!) : null;
-        public ContentItemLineItem? LineItem => TryGetValue("lineItem", out var x) ? x.Deserialize<ContentItemLineItem>(Options) : null;
-        public ContentItemAvailable? Available => TryGetValue("available", out var x) ? x.Deserialize<ContentItemAvailable>(Options) : null;
-        public ContentItemSubmission? Submission => TryGetValue("submission", out var x) ? x.Deserialize<ContentItemSubmission>(Options) : null;
+        public string? Url => TryGetValue(URL, out var x) ? x.GetString() : null;
+        public string? Title => TryGetValue(TITLE, out var x) ? x.GetString() : null;
+        public string? Text => TryGetValue(TEXT, out var x) ? x.GetString() : null;
+        public ContentItemIcon? Icon => TryGetValue(ICON, out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
+        public ContentItemThumbnail? Thumbnail => TryGetValue(THUMBNAIL, out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
+        public ContentItemWindow? Window => TryGetValue(WINDOW, out var x) ? x.Deserialize<ContentItemWindow>(Options) : null;
+        public ContentItemResourceLinkIframe? Iframe => TryGetValue(IFRAME, out var x) ? x.Deserialize<ContentItemResourceLinkIframe>(Options) : null;
+        public IDictionary<string, string>? Custom => TryGetValue(CUSTOM, out var x) ? x.EnumerateObject().ToDictionary(x => x.Name, x => x.Value.GetString()!) : null;
+        public ContentItemLineItem? LineItem => TryGetValue(LINE_ITEM, out var x) ? x.Deserialize<ContentItemLineItem>(Options) : null;
+        public ContentItemAvailable? Available => TryGetValue(AVAILABLE, out var x) ? x.Deserialize<ContentItemAvailable>(Options) : null;
+        public ContentItemSubmission? Submission => TryGetValue(SUBMISSION, out var x) ? x.Deserialize<ContentItemSubmission>(Options) : null;
     }
 
-    public class FileContentItem(JsonElement element) : ContentItem(element, ["url", "title", "text", "icon", "thumbnail", "expiresAt"])
+    public class FileContentItem(JsonElement element) : ContentItem(element, [URL, TITLE, TEXT, ICON, THUMBNAIL, EXPIRES_AT])
     {
-        public string Url => this["url"].GetString()!;
-        public string? Title => TryGetValue("title", out var x) ? x.GetString() : null;
-        public string? Text => TryGetValue("text", out var x) ? x.GetString() : null;
-        public ContentItemIcon? Icon => TryGetValue("icon", out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
-        public ContentItemThumbnail? Thumbnail => TryGetValue("thumbnail", out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
-        public DateTime? ExpiresAt => TryGetValue("expiresAt", out var x) ? x.GetDateTime() : null;
+        public string Url => this[URL].GetString()!;
+        public string? Title => TryGetValue(TITLE, out var x) ? x.GetString() : null;
+        public string? Text => TryGetValue(TEXT, out var x) ? x.GetString() : null;
+        public ContentItemIcon? Icon => TryGetValue(ICON, out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
+        public ContentItemThumbnail? Thumbnail => TryGetValue(THUMBNAIL, out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
+        public DateTime? ExpiresAt => TryGetValue(EXPIRES_AT, out var x) ? x.GetDateTime() : null;
     }
 
-    public class HtmlContentItem(JsonElement element) : ContentItem(element, ["html", "title", "text"])
+    public class HtmlContentItem(JsonElement element) : ContentItem(element, [HTML, TITLE, TEXT])
     {
-        public string Html => this["html"].GetString()!;
-        public string? Title => TryGetValue("title", out var x) ? x.GetString() : null;
-        public string? Text => TryGetValue("text", out var x) ? x.GetString() : null;
+        public string Html => this[HTML].GetString()!;
+        public string? Title => TryGetValue(TITLE, out var x) ? x.GetString() : null;
+        public string? Text => TryGetValue(TEXT, out var x) ? x.GetString() : null;
     }
 
-    public class ImageContentItem(JsonElement element) : ContentItem(element, ["url", "title", "text", "icon", "thumbnail", "width", "height"])
+    public class ImageContentItem(JsonElement element) : ContentItem(element, [URL, TITLE, TEXT, ICON, THUMBNAIL, WIDTH, HEIGHT])
     {
-        public string Url => this["url"].GetString()!;
-        public string? Title => TryGetValue("title", out var x) ? x.GetString() : null;
-        public string? Text => TryGetValue("text", out var x) ? x.GetString() : null;
-        public ContentItemIcon? Icon => TryGetValue("icon", out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
-        public ContentItemThumbnail? Thumbnail => TryGetValue("thumbnail", out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
-        public int? Width => TryGetValue("width", out var x) ? x.GetInt32() : null;
-        public int? Height => TryGetValue("height", out var x) ? x.GetInt32() : null;
+        public string Url => this[URL].GetString()!;
+        public string? Title => TryGetValue(TITLE, out var x) ? x.GetString() : null;
+        public string? Text => TryGetValue(TEXT, out var x) ? x.GetString() : null;
+        public ContentItemIcon? Icon => TryGetValue(ICON, out var x) ? x.Deserialize<ContentItemIcon>(Options) : null;
+        public ContentItemThumbnail? Thumbnail => TryGetValue(THUMBNAIL, out var x) ? x.Deserialize<ContentItemThumbnail>(Options) : null;
+        public int? Width => TryGetValue(WIDTH, out var x) ? x.GetInt32() : null;
+        public int? Height => TryGetValue(HEIGHT, out var x) ? x.GetInt32() : null;
     }
 
     public class CustomContentItem(JsonElement element) : ContentItem(element, [])
@@ -156,21 +180,20 @@ namespace NP.Lti13Platform
 
     public class ContentItemEmbed
     {
-        public string Html { get; set; }
+        public string Html { get; set; } = string.Empty;
     }
 
     public class ContentItemThumbnail
     {
-        public string Url { get; set; }
+        public string Url { get; set; } = string.Empty;
         public int Width { get; set; }
         public int Height { get; set; }
     }
 
     public class ContentItemIcon
     {
-        public string Url { get; set; }
+        public string Url { get; set; } = string.Empty;
         public int Width { get; set; }
         public int Height { get; set; }
     }
-
 }
