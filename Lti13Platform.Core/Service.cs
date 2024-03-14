@@ -154,7 +154,7 @@ namespace NP.Lti13Platform
                 Accept_Types = config.DeepLink.AcceptTypes,
                 Auto_Create = config.DeepLink.AutoCreate,
                 Data = Base64Decode(data),
-                Deep_Link_Return_Url = "https://localhost:44318/lti13/deeplink",
+                Deep_Link_Return_Url = "https://localhost:7242/lti13/deeplink",
                 Text = Base64Decode(text),
                 Title = Base64Decode(title)
             },

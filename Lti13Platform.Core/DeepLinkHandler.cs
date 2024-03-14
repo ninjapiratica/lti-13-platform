@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace NP.Lti13Platform
 {
@@ -62,10 +63,14 @@ namespace NP.Lti13Platform
                 Log = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/log", out var logClaim) ? (string)logClaim : default,
                 ErrorMessage = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg", out var errorMessageClaim) ? (string)errorMessageClaim : default,
                 ErrorLog = validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog", out var errorLogClaim) ? (string)errorLogClaim : default,
-                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => JsonSerializer.Deserialize<ContentItem>(x.Value)!),
+                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => ContentItem.Parse(JsonDocument.Parse(x.Value).RootElement)),
             };
 
-            return Results.Ok(deepLinkResponseMessage);
+            return Results.Ok(new
+            {
+                deepLinkResponseMessage,
+                jwt
+            });
         }
     }
 }
