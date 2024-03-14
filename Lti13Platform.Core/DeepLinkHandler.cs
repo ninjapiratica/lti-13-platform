@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace NP.Lti13Platform
 {
@@ -64,14 +65,8 @@ namespace NP.Lti13Platform
                 Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
                 ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
                 ErrorLog = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog")?.Value,
-                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => JsonSerializer.Deserialize<ContentItem>(x.Value)!)
+                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => ContentItem.Parse(JsonDocument.Parse(x.Value).RootElement)),
             });
         }
-    }
-
-    public class ContentItem
-    {
-        public string type { get; set; }
-        public string title { get; set; }
     }
 }
