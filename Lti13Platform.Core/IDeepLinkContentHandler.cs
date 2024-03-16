@@ -4,6 +4,6 @@ namespace NP.Lti13Platform
 {
     public interface IDeepLinkContentHandler
     {
-        Task<IResult> HandleAsync(IServiceProvider services, DeepLinkResponse response);
+        Task<IResult> HandleAsync(DeepLinkResponse response);
     }
 }

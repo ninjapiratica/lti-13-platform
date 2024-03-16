@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Net.Mime;
@@ -7,7 +8,7 @@ using System.Security.Cryptography;
 namespace NP.Lti13Platform
 {
     public class AuthenticationHandler(
-        Lti13PlatformConfig config,
+        IOptionsMonitor<Lti13PlatformConfig> config,
         Service service,
         IDataService dataService)
     {
@@ -136,7 +137,7 @@ namespace NP.Lti13Platform
 
                 // optional
                 context,
-                config.PlatformClaim,
+                config.CurrentValue.PlatformClaim,
                 new Lti13RoleScopeMentorClaim { UserIds = mentoredUserIds },
                 service.ParseLaunchPresentationHint(launchPresentationHint),
                 new Lti13CustomClaim());
@@ -147,9 +148,9 @@ namespace NP.Lti13Platform
 
             var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
             {
-                Issuer = config.Issuer,
+                Issuer = config.CurrentValue.Issuer,
                 Audience = request.Client_Id,
-                Expires = DateTime.UtcNow.AddMinutes(config.IdTokenExpirationMinutes),
+                Expires = DateTime.UtcNow.AddMinutes(config.CurrentValue.IdTokenExpirationMinutes),
                 SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsaProvider) { KeyId = "asdf", CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY }, SecurityAlgorithms.RsaSha256),
                 Claims = user.GetClaims().Concat(ltiClaims).Append(new KeyValuePair<string, object>("nonce", request.Nonce)).ToDictionary(c => c.Key, c => c.Value)
             });

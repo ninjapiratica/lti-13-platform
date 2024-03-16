@@ -37,19 +37,12 @@
             public IEnumerable<string> AcceptTypes { get; set; } = [Lti13DeepLinkingTypes.File, Lti13DeepLinkingTypes.Html, Lti13DeepLinkingTypes.Image, Lti13DeepLinkingTypes.Link, Lti13DeepLinkingTypes.LtiResourceLink];
             public IEnumerable<string> AcceptMediaTypes { get; set; } = [MEDIA_TYPE_IMAGE, MEDIA_TYPE_TEXT_HTML];
 
-            public bool AcceptLineItem { get; set; }
-            public bool AcceptMultiple { get; set; }
-            public bool AutoCreate { get; set; }
+            public bool? AcceptLineItem { get; set; }
+            public bool? AcceptMultiple { get; set; }
+            public bool? AutoCreate { get; set; }
 
-            public void CopyTo(Lti13DeepLinkConfig config)
-            {
-                config.AcceptPresentationDocumentTargets = AcceptPresentationDocumentTargets.ToList();
-                config.AcceptTypes = AcceptTypes.ToList();
-                config.AcceptMediaTypes = AcceptMediaTypes.ToList();
-                config.AcceptLineItem = AcceptLineItem;
-                config.AcceptMultiple = AcceptMultiple;
-                config.AutoCreate = AutoCreate;
-            }
+            // this property is auto-set in the UseLtiPlatform() startup method
+            public string ReturnUrl { get; set; } = string.Empty;
         }
     }
 }

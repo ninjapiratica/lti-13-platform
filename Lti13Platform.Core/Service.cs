@@ -64,8 +64,7 @@ namespace NP.Lti13Platform
             string? documentTarget = default,
             double? height = default,
             double? width = default,
-            string? locale = default,
-            string? returnUrl = default)
+            string? locale = default)
         {
             var builder = new UriBuilder(client.OidcInitiationUrl);
 
@@ -74,7 +73,7 @@ namespace NP.Lti13Platform
             query.Add("login_hint", userId);
             query.Add("target_link_uri", client.DeepLinkUri);
             query.Add("client_id", client.Id);
-            query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{context.Id},{Base64Encode(title)},{Base64Encode(text)},{Base64Encode(data)}");
+            query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale)}!{context.Id},{Base64Encode(title)},{Base64Encode(text)},{Base64Encode(data)}");
             query.Add("lti_deployment_id", deployment.Id);
             builder.Query = query.ToString();
 
@@ -97,9 +96,9 @@ namespace NP.Lti13Platform
             var query = HttpUtility.ParseQueryString(builder.Query);
             query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
-            query.Add("target_link_uri", client.DeepLinkUri);
+            query.Add("target_link_uri", GetResourceLinkUrl(resourceLink, client));
             query.Add("client_id", client.Id);
-            query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{resourceLink.Id}");
+            query.Add("lti_message_hint", $"{Lti13MessageType.LtiResourceLinkRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{resourceLink.Id}");
             query.Add("lti_deployment_id", deployment.Id);
             builder.Query = query.ToString();
 
@@ -120,18 +119,29 @@ namespace NP.Lti13Platform
                 return (null, null);
             }
 
+            var deployment = await dataService.GetDeploymentAsync(context.DeploymentId);
+            if (deployment == null)
+            {
+                return (null, null);
+            }
+
+            var client = await dataService.GetClientAsync(deployment.ClientId);
+            if (client == null)
+            {
+                return (null, null);
+            }
+
             return (new LtiResourceLinkRequestMessage
             {
                 Resource_Link_Id = resourceLink.Id,
-
-                Target_Link_Uri = ""
-                // TODO: Figure this out
-                //Target_Link_Uri = resourceLink.Uri,
-                //Resource_Link_Description = resourceLink.Description,
-                //Resource_Link_Title = resourceLink.Title
+                Target_Link_Uri = GetResourceLinkUrl(resourceLink, client),
+                Resource_Link_Description = resourceLink.Description,
+                Resource_Link_Title = resourceLink.Title
             },
             context);
         }
+
+        private string GetResourceLinkUrl(Lti13ResourceLink resourceLink, Lti13Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUri : resourceLink.Url!;
 
         public async Task<(ILti13Message?, Lti13Context?)> ParseDeepLinkRequestHintAsync(string hint)
         {
@@ -155,7 +165,7 @@ namespace NP.Lti13Platform
                 Accept_Types = config.CurrentValue.DeepLink.AcceptTypes,
                 Auto_Create = config.CurrentValue.DeepLink.AutoCreate,
                 Data = Base64Decode(data),
-                Deep_Link_Return_Url = "https://localhost:7242/lti13/deeplink",
+                Deep_Link_Return_Url = config.CurrentValue.DeepLink.ReturnUrl,
                 Text = Base64Decode(text),
                 Title = Base64Decode(title)
             },
@@ -198,6 +208,7 @@ namespace NP.Lti13Platform
         Task<IEnumerable<string>> GetRolesAsync(string userId, Lti13Client client, Lti13Context? context);
         Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Lti13Client client, Lti13Context? context);
         Task<Lti13OpenIdUser?> GetUserAsync(Lti13Client client, string userId);
+        Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
         // TODO: Figure out custom
     }
 
@@ -207,9 +218,11 @@ namespace NP.Lti13Platform
 
         public required string OidcInitiationUrl { get; set; }
 
-        public required IEnumerable<string> RedirectUris { get; set; }
+        public required string DeepLinkUri { get; set; }
 
-        public string? DeepLinkUri { get; set; }
+        public required string LaunchUri { get; set; }
+
+        public IEnumerable<string> RedirectUris => new[] { DeepLinkUri, LaunchUri }.Where(x => x != null).Select(x => x!);
 
         public Jwks? Jwks { get; set; }
     }
@@ -310,12 +323,11 @@ namespace NP.Lti13Platform
 
         public required string ContextId { get; set; }
 
-        // TODO: Figure this out
-        //public string? Uri { get; set; }
+        public string? Url { get; set; }
 
-        //public string? Description { get; set; }
+        public string? Description { get; set; }
 
-        //public string? Title { get; set; }
+        public string? Title { get; set; }
     }
 
     public class Lti13PlatformClaim : ILti13Claim

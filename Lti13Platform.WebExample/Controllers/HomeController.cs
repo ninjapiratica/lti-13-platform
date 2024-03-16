@@ -20,9 +20,14 @@ namespace NP.Lti13PlatformExample.Controllers
             var height = 200;
             var width = 250;
             var locale = "en-US";
-            var returnUrl = "https://www.google.com";
 
-            return Results.Ok(service.GetDeepLinkInitiationUrl(client!, deployment!, context!, userId, title, text, data, documentTarget, height, width, locale, returnUrl));
+            var resourceLink = await dataService.GetResourceLinkAsync("1");
+
+            return Results.Ok(new
+            {
+                deepLinkUrl = service.GetDeepLinkInitiationUrl(client!, deployment!, context!, userId, title, text, data, documentTarget, height, width, locale),
+                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(client!, deployment!, resourceLink!, userId, documentTarget, height, width, locale) : null
+            });
         }
     }
 }
