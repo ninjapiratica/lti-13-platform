@@ -71,7 +71,7 @@ namespace NP.Lti13Platform
             var query = HttpUtility.ParseQueryString(builder.Query);
             query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
-            query.Add("target_link_uri", client.DeepLinkUri);
+            query.Add("target_link_uri", client.DeepLinkUrl);
             query.Add("client_id", client.Id);
             query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale)}!{context.Id},{Base64Encode(title)},{Base64Encode(text)},{Base64Encode(data)}");
             query.Add("lti_deployment_id", deployment.Id);
@@ -141,7 +141,7 @@ namespace NP.Lti13Platform
             context);
         }
 
-        private string GetResourceLinkUrl(Lti13ResourceLink resourceLink, Lti13Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUri : resourceLink.Url!;
+        private string GetResourceLinkUrl(Lti13ResourceLink resourceLink, Lti13Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
 
         public async Task<(ILti13Message?, Lti13Context?)> ParseDeepLinkRequestHintAsync(string hint)
         {
@@ -209,7 +209,32 @@ namespace NP.Lti13Platform
         Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Lti13Client client, Lti13Context? context);
         Task<Lti13OpenIdUser?> GetUserAsync(Lti13Client client, string userId);
         Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
+        Task<ServiceToken?> GetServiceTokenRequestAsync(string id);
+        Task SaveServiceTokenRequestAsync(ServiceToken serviceToken);
+        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync();
+        Task<SecurityKey> GetPrivateKeyAsync();
+        Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag);
+        Task<string> SaveLineItemAsync(LineItem lineItem);
+        Task<LineItem?> GetLineItemAsync(string lineItemId);
         // TODO: Figure out custom
+    }
+
+    public class PartialList<T>
+    {
+        public required IEnumerable<T> Items { get; set; }
+        public int TotalItems { get; set; }
+    }
+
+    public class LineItem
+    {
+        public string? Id { get; set; }
+        public required decimal ScoreMaximum { get; set; }
+        public required string Label { get; set; }
+        public string? ResourceLinkId { get; set; }
+        public string? ResourceId { get; set; }
+        public string? Tag { get; set; }
+        public DateTime? StartDateTime { get; set; }
+        public DateTime? EndDateTime { get; set; }
     }
 
     public class Lti13Client
@@ -218,11 +243,11 @@ namespace NP.Lti13Platform
 
         public required string OidcInitiationUrl { get; set; }
 
-        public required string DeepLinkUri { get; set; }
+        public required string DeepLinkUrl { get; set; }
 
-        public required string LaunchUri { get; set; }
+        public required string LaunchUrl { get; set; }
 
-        public IEnumerable<string> RedirectUris => new[] { DeepLinkUri, LaunchUri }.Where(x => x != null).Select(x => x!);
+        public IEnumerable<string> RedirectUrls => new[] { DeepLinkUrl, LaunchUrl }.Where(x => x != null).Select(x => x!);
 
         public Jwks? Jwks { get; set; }
     }

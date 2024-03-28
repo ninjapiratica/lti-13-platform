@@ -3,6 +3,7 @@
     public class Lti13PlatformConfig
     {
         private const string INVALID_ISSUER = "Issuer must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
+        private const string INVALID_TOKEN_AUDIENCE = "Token Audience must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
         private const string MEDIA_TYPE_IMAGE = "image/*";
         private const string MEDIA_TYPE_TEXT_HTML = "text/html";
 
@@ -25,9 +26,30 @@
             }
         }
 
+        private string _tokenAudience = string.Empty;
+        public string TokenAudience
+        {
+            get => _tokenAudience;
+            set
+            {
+                if (Uri.TryCreate(value, UriKind.Absolute, out var result))
+                {
+                    if (result.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.InvariantCultureIgnoreCase) && string.IsNullOrWhiteSpace(result.Query) && string.IsNullOrWhiteSpace(result.Fragment))
+                    {
+                        _tokenAudience = value;
+                        return;
+                    }
+                }
+
+                throw new UriFormatException(INVALID_TOKEN_AUDIENCE);
+            }
+        }
+
         public Lti13DeepLinkConfig DeepLink { get; set; } = new Lti13DeepLinkConfig();
 
-        public int IdTokenExpirationMinutes { get; set; } = 5;
+        public int IdTokenExpirationSeconds { get; set; } = 300;
+
+        public int AccessTokenExpirationSeconds { get; set; } = 3600;
 
         public Lti13PlatformClaim? PlatformClaim { get; set; }
 

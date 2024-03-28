@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Net.Mime;
-using System.Security.Cryptography;
 
 namespace NP.Lti13Platform
 {
@@ -86,7 +85,7 @@ namespace NP.Lti13Platform
                     return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
                 }
 
-                if (!client.RedirectUris.Contains(request.Redirect_Uri))
+                if (!client.RedirectUrls.Contains(request.Redirect_Uri))
                 {
                     return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
                 }
@@ -142,20 +141,19 @@ namespace NP.Lti13Platform
                 service.ParseLaunchPresentationHint(launchPresentationHint),
                 new Lti13CustomClaim());
 
-            using var rsaProvider = RSA.Create();
-            // Test key
-            rsaProvider.ImportFromPem("-----BEGIN RSA PRIVATE KEY-----\r\nMIIEpAIBAAKCAQEArSpqDfXwj0ZYB0yQTL967oaTiOI35kaudwkF2NFRPKkxF43o\r\nqtlzdX7TuTzvhVmIW8iY9ZqDVcH9av+MfA5D3YYMPnRws2+b2DE16cN+qKqonuMt\r\naj9RERLYrC2Gz2fDB612L8TZi7KV/AFESeVt3rAGGSeXc8PLRvPz/WU0o4JGnsbq\r\naY2morgcHssHWurAWlrNHM4cYnz5ku9BM2OsT3vTKjQCW9pcEfGtBuPPOhVUK879\r\n9GOZTeIsU4Uvjv+l+FoINJwRqeaoisA5nh2MxbP2CyCiAW9b0oWFRCoJwDz6HKUG\r\nVZWsclLmLosjrKK1nxHmWyy5jxxak7YNCyhfmQIDAQABAoIBAAtgblKie35+PvRO\r\necCBEquEbexKqHou30bKHKHlBp2h+Va0fQ+/H5By7P1jh9JOp+BtKmzLDPaKZdgs\r\nwpG37N+AmgyptmnOMFf2IQui9g77af6eVZ0rBxbEZ+B6ppEOc8gXrlxvELfWhiIQ\r\nrJLfnuXy0e5pz8/MPO5ZbV3oKJrWrYP1XYQ3op3y9m55mveuuxKjjOg86Jool4Zb\r\n9jTJLQnW02PeFyIoKV5IBlWvzxSKsTqFcxW4YBcIoR3/OaCq5W8DnAf7QHQn+yaU\r\nbhMipa5iBUADd/MF8CdZKbuMaqaazyheH4s/EnbMi7s/neaZ7S313asVWMTMhCp7\r\nxyDxxbECgYEA5F1EUN+jCfiwct2E2/HY7k0jG9/ETsGxA6QHds4w76NzuKiV2f/D\r\n1f3F4/DJ/GpMCXi3Lz6j8b7qm8ypPYNRhOhCPx0F3LJLWLKw7nW5oiwM9zp1LMHC\r\na6Y7ZlAWd68fqlqegG9EEXFrCGR3nOk9Xpgwc/mNFecLsrzWNzNNWJ0CgYEAwh8X\r\nh6rJcfCM8Kf0Dbl5CCKVuFieBJ8UrM36Ky+LscVPCpcXufQ9UVCED8cI86FxjDAr\r\nRe4WCUztcq6YbNl80FiWce7w+J1JQ3GU5KQTj9kSDwtzCTTwv2vjogNExNdqEHIt\r\nsLnePMXJGIZaugWKpuxhUfsFQmCAiPs+ymeHPC0CgYEAm17tdQzDE6y0+GHI3BAu\r\n5OtsgLF9EYxs0CpQvb9JwjF2MWPaGKkQZ86yTgRsmKUFuMf98lHvHzIi0v+rAeQP\r\nmZqgP+qSK3bPFrj08jj8pN7Nr4OBZ4MosS83aMQClUl8BN6EyqNpL2j4Rox8aTCz\r\nhWGMTcuy9vzsk54xLPtlm20CgYB2IYmmK86PIf4C7ZJdT8NRqgpGttbipRRl3Ksi\r\n4Lo4IoRpQ21S4kj2VPMozsypxlNdJmsPEUYjvsa5BXsIsol8GIzlJK1L/ht5iYM8\r\naITnAwg0U5lbvvXK55MNIsQUraqD+5fGdjXB8fLgk9JeZcTss+i9hO68aBGQSqT5\r\nc2seuQKBgQDgzT9ZlxqR4JLhWsmQnu6aPt+74bxJBDvoMixFGbk3DFSQgS7Ym+Jc\r\nioRRsOZhEPkO+du8QCp86Xgga075YU0HsmHMxbFkJfUrpiwIZgcB92qk+bY/u41g\r\noSkWC32K2DuZpdLuegfjmQZo0FgDlZH6bKze0liafaioEGMGalhx9Q==\r\n-----END RSA PRIVATE KEY-----\r\n");
+            var privateKey = await dataService.GetPrivateKeyAsync();
 
             var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
             {
                 Issuer = config.CurrentValue.Issuer,
                 Audience = request.Client_Id,
-                Expires = DateTime.UtcNow.AddMinutes(config.CurrentValue.IdTokenExpirationMinutes),
-                SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsaProvider) { KeyId = "asdf", CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY }, SecurityAlgorithms.RsaSha256),
-                Claims = user.GetClaims().Concat(ltiClaims).Append(new KeyValuePair<string, object>("nonce", request.Nonce)).ToDictionary(c => c.Key, c => c.Value)
+                Expires = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds),
+                SigningCredentials = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY },
+                Claims = user.GetClaims()
+                    .Concat(ltiClaims)
+                    .Append(KeyValuePair.Create("nonce", (object)request.Nonce))
+                    .ToDictionary(c => c.Key, c => c.Value)
             });
-
-            //return Results.Ok(token);
 
             return Results.Content(@$"<!DOCTYPE html>
             <html>

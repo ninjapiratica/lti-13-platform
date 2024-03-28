@@ -1,4 +1,6 @@
+using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,8 @@ builder.Services.AddLti13Platform(config =>
     config.DeepLink.AcceptMultiple = true;
     config.DeepLink.AcceptLineItem = true;
     config.DeepLink.AutoCreate = true;
-    config.DeepLink.ReturnUrl = "https://localhost:44318/lti13/deeplink"; // todo: auto-set this from uselti13platform
+    config.DeepLink.ReturnUrl = "https://05e4-2601-1c1-8400-cd97-00-1005.ngrok-free.app/lti13/deeplink"; // todo: auto-set this from uselti13platform
+    config.TokenAudience = "https://05e4-2601-1c1-8400-cd97-00-1005.ngrok-free.app/lti13/token";
 });
 builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddTransient<IDeepLinkContentHandler, DeepLinkContentHandler>();
@@ -43,9 +46,11 @@ app.Run();
 
 public class DataService : IDataService
 {
+    private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
+
     public Task<Lti13Client?> GetClientAsync(string clientId)
     {
-        return Task.FromResult<Lti13Client?>(new Lti13Client { Id = "asdf", OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUri = "https://saltire.lti.app/tool", DeepLinkUri = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
+        return Task.FromResult<Lti13Client?>(new Lti13Client { Id = "asdf", OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
     }
 
     public Task<Lti13Context?> GetContextAsync(string contextId)
@@ -79,11 +84,81 @@ public class DataService : IDataService
         return Task.FromResult<Lti13OpenIdUser?>(new Lti13OpenIdUser { });
     }
 
-    private List<ContentItem> _contentItems = new List<ContentItem>();
+    private List<ContentItem> _contentItems = [];
     public Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems)
     {
         _contentItems.AddRange(contentItems);
         return Task.CompletedTask;
+    }
+
+    private List<ServiceToken> _serviceTokens = [];
+    public Task<ServiceToken?> GetServiceTokenRequestAsync(string id)
+    {
+        return Task.FromResult(_serviceTokens.FirstOrDefault(x => x.Id == id));
+    }
+
+    public Task SaveServiceTokenRequestAsync(ServiceToken serviceToken)
+    {
+        _serviceTokens.Add(serviceToken);
+        return Task.CompletedTask;
+    }
+
+    public Task<IEnumerable<SecurityKey>> GetPublicKeysAsync()
+    {
+        var rsaProvider = RSA.Create();
+        var key = "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6S7asUuzq5Q/3U9rbs+P\r\nkDVIdjgmtgWreG5qWPsC9xXZKiMV1AiV9LXyqQsAYpCqEDM3XbfmZqGb48yLhb/X\r\nqZaKgSYaC/h2DjM7lgrIQAp9902Rr8fUmLN2ivr5tnLxUUOnMOc2SQtr9dgzTONY\r\nW5Zu3PwyvAWk5D6ueIUhLtYzpcB+etoNdL3Ir2746KIy/VUsDwAM7dhrqSK8U2xF\r\nCGlau4ikOTtvzDownAMHMrfE7q1B6WZQDAQlBmxRQsyKln5DIsKv6xauNsHRgBAK\r\nctUxZG8M4QJIx3S6Aughd3RZC4Ca5Ae9fd8L8mlNYBCrQhOZ7dS0f4at4arlLcaj\r\ntwIDAQAB\r\n-----END PUBLIC KEY-----";
+        rsaProvider.ImportFromPem(key);
+        var securityKey = new RsaSecurityKey(rsaProvider)
+        {
+            KeyId = "asdf",
+            CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY
+        };
+
+        return Task.FromResult<IEnumerable<SecurityKey>>([securityKey]);
+    }
+
+    public Task<SecurityKey> GetPrivateKeyAsync()
+    {
+        var rsaProvider = RSA.Create();
+        var key = "-----BEGIN PRIVATE KEY-----\r\nMIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQDpLtqxS7OrlD/d\r\nT2tuz4+QNUh2OCa2Bat4bmpY+wL3FdkqIxXUCJX0tfKpCwBikKoQMzddt+ZmoZvj\r\nzIuFv9eploqBJhoL+HYOMzuWCshACn33TZGvx9SYs3aK+vm2cvFRQ6cw5zZJC2v1\r\n2DNM41hblm7c/DK8BaTkPq54hSEu1jOlwH562g10vcivbvjoojL9VSwPAAzt2Gup\r\nIrxTbEUIaVq7iKQ5O2/MOjCcAwcyt8TurUHpZlAMBCUGbFFCzIqWfkMiwq/rFq42\r\nwdGAEApy1TFkbwzhAkjHdLoC6CF3dFkLgJrkB7193wvyaU1gEKtCE5nt1LR/hq3h\r\nquUtxqO3AgMBAAECggEBANX6C+7EA/TADrbcCT7fMuNnMb5iGovPuiDCWc6bUIZC\r\nQ0yac45l7o1nZWzfzpOkIprJFNZoSgIF7NJmQeYTPCjAHwsSVraDYnn3Y4d1D3tM\r\n5XjJcpX2bs1NactxMTLOWUl0JnkGwtbWp1Qq+DBnMw6ghc09lKTbHQvhxSKNL/0U\r\nC+YmCYT5ODmxzLBwkzN5RhxQZNqol/4LYVdji9bS7N/UITw5E6LGDOo/hZHWqJsE\r\nfgrJTPsuCyrYlwrNkgmV2KpRrGz5MpcRM7XHgnqVym+HyD/r9E7MEFdTLEaiiHcm\r\nIsh1usJDEJMFIWkF+rnEoJkQHbqiKlQBcoqSbCmoMWECgYEA/4379mMPF0JJ/EER\r\n4VH7/ZYxjdyphenx2VYCWY/uzT0KbCWQF8KXckuoFrHAIP3EuFn6JNoIbja0NbhI\r\nHGrU29BZkATG8h/xjFy/zPBauxTQmM+yS2T37XtMoXNZNS/ubz2lJXMOapQQiXVR\r\nl/tzzpyWaCe9j0NT7DAU0ZFmDbECgYEA6ZbjkcOs2jwHsOwwfamFm4VpUFxYtED7\r\n9vKzq5d7+Ii1kPKHj5fDnYkZd+mNwNZ02O6OGxh40EDML+i6nOABPg/FmXeVCya9\r\nVump2Yqr2fAK3xm6QY5KxAjWWq2kVqmdRmICSL2Z9rBzpXmD5o06y9viOwd2bhBo\r\n0wB02416GecCgYEA+S/ZoEa3UFazDeXlKXBn5r2tVEb2hj24NdRINkzC7h23K/z0\r\npDZ6tlhPbtGkJodMavZRk92GmvF8h2VJ62vAYxamPmhqFW5Qei12WL+FuSZywI7F\r\nq/6oQkkYT9XKBrLWLGJPxlSKmiIGfgKHrUrjgXPutWEK1ccw7f10T2UXvgECgYEA\r\nnXqLa58G7o4gBUgGnQFnwOSdjn7jkoppFCClvp4/BtxrxA+uEsGXMKLYV75OQd6T\r\nIhkaFuxVrtiwj/APt2lRjRym9ALpqX3xkiGvz6ismR46xhQbPM0IXMc0dCeyrnZl\r\nQKkcrxucK/Lj1IBqy0kVhZB1IaSzVBqeAPrCza3AzqsCgYEAvSiEjDvGLIlqoSvK\r\nMHEVe8PBGOZYLcAdq4YiOIBgddoYyRsq5bzHtTQFgYQVK99Cnxo+PQAvzGb+dpjN\r\n/LIEAS2LuuWHGtOrZlwef8ZpCQgrtmp/phXfVi6llcZx4mMm7zYmGhh2AsA9yEQc\r\nacgc4kgDThAjD7VlXad9UHpNMO8=\r\n-----END PRIVATE KEY-----";
+        rsaProvider.ImportFromPem(key);
+        var securityKey = new RsaSecurityKey(rsaProvider)
+        {
+            KeyId = "asdf",
+            CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY
+        };
+
+        return Task.FromResult<SecurityKey>(securityKey);
+    }
+
+    public Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag)
+    {
+        var totalItems = 23;
+        return Task.FromResult(new PartialList<LineItem>
+        {
+            Items = Enumerable.Range(pageIndex * limit, Math.Max(0, Math.Min(limit, totalItems - pageIndex * limit))).Select(i => new LineItem
+            {
+                Id = i.ToString(),
+                StartDateTime = DateTime.Now,
+                EndDateTime = DateTime.UtcNow,
+                Label = "label " + i,
+                ResourceId = "resource id " + i,
+                ResourceLinkId = "resource link id " + i,
+                ScoreMaximum = 1.1m * i,
+                Tag = "tag " + i
+            }),
+            TotalItems = totalItems
+        });
+    }
+
+    public Task<string> SaveLineItemAsync(LineItem lineItem)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LineItem?> GetLineItemAsync(string lineItemId)
+    {
+        throw new NotImplementedException();
     }
 }
 
