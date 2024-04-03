@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Models;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -26,10 +27,10 @@ namespace NP.Lti13Platform
         /// <returns></returns>
         public IDictionary<string, object> GetClaims(
             Lti13MessageType messageType,
-            string deploymentId,
+            Guid deploymentId,
             ILti13Message message,
             Lti13RolesClaim roles,
-            Lti13Context? context = null,
+            Context? context = null,
             Lti13PlatformClaim? platform = null,
             Lti13RoleScopeMentorClaim? roleScopeMentor = null,
             Lti13LaunchPresentationClaim? launchPresentation = null,
@@ -54,9 +55,9 @@ namespace NP.Lti13Platform
         }
 
         public Uri GetDeepLinkInitiationUrl(
-            Lti13Client client,
-            Lti13Deployment deployment,
-            Lti13Context context,
+            Client client,
+            Deployment deployment,
+            Context context,
             string userId,
             string? title = default,
             string? text = default,
@@ -72,18 +73,18 @@ namespace NP.Lti13Platform
             query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
             query.Add("target_link_uri", client.DeepLinkUrl);
-            query.Add("client_id", client.Id);
+            query.Add("client_id", client.Id.ToString());
             query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale)}!{context.Id},{Base64Encode(title)},{Base64Encode(text)},{Base64Encode(data)}");
-            query.Add("lti_deployment_id", deployment.Id);
+            query.Add("lti_deployment_id", deployment.Id.ToString());
             builder.Query = query.ToString();
 
             return builder.Uri;
         }
 
         public Uri GetResourceLinkInitiationUrl(
-            Lti13Client client,
-            Lti13Deployment deployment,
-            Lti13ResourceLink resourceLink,
+            Client client,
+            Deployment deployment,
+            ResourceLink resourceLink,
             string userId,
             string? documentTarget = default,
             double? height = default,
@@ -97,17 +98,17 @@ namespace NP.Lti13Platform
             query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
             query.Add("target_link_uri", GetResourceLinkUrl(resourceLink, client));
-            query.Add("client_id", client.Id);
+            query.Add("client_id", client.Id.ToString());
             query.Add("lti_message_hint", $"{Lti13MessageType.LtiResourceLinkRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{resourceLink.Id}");
-            query.Add("lti_deployment_id", deployment.Id);
+            query.Add("lti_deployment_id", deployment.Id.ToString());
             builder.Query = query.ToString();
 
             return builder.Uri;
         }
 
-        public async Task<(ILti13Message?, Lti13Context?)> ParseResourceLinkRequestHintAsync(string hint)
+        public async Task<(ILti13Message?, Context?)> ParseResourceLinkRequestHintAsync(string hint)
         {
-            var resourceLink = await dataService.GetResourceLinkAsync(hint);
+            var resourceLink = await dataService.GetResourceLinkAsync(Guid.Parse(hint));
             if (resourceLink == null)
             {
                 return (null, null);
@@ -133,7 +134,7 @@ namespace NP.Lti13Platform
 
             return (new LtiResourceLinkRequestMessage
             {
-                Resource_Link_Id = resourceLink.Id,
+                Resource_Link_Id = resourceLink.Id.ToString(),
                 Target_Link_Uri = GetResourceLinkUrl(resourceLink, client),
                 Resource_Link_Description = resourceLink.Description,
                 Resource_Link_Title = resourceLink.Title
@@ -141,16 +142,16 @@ namespace NP.Lti13Platform
             context);
         }
 
-        private string GetResourceLinkUrl(Lti13ResourceLink resourceLink, Lti13Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
+        private string GetResourceLinkUrl(ResourceLink resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
 
-        public async Task<(ILti13Message?, Lti13Context?)> ParseDeepLinkRequestHintAsync(string hint)
+        public async Task<(ILti13Message?, Context?)> ParseDeepLinkRequestHintAsync(string hint)
         {
             if (hint.Split(',', 4) is not [var contextId, var title, var text, var data])
             {
                 return (null, null);
             }
 
-            var context = await dataService.GetContextAsync(contextId);
+            var context = await dataService.GetContextAsync(Guid.Parse(contextId));
             if (context == null)
             {
                 return (null, null);
@@ -201,71 +202,32 @@ namespace NP.Lti13Platform
 
     public interface IDataService
     {
-        Task<Lti13Client?> GetClientAsync(string clientId);
-        Task<Lti13Deployment?> GetDeploymentAsync(string deploymentId);
-        Task<Lti13Context?> GetContextAsync(string contextId);
-        Task<Lti13ResourceLink?> GetResourceLinkAsync(string resourceLinkId);
-        Task<IEnumerable<string>> GetRolesAsync(string userId, Lti13Client client, Lti13Context? context);
-        Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Lti13Client client, Lti13Context? context);
-        Task<Lti13OpenIdUser?> GetUserAsync(Lti13Client client, string userId);
+        Task<Client?> GetClientAsync(Guid clientId);
+        Task<Deployment?> GetDeploymentAsync(Guid deploymentId);
+        Task<Context?> GetContextAsync(Guid contextId);
+        Task<ResourceLink?> GetResourceLinkAsync(Guid resourceLinkId);
+        Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context);
+        Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Client client, Context? context);
+        Task<Lti13OpenIdUser?> GetUserAsync(Client client, string userId);
         Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
         Task<ServiceToken?> GetServiceTokenRequestAsync(string id);
         Task SaveServiceTokenRequestAsync(ServiceToken serviceToken);
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync();
         Task<SecurityKey> GetPrivateKeyAsync();
-        Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag);
-        Task<string> SaveLineItemAsync(LineItem lineItem);
-        Task<LineItem?> GetLineItemAsync(string lineItemId);
-        Task DeleteLineItemAsync(string lineItemId);
-        Task<PartialList<LineItemResult>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int v, string? user_id);
-        Task<LineItemResult> GetLineItemResultAsync(string contextId, string lineItemId, string userId);
-        Task SaveLineItemResultAsync(LineItemResult result);
+        Task<PartialList<LineItem>> GetLineItemsAsync(Guid contextId, int pageIndex, int limit, string? resourceId, Guid? resourceLinkId, string? tag);
+        Task SaveLineItemAsync(LineItem lineItem);
+        Task<LineItem?> GetLineItemAsync(Guid lineItemId);
+        Task DeleteLineItemAsync(Guid lineItemId);
+        Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? user_id);
+        Task<Result> GetLineItemResultAsync(Guid contextId, Guid lineItemId, string userId);
+        Task SaveLineItemResultAsync(Result result);
         // TODO: Figure out custom
-    }
-
-    public class LineItemResult
-    {
-        public string Id { get; set; }
-        public string LineItemId { get; set; }
-        public string UserId { get; set; }
-        public string ScoringUserId { get; set; }
-        public decimal ResultScore { get; set; }
-        public decimal ResultMaximum { get; set; }
-        public string Comment { get; set; }
-        public DateTime Timestamp { get; set; }
     }
 
     public class PartialList<T>
     {
         public required IEnumerable<T> Items { get; set; }
         public int TotalItems { get; set; }
-    }
-
-    public class LineItem
-    {
-        public string? Id { get; set; }
-        public required decimal ScoreMaximum { get; set; }
-        public required string Label { get; set; }
-        public string? ResourceLinkId { get; set; }
-        public string? ResourceId { get; set; }
-        public string? Tag { get; set; }
-        public DateTime? StartDateTime { get; set; }
-        public DateTime? EndDateTime { get; set; }
-    }
-
-    public class Lti13Client
-    {
-        public required string Id { get; set; }
-
-        public required string OidcInitiationUrl { get; set; }
-
-        public required string DeepLinkUrl { get; set; }
-
-        public required string LaunchUrl { get; set; }
-
-        public IEnumerable<string> RedirectUrls => new[] { DeepLinkUrl, LaunchUrl }.Where(x => x != null).Select(x => x!);
-
-        public Jwks? Jwks { get; set; }
     }
 
     public class JwtPublicKey : Jwks
@@ -312,63 +274,6 @@ namespace NP.Lti13Platform
         public abstract Task<IEnumerable<SecurityKey>> GetKeysAsync();
 
         public static implicit operator Jwks(string keyOrUri) => Create(keyOrUri);
-    }
-
-    public class Lti13Deployment
-    {
-        public required string Id { get; set; }
-
-        public required string ClientId { get; set; }
-    }
-
-    public class Lti13Context : ILti13Claim
-    {
-        /// <summary>
-        /// Max Length 255 characters
-        /// Case sensitive
-        /// </summary>
-        public required string Id { get; set; }
-
-        public required string DeploymentId { get; set; }
-
-        public string? Label { get; set; }
-
-        public string? Title { get; set; }
-
-        public IEnumerable<string> Types { get; set; } = Enumerable.Empty<string>();
-
-        public IDictionary<string, object> GetClaims()
-        {
-            var dict = new Dictionary<string, object>();
-
-            if (Id != null) dict.Add("id", Id);
-            if (Types.Any()) dict.Add("type", JsonSerializer.SerializeToElement(Types));
-            if (Label != null) dict.Add("label", Label);
-            if (Title != null) dict.Add("title", Title);
-
-            if (dict.Count > 0)
-            {
-                return new Dictionary<string, object>
-                {
-                    { "https://purl.imsglobal.org/spec/lti/claim/context", dict }
-                };
-            }
-
-            return new Dictionary<string, object>();
-        }
-    }
-
-    public class Lti13ResourceLink
-    {
-        public required string Id { get; set; }
-
-        public required string ContextId { get; set; }
-
-        public string? Url { get; set; }
-
-        public string? Description { get; set; }
-
-        public string? Title { get; set; }
     }
 
     public class Lti13PlatformClaim : ILti13Claim

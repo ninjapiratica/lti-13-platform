@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Extensions;
+using NP.Lti13Platform.Models;
 using System.Collections.ObjectModel;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -113,7 +115,9 @@ namespace NP.Lti13Platform
 
     internal static class Lti13Ags
     {
-        internal static async Task<IResult> GetLineItemsAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0)
+        internal record LineItemRequest(decimal ScoreMaximum, string Label, Guid? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTime? StartDateTime, DateTime? EndDateTime);
+
+        internal static async Task<IResult> GetLineItemsAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, string? resource_id, Guid? resource_link_id, string? tag, int? limit, int pageIndex = 0)
         {
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
@@ -159,11 +163,17 @@ namespace NP.Lti13Platform
             }), contentType: Lti13ContentTypes.LineItemContainer);
         }
 
-        internal static async Task<IResult> CreateLineItemAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, LineItemsPostRequest request)
+        internal static async Task<IResult> CreateLineItemAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, LineItemRequest request)
         {
-            const string INVALID_CONTENT_TYPE = "Invalid Content Type";
-            const string CONTENT_TYPE_REQUIRED = "Content type must be 'application/vnd.ims.lis.v2.lineitem+json'";
+            const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
+            const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
             const string CONTENT_TYPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item";
+            const string INVALID_LABEL = "Invalid Label";
+            const string LABEL_REQUIRED = "Label is reuired";
+            const string LABEL_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label";
+            const string INVALID_SCORE_MAXIMUM = "Invalid ScoreMaximum";
+            const string SCORE_MAXIMUM_REQUIRED = "ScoreMaximum must be greater than 0";
+            const string SCORE_MAXIUMUM_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum";
 
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
@@ -181,13 +191,45 @@ namespace NP.Lti13Platform
                 });
             }
 
-            var lineItemId = await dataService.SaveLineItemAsync(new LineItem
+            if (string.IsNullOrWhiteSpace(request.Label))
             {
+                return Results.BadRequest(new
+                {
+                    Error = INVALID_LABEL,
+                    Error_Description = LABEL_REQUIRED,
+                    Error_Uri = LABEL_SPEC_URI
+                });
+            }
+
+            if (request.ScoreMaximum <= 0)
+            {
+                return Results.BadRequest(new
+                {
+                    Error = INVALID_SCORE_MAXIMUM,
+                    Error_Description = SCORE_MAXIMUM_REQUIRED,
+                    Error_Uri = SCORE_MAXIUMUM_SPEC_URI
+                });
+            }
+
+            if (request.ResourceLinkId.HasValue)
+            {
+                var resourceLink = await dataService.GetResourceLinkAsync(request.ResourceLinkId.GetValueOrDefault());
+                if (resourceLink?.ContextId != contextId)
+                {
+                    return Results.NotFound();
+                }
+            }
+
+            var lineItemId = Guid.NewGuid();
+            await dataService.SaveLineItemAsync(new LineItem
+            {
+                Id = lineItemId,
                 Label = request.Label,
-                ResourceId = request.ResourceId,
+                ResourceId = request.ResourceId.ToNullIfEmpty(),
                 ResourceLinkId = request.ResourceLinkId,
                 ScoreMaximum = request.ScoreMaximum,
-                Tag = request.Tag,
+                Tag = request.Tag.ToNullIfEmpty(),
+                GradesReleased = request.GradesReleased,
                 StartDateTime = request.StartDateTime,
                 EndDateTime = request.EndDateTime,
             });
@@ -201,12 +243,13 @@ namespace NP.Lti13Platform
                 request.ResourceLinkId,
                 request.ScoreMaximum,
                 request.Tag,
+                request.GradesReleased,
                 request.StartDateTime,
                 request.EndDateTime,
             });
         }
 
-        internal static async Task<IResult> GetLineItemAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId)
+        internal static async Task<IResult> GetLineItemAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, Guid lineItemId)
         {
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
@@ -233,8 +276,21 @@ namespace NP.Lti13Platform
             }, contentType: Lti13ContentTypes.LineItem);
         }
 
-        internal static async Task<IResult> UpdateLineItemAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, LineItemPutRequest request)
+        internal static async Task<IResult> UpdateLineItemAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, Guid lineItemId, LineItemRequest request)
         {
+            const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
+            const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
+            const string CONTENT_TYPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item";
+            const string INVALID_LABEL = "Invalid Label";
+            const string LABEL_REQUIRED = "Label is reuired";
+            const string LABEL_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label";
+            const string INVALID_SCORE_MAXIMUM = "Invalid ScoreMaximum";
+            const string SCORE_MAXIMUM_REQUIRED = "ScoreMaximum must be greater than 0";
+            const string SCORE_MAXIUMUM_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum";
+            const string INVALID_RESOURCE_LINK_ID = "Invalid ResourceLinkId";
+            const string RESOURCE_LINK_ID_MODIFIED = "ResourceLinkId may not change after creation";
+            const string LINE_ITEM_UPDATE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item";
+
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
             {
@@ -247,11 +303,52 @@ namespace NP.Lti13Platform
                 return Results.NotFound();
             }
 
+            if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
+            {
+                return Results.BadRequest(new
+                {
+                    Error = INVALID_CONTENT_TYPE,
+                    Error_Description = CONTENT_TYPE_REQUIRED,
+                    Error_Uri = CONTENT_TYPE_SPEC_URI
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Label))
+            {
+                return Results.BadRequest(new
+                {
+                    Error = INVALID_LABEL,
+                    Error_Description = LABEL_REQUIRED,
+                    Error_Uri = LABEL_SPEC_URI
+                });
+            }
+
+            if (request.ScoreMaximum <= 0)
+            {
+                return Results.BadRequest(new
+                {
+                    Error = INVALID_SCORE_MAXIMUM,
+                    Error_Description = SCORE_MAXIMUM_REQUIRED,
+                    Error_Uri = SCORE_MAXIUMUM_SPEC_URI
+                });
+            }
+
+            if (request.ResourceLinkId.HasValue && request.ResourceLinkId != lineItem.ResourceLinkId)
+            {
+                return Results.BadRequest(new
+                {
+                    Error = INVALID_RESOURCE_LINK_ID,
+                    Error_Description = RESOURCE_LINK_ID_MODIFIED,
+                    Error_Uri = LINE_ITEM_UPDATE_SPEC_URI
+                });
+            }
+
             lineItem.Label = request.Label;
-            lineItem.ResourceId = request.ResourceId;
+            lineItem.ResourceId = request.ResourceId.ToNullIfEmpty();
             lineItem.ResourceLinkId = request.ResourceLinkId;
             lineItem.ScoreMaximum = request.ScoreMaximum;
-            lineItem.Tag = request.Tag;
+            lineItem.Tag = request.Tag.ToNullIfEmpty();
+            lineItem.GradesReleased = request.GradesReleased;
             lineItem.StartDateTime = request.StartDateTime;
             lineItem.EndDateTime = request.EndDateTime;
 
@@ -265,12 +362,13 @@ namespace NP.Lti13Platform
                 lineItem.ResourceLinkId,
                 lineItem.ScoreMaximum,
                 lineItem.Tag,
+                lineItem.GradesReleased,
                 lineItem.StartDateTime,
                 lineItem.EndDateTime,
             }, contentType: Lti13ContentTypes.LineItem);
         }
 
-        internal static async Task<IResult> DeleteLineItemAsync(IDataService dataService, string contextId, string lineItemId)
+        internal static async Task<IResult> DeleteLineItemAsync(IDataService dataService, Guid contextId, Guid lineItemId)
         {
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
@@ -289,7 +387,7 @@ namespace NP.Lti13Platform
             return Results.NoContent();
         }
 
-        internal static async Task<IResult> GetLineItemResultsAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0)
+        internal static async Task<IResult> GetLineItemResultsAsync(HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, Guid lineItemId, string? user_id, int? limit, int pageIndex = 0)
         {
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
@@ -340,7 +438,7 @@ namespace NP.Lti13Platform
             }), contentType: Lti13ContentTypes.ResultContainer);
         }
 
-        internal static async Task<IResult> PublishScoreAsync(IDataService dataService, string contextId, string lineItemId, ScoreRequest request)
+        internal static async Task<IResult> PublishScoreAsync(IDataService dataService, Guid contextId, Guid lineItemId, ScoreRequest request)
         {
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
@@ -354,21 +452,20 @@ namespace NP.Lti13Platform
                 return Results.NotFound();
             }
 
-            // TODO
-            //if (!lineItem.IsAcceptingChanges)
-            //{
-            //    return Results.Forbid(); // 403 cannot be applied (ie. activity is closed, not accepting changes anymore), describe reason for rejection
-            //}
+            if (DateTime.UtcNow < lineItem.StartDateTime || DateTime.UtcNow > lineItem.EndDateTime)
+            {
+                return Results.Forbid(); // 403 cannot be applied (ie. activity is closed, not accepting changes anymore), describe reason for rejection
+            }
 
             var isNew = false;
             var result = await dataService.GetLineItemResultAsync(contextId, lineItemId, request.UserId);
             if (result == null)
             {
                 isNew = true;
-                result = new LineItemResult
+                result = new Result
                 {
                     LineItemId = lineItemId,
-                    UserId = request.UserId                    
+                    UserId = request.UserId
                 };
             }
             else if (result.Timestamp >= request.TimeStamp)
@@ -508,14 +605,14 @@ namespace NP.Lti13Platform
 
             var jwt = new JsonWebToken(request.Client_Assertion);
 
-            Lti13Client? client;
-            if (jwt.Issuer != jwt.Subject)
+            Client? client;
+            if (jwt.Issuer != jwt.Subject || !Guid.TryParse(jwt.Issuer, out var issuer))
             {
                 return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
             }
             else
             {
-                client = await dataService.GetClientAsync(jwt.Issuer);
+                client = await dataService.GetClientAsync(issuer);
                 if (client?.Jwks == null)
                 {
                     return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
@@ -526,7 +623,7 @@ namespace NP.Lti13Platform
             {
                 IssuerSigningKeys = await client.Jwks.GetKeysAsync(),
                 ValidAudience = config.CurrentValue.TokenAudience,
-                ValidIssuer = client.Id
+                ValidIssuer = client.Id.ToString()
             });
 
             if (!validatedToken.IsValid)
@@ -584,6 +681,7 @@ namespace NP.Lti13Platform
         public string Tag { get; set; }
         public string ResourceId { get; set; }
         public string ResourceLinkId { get; set; }
+        public bool? GradesReleased { get; set; }
     }
 
     public class LineItemPutRequest

@@ -9,9 +9,9 @@ namespace NP.Lti13PlatformExample.Controllers
 
         public async Task<IResult> Index()
         {
-            var client = await dataService.GetClientAsync("asdf");
-            var deployment = await dataService.GetDeploymentAsync("asdf");
-            var context = await dataService.GetContextAsync("asdf");
+            var client = await dataService.GetClientAsync(new Guid());
+            var deployment = await dataService.GetDeploymentAsync(new Guid());
+            var context = await dataService.GetContextAsync(new Guid());
             var userId = "asdf";
             var title = "TITLE";
             var text = "TEXT";
@@ -21,7 +21,7 @@ namespace NP.Lti13PlatformExample.Controllers
             var width = 250;
             var locale = "en-US";
 
-            var resourceLink = await dataService.GetResourceLinkAsync("1");
+            var resourceLink = await dataService.GetResourceLinkAsync(new Guid());
 
             return Results.Ok(new
             {

@@ -19,12 +19,12 @@ namespace NP.Lti13Platform
 
             var jwt = new JsonWebToken(request.Jwt);
 
-            if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
+            if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim) || Guid.TryParse(deploymentIdClaim.Value, out var deploymentId))
             {
                 return Results.BadRequest("BAD DEPLOYMENT ID");
             }
 
-            var deployment = await dataService.GetDeploymentAsync(deploymentIdClaim.Value);
+            var deployment = await dataService.GetDeploymentAsync(deploymentId);
             if (deployment == null)
             {
                 return Results.BadRequest("BAD DEPLOYMENT ID");
@@ -40,7 +40,7 @@ namespace NP.Lti13Platform
             {
                 IssuerSigningKeys = await client.Jwks.GetKeysAsync(),
                 ValidAudience = config.CurrentValue.Issuer,
-                ValidIssuer = client.Id
+                ValidIssuer = client.Id.ToString()
             });
 
             if (!validatedToken.IsValid)

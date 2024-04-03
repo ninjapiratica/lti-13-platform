@@ -1,5 +1,6 @@
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform;
+using NP.Lti13Platform.Models;
 using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,38 +49,38 @@ public class DataService : IDataService
 {
     private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-    public Task<Lti13Client?> GetClientAsync(string clientId)
+    public Task<Client?> GetClientAsync(Guid clientId)
     {
-        return Task.FromResult<Lti13Client?>(new Lti13Client { Id = "asdf", OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
+        return Task.FromResult<Client?>(new Client { Id = clientId, OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
     }
 
-    public Task<Lti13Context?> GetContextAsync(string contextId)
+    public Task<Context?> GetContextAsync(Guid contextId)
     {
-        return Task.FromResult<Lti13Context?>(new Lti13Context { Id = "asdf", DeploymentId = "asdf", Label = "asdf_label", Title = "asdf_title", Types = [] });
+        return Task.FromResult<Context?>(new Context { Id = contextId, DeploymentId = new Guid(), Label = "asdf_label", Title = "asdf_title", Types = [] });
     }
 
-    public Task<Lti13Deployment?> GetDeploymentAsync(string deploymentId)
+    public Task<Deployment?> GetDeploymentAsync(Guid deploymentId)
     {
-        return Task.FromResult<Lti13Deployment?>(new Lti13Deployment { Id = "asdf", ClientId = "asdf" });
+        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ClientId = new Guid() });
     }
 
-    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Lti13Client client, Lti13Context? context)
-    {
-        return Task.FromResult<IEnumerable<string>>([]);
-    }
-
-    public Task<Lti13ResourceLink?> GetResourceLinkAsync(string resourceLinkId)
-    {
-        var contentItem = _contentItems.Count > int.Parse(resourceLinkId) ? _contentItems[int.Parse(resourceLinkId)] as ResourceLinkContentItem : null;
-        return Task.FromResult<Lti13ResourceLink?>(contentItem == null ? null : new Lti13ResourceLink { Id = resourceLinkId, ContextId = "asdf", Url = contentItem.Url, Description = contentItem.Text, Title = contentItem.Title });
-    }
-
-    public Task<IEnumerable<string>> GetRolesAsync(string userId, Lti13Client client, Lti13Context? context)
+    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Client client, Context? context)
     {
         return Task.FromResult<IEnumerable<string>>([]);
     }
 
-    public Task<Lti13OpenIdUser?> GetUserAsync(Lti13Client client, string userId)
+    public Task<ResourceLink?> GetResourceLinkAsync(Guid resourceLinkId)
+    {
+        var contentItem = _contentItems.Count > 0 ? _contentItems[0] as ResourceLinkContentItem : null;
+        return Task.FromResult<ResourceLink?>(contentItem == null ? null : new ResourceLink { Id = resourceLinkId, ContextId = new Guid(), Url = contentItem.Url, Description = contentItem.Text, Title = contentItem.Title });
+    }
+
+    public Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context)
+    {
+        return Task.FromResult<IEnumerable<string>>([]);
+    }
+
+    public Task<Lti13OpenIdUser?> GetUserAsync(Client client, string userId)
     {
         return Task.FromResult<Lti13OpenIdUser?>(new Lti13OpenIdUser { });
     }
@@ -131,19 +132,19 @@ public class DataService : IDataService
         return Task.FromResult<SecurityKey>(securityKey);
     }
 
-    public Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag)
+    public Task<PartialList<LineItem>> GetLineItemsAsync(Guid contextId, int pageIndex, int limit, string? resourceId, Guid? resourceLinkId, string? tag)
     {
         var totalItems = 23;
         return Task.FromResult(new PartialList<LineItem>
         {
             Items = Enumerable.Range(pageIndex * limit, Math.Max(0, Math.Min(limit, totalItems - pageIndex * limit))).Select(i => new LineItem
             {
-                Id = i.ToString(),
+                Id = new Guid(),
                 StartDateTime = DateTime.Now,
                 EndDateTime = DateTime.UtcNow,
                 Label = "label " + i,
                 ResourceId = "resource id " + i,
-                ResourceLinkId = "resource link id " + i,
+                ResourceLinkId = new Guid(),
                 ScoreMaximum = 1.1m * i,
                 Tag = "tag " + i
             }),
@@ -151,32 +152,32 @@ public class DataService : IDataService
         });
     }
 
-    public Task<string> SaveLineItemAsync(LineItem lineItem)
+    public Task SaveLineItemAsync(LineItem lineItem)
     {
         throw new NotImplementedException();
     }
 
-    public Task<LineItem?> GetLineItemAsync(string lineItemId)
+    public Task<LineItem?> GetLineItemAsync(Guid lineItemId)
     {
         throw new NotImplementedException();
     }
 
-    public Task DeleteLineItemAsync(string lineItemId)
+    public Task DeleteLineItemAsync(Guid lineItemId)
     {
         throw new NotImplementedException();
     }
 
-    public Task<PartialList<LineItemResult>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int v, string? user_id)
+    public Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? user_id)
     {
         throw new NotImplementedException();
     }
 
-    public Task<LineItemResult> GetLineItemResultAsync(string contextId, string lineItemId, string userId)
+    public Task<Result> GetLineItemResultAsync(Guid contextId, Guid lineItemId, string userId)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveLineItemResultAsync(LineItemResult result)
+    public Task SaveLineItemResultAsync(Result result)
     {
         throw new NotImplementedException();
     }

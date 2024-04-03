@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Models;
 using System.Net.Mime;
 
 namespace NP.Lti13Platform
@@ -72,14 +73,14 @@ namespace NP.Lti13Platform
                 return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LOGIN_HINT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
             }
 
-            Lti13Client? client;
-            if (string.IsNullOrWhiteSpace(request.Client_Id))
+            Client? client;
+            if (string.IsNullOrWhiteSpace(request.Client_Id) || !Guid.TryParse(request.Client_Id, out var clientId))
             {
                 return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
             }
             else
             {
-                client = await dataService.GetClientAsync(request.Client_Id);
+                client = await dataService.GetClientAsync(clientId);
                 if (client == null)
                 {
                     return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
@@ -107,7 +108,7 @@ namespace NP.Lti13Platform
 
             _ = Enum.TryParse(messageTypeHint, out Lti13MessageType messageType);
 
-            (ILti13Message? ltiMessage, Lti13Context? context) = messageType switch
+            (ILti13Message? ltiMessage, Context? context) = messageType switch
             {
                 Lti13MessageType.LtiResourceLinkRequest => await service.ParseResourceLinkRequestHintAsync(messageHint),
                 Lti13MessageType.LtiDeepLinkingRequest => await service.ParseDeepLinkRequestHintAsync(messageHint),
