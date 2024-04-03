@@ -160,6 +160,26 @@ public class DataService : IDataService
     {
         throw new NotImplementedException();
     }
+
+    public Task DeleteLineItemAsync(string lineItemId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<PartialList<LineItemResult>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int v, string? user_id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LineItemResult> GetLineItemResultAsync(string contextId, string lineItemId, string userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SaveLineItemResultAsync(LineItemResult result)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class DeepLinkContentHandler : IDeepLinkContentHandler

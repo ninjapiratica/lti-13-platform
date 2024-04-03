@@ -216,7 +216,23 @@ namespace NP.Lti13Platform
         Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag);
         Task<string> SaveLineItemAsync(LineItem lineItem);
         Task<LineItem?> GetLineItemAsync(string lineItemId);
+        Task DeleteLineItemAsync(string lineItemId);
+        Task<PartialList<LineItemResult>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int v, string? user_id);
+        Task<LineItemResult> GetLineItemResultAsync(string contextId, string lineItemId, string userId);
+        Task SaveLineItemResultAsync(LineItemResult result);
         // TODO: Figure out custom
+    }
+
+    public class LineItemResult
+    {
+        public string Id { get; set; }
+        public string LineItemId { get; set; }
+        public string UserId { get; set; }
+        public string ScoringUserId { get; set; }
+        public decimal ResultScore { get; set; }
+        public decimal ResultMaximum { get; set; }
+        public string Comment { get; set; }
+        public DateTime Timestamp { get; set; }
     }
 
     public class PartialList<T>
