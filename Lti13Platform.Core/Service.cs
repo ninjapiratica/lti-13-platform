@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Models;
 using System.Net.Http.Json;
@@ -32,6 +34,7 @@ namespace NP.Lti13Platform
             Lti13RolesClaim roles,
             Context? context = null,
             Lti13PlatformClaim? platform = null,
+            Lti13AgsEndpointClaim? agsClaim = null,
             Lti13RoleScopeMentorClaim? roleScopeMentor = null,
             Lti13LaunchPresentationClaim? launchPresentation = null,
             Lti13CustomClaim? custom = null)
@@ -43,7 +46,7 @@ namespace NP.Lti13Platform
                 { "https://purl.imsglobal.org/spec/lti/claim/deployment_id", deploymentId },
             };
 
-            foreach (var ltiClaim in new ILti13Claim?[] { message, roles, context, platform, roleScopeMentor, launchPresentation, custom })
+            foreach (var ltiClaim in new ILti13Claim?[] { message, roles, context, platform, agsClaim, roleScopeMentor, launchPresentation, custom })
             {
                 if (ltiClaim != null)
                 {
@@ -84,7 +87,7 @@ namespace NP.Lti13Platform
         public Uri GetResourceLinkInitiationUrl(
             Client client,
             Deployment deployment,
-            ResourceLink resourceLink,
+            ResourceLinkContentItem resourceLink,
             string userId,
             string? documentTarget = default,
             double? height = default,
@@ -99,16 +102,21 @@ namespace NP.Lti13Platform
             query.Add("login_hint", userId);
             query.Add("target_link_uri", GetResourceLinkUrl(resourceLink, client));
             query.Add("client_id", client.Id.ToString());
-            query.Add("lti_message_hint", $"{Lti13MessageType.LtiResourceLinkRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{resourceLink.Id}");
+            query.Add("lti_message_hint", $"{Lti13MessageType.LtiResourceLinkRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{deployment.Id},{resourceLink.Id}");
             query.Add("lti_deployment_id", deployment.Id.ToString());
             builder.Query = query.ToString();
 
             return builder.Uri;
         }
 
-        public async Task<(ILti13Message?, Context?)> ParseResourceLinkRequestHintAsync(string hint)
+        public async Task<(ILti13Message?, Context?)> ParseResourceLinkRequestHintAsync(Client client, string hint)
         {
-            var resourceLink = await dataService.GetResourceLinkAsync(Guid.Parse(hint));
+            if (hint.Split(',') is not [var deploymentId, var resourceLinkId])
+            {
+                return (null, null);
+            }
+
+            var resourceLink = await dataService.GetContentItemAsync<ResourceLinkContentItem>(Guid.Parse(deploymentId), Guid.Parse(resourceLinkId));
             if (resourceLink == null)
             {
                 return (null, null);
@@ -120,29 +128,17 @@ namespace NP.Lti13Platform
                 return (null, null);
             }
 
-            var deployment = await dataService.GetDeploymentAsync(context.DeploymentId);
-            if (deployment == null)
-            {
-                return (null, null);
-            }
-
-            var client = await dataService.GetClientAsync(deployment.ClientId);
-            if (client == null)
-            {
-                return (null, null);
-            }
-
             return (new LtiResourceLinkRequestMessage
             {
                 Resource_Link_Id = resourceLink.Id.ToString(),
                 Target_Link_Uri = GetResourceLinkUrl(resourceLink, client),
-                Resource_Link_Description = resourceLink.Description,
+                Resource_Link_Description = resourceLink.Text,
                 Resource_Link_Title = resourceLink.Title
             },
             context);
         }
 
-        private string GetResourceLinkUrl(ResourceLink resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
+        private string GetResourceLinkUrl(ResourceLinkContentItem resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
 
         public async Task<(ILti13Message?, Context?)> ParseDeepLinkRequestHintAsync(string hint)
         {
@@ -151,11 +147,7 @@ namespace NP.Lti13Platform
                 return (null, null);
             }
 
-            var context = await dataService.GetContextAsync(Guid.Parse(contextId));
-            if (context == null)
-            {
-                return (null, null);
-            }
+            var context = Guid.TryParse(contextId, out var resourceId) ? await dataService.GetContextAsync(resourceId) : null;
 
             return (new LtiDeepLinkingRequestMessage
             {
@@ -205,21 +197,24 @@ namespace NP.Lti13Platform
         Task<Client?> GetClientAsync(Guid clientId);
         Task<Deployment?> GetDeploymentAsync(Guid deploymentId);
         Task<Context?> GetContextAsync(Guid contextId);
-        Task<ResourceLink?> GetResourceLinkAsync(Guid resourceLinkId);
+
         Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context);
         Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Client client, Context? context);
         Task<Lti13OpenIdUser?> GetUserAsync(Client client, string userId);
+
         Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
+        Task<T?> GetContentItemAsync<T>(Guid deploymentId, Guid contentItemId) where T : ContentItem;
+
         Task<ServiceToken?> GetServiceTokenRequestAsync(string id);
         Task SaveServiceTokenRequestAsync(ServiceToken serviceToken);
+
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync();
         Task<SecurityKey> GetPrivateKeyAsync();
         Task<PartialList<LineItem>> GetLineItemsAsync(Guid contextId, int pageIndex, int limit, string? resourceId, Guid? resourceLinkId, string? tag);
         Task SaveLineItemAsync(LineItem lineItem);
         Task<LineItem?> GetLineItemAsync(Guid lineItemId);
         Task DeleteLineItemAsync(Guid lineItemId);
-        Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? user_id);
-        Task<Result> GetLineItemResultAsync(Guid contextId, Guid lineItemId, string userId);
+        Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? userId);
         Task SaveLineItemResultAsync(Result result);
         // TODO: Figure out custom
     }
@@ -256,7 +251,7 @@ namespace NP.Lti13Platform
                 return result.Keys;
             }
 
-            return Enumerable.Empty<SecurityKey>();
+            return [];
         }
     }
 
@@ -362,6 +357,38 @@ namespace NP.Lti13Platform
             if (dict.Count > 0)
             {
                 return new Dictionary<string, object> { { "https://purl.imsglobal.org/spec/lti/claim/launch_presentation", dict } };
+            }
+
+            return new Dictionary<string, object>();
+        }
+    }
+
+    public class Lti13AgsEndpointClaim(LinkGenerator linkGenerator, HttpContext httpContext) : ILti13Claim
+    {
+        public IEnumerable<string> Scope { get; set; } = [];
+        public Guid? ContextId { get; set; }
+        public Guid? LineItemId { get; set; }
+
+        public IDictionary<string, object> GetClaims()
+        {
+            if (Scope.Any() && ContextId.HasValue)
+            {
+                var dict = new Dictionary<string, object>
+                {
+                    { "scope", Scope }
+                };
+
+                if (Scope.Intersect([]).Any())
+                {
+                    dict.Add("lineitems", linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId = ContextId.Value })!);
+                }
+
+                if (LineItemId.HasValue && Scope.Intersect([]).Any())
+                {
+                    dict.Add("lineitem", linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId = ContextId.Value, lineItemId = LineItemId.Value })!);
+                }
+
+                return new Dictionary<string, object> { { "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint", dict } };
             }
 
             return new Dictionary<string, object>();

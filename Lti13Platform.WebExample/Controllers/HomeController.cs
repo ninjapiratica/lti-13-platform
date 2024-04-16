@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NP.Lti13Platform;
+using NP.Lti13Platform.Models;
 
 namespace NP.Lti13PlatformExample.Controllers
 {
@@ -21,7 +22,7 @@ namespace NP.Lti13PlatformExample.Controllers
             var width = 250;
             var locale = "en-US";
 
-            var resourceLink = await dataService.GetResourceLinkAsync(new Guid());
+            var resourceLink = await dataService.GetContentItemAsync<ResourceLinkContentItem>(new Guid(), new Guid());
 
             return Results.Ok(new
             {

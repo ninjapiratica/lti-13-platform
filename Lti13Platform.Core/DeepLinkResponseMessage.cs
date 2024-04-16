@@ -1,4 +1,6 @@
-﻿namespace NP.Lti13Platform
+﻿using NP.Lti13Platform.Models;
+
+namespace NP.Lti13Platform
 {
     public class DeepLinkResponseMessage
     {

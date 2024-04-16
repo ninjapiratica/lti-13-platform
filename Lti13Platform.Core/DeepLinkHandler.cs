@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Models;
 using System.Text.Json;
 
 namespace NP.Lti13Platform
@@ -84,10 +85,26 @@ namespace NP.Lti13Platform
             }
 
             // TODO: figure this out with the AGS spec
-            //if (config.CurrentValue.DeepLink.AcceptLineItem == true)
-            //{
-            //    await dataService.SaveLineItemsAsync(response.ContentItems.OfType<ResourceLinkContentItem>().Where(i => i.LineItem != null).Select(i => i.LineItem));
-            //}
+            if (config.CurrentValue.DeepLink.AcceptLineItem == true)
+            {
+                var saveTasks = response.ContentItems
+                    .OfType<ResourceLinkContentItem>()
+                    .Where(i => i.LineItem != null)
+                    .Select(i => dataService.SaveLineItemAsync(new LineItem
+                    {
+                        Id = Guid.NewGuid(),
+                        Label = i.LineItem!.Label ?? i.Title ?? i.Type,
+                        ScoreMaximum = i.LineItem.ScoreMaximum,
+                        GradesReleased = i.LineItem.GradesReleased,
+                        Tag = i.LineItem.Tag,
+                        ResourceId = i.LineItem.ResourceId,
+                        //ResourceLinkId = i. // TODO: get resource link id,
+                        StartDateTime = i.Submission?.StartDateTime,
+                        EndDateTime = i.Submission?.EndDateTime
+                    }));
+
+                await Task.WhenAll(saveTasks);
+            }
 
             return await serviceProvider.GetRequiredService<IDeepLinkContentHandler>().HandleAsync(response);
         }

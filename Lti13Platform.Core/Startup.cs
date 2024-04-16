@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Extensions;
 using NP.Lti13Platform.Models;
 using System.Collections.ObjectModel;
+using System.Net;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Web;
@@ -70,7 +71,8 @@ namespace NP.Lti13Platform
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                     policy.RequireRole(Lti13ServiceScopes.LineItem);
-                });
+                })
+                .DisableAntiforgery();
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemBaseUrl, Lti13Ags.GetLineItemAsync)
                 .WithName(RouteNames.GET_LINE_ITEM)
@@ -85,14 +87,16 @@ namespace NP.Lti13Platform
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                     policy.RequireRole(Lti13ServiceScopes.LineItem);
-                });
+                })
+                .DisableAntiforgery();
 
             app.MapDelete(config.AssignmentAndGradeServiceLineItemBaseUrl, Lti13Ags.DeleteLineItemAsync)
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                     policy.RequireRole(Lti13ServiceScopes.LineItem);
-                });
+                })
+                .DisableAntiforgery();
 
             app.MapGet($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/results", Lti13Ags.GetLineItemResultsAsync)
                 .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
@@ -107,7 +111,8 @@ namespace NP.Lti13Platform
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                     policy.RequireRole(Lti13ServiceScopes.Score);
-                });
+                })
+                .DisableAntiforgery();
 
             return app;
         }
@@ -153,8 +158,8 @@ namespace NP.Lti13Platform
             return Results.Json(lineItemsResponse.Items.Select(i => new
             {
                 Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.Id }),
-                i.StartDateTime,
-                i.EndDateTime,
+                StartDateTime = i.StartDateTime,
+                EndDateTime = i.EndDateTime,
                 i.ScoreMaximum,
                 i.Label,
                 i.Tag,
@@ -213,7 +218,7 @@ namespace NP.Lti13Platform
 
             if (request.ResourceLinkId.HasValue)
             {
-                var resourceLink = await dataService.GetResourceLinkAsync(request.ResourceLinkId.GetValueOrDefault());
+                var resourceLink = await dataService.GetContentItemAsync<ResourceLinkContentItem>(Guid.NewGuid(), request.ResourceLinkId.GetValueOrDefault()); // TODO: change to deployment id
                 if (resourceLink?.ContextId != contextId)
                 {
                     return Results.NotFound();
@@ -271,8 +276,8 @@ namespace NP.Lti13Platform
                 lineItem.ResourceLinkId,
                 lineItem.ScoreMaximum,
                 lineItem.Tag,
-                lineItem.StartDateTime,
-                lineItem.EndDateTime,
+                StartDateTime = lineItem.StartDateTime,
+                EndDateTime = lineItem.EndDateTime,
             }, contentType: Lti13ContentTypes.LineItem);
         }
 
@@ -363,8 +368,8 @@ namespace NP.Lti13Platform
                 lineItem.ScoreMaximum,
                 lineItem.Tag,
                 lineItem.GradesReleased,
-                lineItem.StartDateTime,
-                lineItem.EndDateTime,
+                StartDateTime = lineItem.StartDateTime,
+                EndDateTime = lineItem.EndDateTime,
             }, contentType: Lti13ContentTypes.LineItem);
         }
 
@@ -395,7 +400,7 @@ namespace NP.Lti13Platform
                 return Results.NotFound();
             }
 
-            var lineItem = await dataService.GetLineItemAsync(contextId);
+            var lineItem = await dataService.GetLineItemAsync(lineItemId);
             if (lineItem == null)
             {
                 return Results.NotFound();
@@ -428,7 +433,7 @@ namespace NP.Lti13Platform
 
             return Results.Json(lineItemsResponse.Items.Select(i => new
             {
-                Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, i.Id }), // TODO: make url for a single result (does not need to be an actual endpoint
+                Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, i.LineItemId, user_id = i.UserId }),
                 ScoreOf = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.LineItemId }),
                 i.UserId,
                 i.ResultScore,
@@ -440,37 +445,68 @@ namespace NP.Lti13Platform
 
         internal static async Task<IResult> PublishScoreAsync(IDataService dataService, Guid contextId, Guid lineItemId, ScoreRequest request)
         {
+            const string RESULT_TOO_EARLY = "startDateTime";
+            const string RESULT_TOO_EARLY_DESCRIPTION = "lineItem startDateTime is in the future";
+            const string RESULT_TOO_EARLY_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#startdatetime";
+            const string RESULT_TOO_LATE = "endDateTime";
+            const string RESULT_TOO_LATE_DESCRIPTION = "lineItem endDateTime is in the past";
+            const string RESULT_TOO_LATE_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#enddatetime";
+            const string OUT_OF_DATE = "timestamp";
+            const string OUT_OF_DATE_DESCRIPTION = "timestamp must be after the current timestamp";
+            const string OUT_OF_DATE_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#timestamp";
+
             var context = await dataService.GetContextAsync(contextId);
             if (context == null)
             {
                 return Results.NotFound();
             }
 
-            var lineItem = await dataService.GetLineItemAsync(contextId);
+            var lineItem = await dataService.GetLineItemAsync(lineItemId);
             if (lineItem == null)
             {
                 return Results.NotFound();
             }
 
-            if (DateTime.UtcNow < lineItem.StartDateTime || DateTime.UtcNow > lineItem.EndDateTime)
+            if (DateTime.UtcNow < lineItem.StartDateTime)
             {
-                return Results.Forbid(); // 403 cannot be applied (ie. activity is closed, not accepting changes anymore), describe reason for rejection
+                return Results.Json(new
+                {
+                    Error = RESULT_TOO_EARLY,
+                    Error_Description = RESULT_TOO_EARLY_DESCRIPTION,
+                    Error_Uri = RESULT_TOO_EARLY_URI
+                }, statusCode: (int)HttpStatusCode.Forbidden);
+            }
+
+            if (DateTime.UtcNow > lineItem.EndDateTime)
+            {
+                return Results.Json(new
+                {
+                    Error = RESULT_TOO_LATE,
+                    Error_Description = RESULT_TOO_LATE_DESCRIPTION,
+                    Error_Uri = RESULT_TOO_LATE_URI
+                }, statusCode: (int)HttpStatusCode.Forbidden);
             }
 
             var isNew = false;
-            var result = await dataService.GetLineItemResultAsync(contextId, lineItemId, request.UserId);
+            var result = (await dataService.GetLineItemResultsAsync(contextId, lineItemId, 0, 1, request.UserId)).Items.FirstOrDefault();
             if (result == null)
             {
                 isNew = true;
                 result = new Result
                 {
+                    Id = Guid.NewGuid(),
                     LineItemId = lineItemId,
                     UserId = request.UserId
                 };
             }
             else if (result.Timestamp >= request.TimeStamp)
             {
-                return Results.Conflict();
+                return Results.Conflict(new
+                {
+                    Error = OUT_OF_DATE,
+                    Error_Description = OUT_OF_DATE_DESCRIPTION,
+                    Error_Uri = OUT_OF_DATE_URI
+                });
             }
 
             result.ResultScore = request.ScoreGiven;
@@ -478,7 +514,7 @@ namespace NP.Lti13Platform
             result.Comment = request.Comment;
             result.ScoringUserId = request.ScoringUserId;
             result.Timestamp = request.TimeStamp;
-
+            
             await dataService.SaveLineItemResultAsync(result);
 
             return isNew ? Results.Created() : Results.NoContent();

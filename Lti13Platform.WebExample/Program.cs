@@ -69,10 +69,10 @@ public class DataService : IDataService
         return Task.FromResult<IEnumerable<string>>([]);
     }
 
-    public Task<ResourceLink?> GetResourceLinkAsync(Guid resourceLinkId)
+    public Task<ResourceLinkContentItem?> GetResourceLinkAsync(Guid resourceLinkId)
     {
         var contentItem = _contentItems.Count > 0 ? _contentItems[0] as ResourceLinkContentItem : null;
-        return Task.FromResult<ResourceLink?>(contentItem == null ? null : new ResourceLink { Id = resourceLinkId, ContextId = new Guid(), Url = contentItem.Url, Description = contentItem.Text, Title = contentItem.Title });
+        return Task.FromResult<ResourceLinkContentItem?>(contentItem);
     }
 
     public Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context)
@@ -167,17 +167,17 @@ public class DataService : IDataService
         throw new NotImplementedException();
     }
 
-    public Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? user_id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<Result> GetLineItemResultAsync(Guid contextId, Guid lineItemId, string userId)
+    public Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? userId)
     {
         throw new NotImplementedException();
     }
 
     public Task SaveLineItemResultAsync(Result result)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<T?> GetContentItemAsync<T>(Guid deploymentId, Guid contentItemId) where T : ContentItem
     {
         throw new NotImplementedException();
     }

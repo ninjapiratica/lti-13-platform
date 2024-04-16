@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace NP.Lti13Platform
+namespace NP.Lti13Platform.Models
 {
     public abstract class ContentItem(JsonElement element, IEnumerable<string> knownKeys) : IReadOnlyDictionary<string, JsonElement>
     {
@@ -17,13 +17,13 @@ namespace NP.Lti13Platform
         protected const string EXPIRES_AT = "expiresAt";
         protected const string WINDOW = "window";
         protected const string IFRAME = "iframe";
-        protected const string EMBED = "embed"; 
+        protected const string EMBED = "embed";
         protected const string CUSTOM = "custom";
         protected const string LINE_ITEM = "lineItem";
         protected const string AVAILABLE = "available";
         protected const string SUBMISSION = "submission";
         protected const string TYPE = "type";
-        
+
         private const string LINK = "link";
         private const string LTI_RESOURCE_LINK = "ltiResourceLink";
         private const string FILE = "file";
@@ -68,9 +68,13 @@ namespace NP.Lti13Platform
     {
         public KeyValuePair<string, JsonElement> Current => new(enumerator.Current.Name, enumerator.Current.Value);
 
-        object IEnumerator.Current => this.Current;
+        object IEnumerator.Current => Current;
 
-        public void Dispose() => enumerator.Dispose();
+        public void Dispose()
+        {
+            enumerator.Dispose();
+            GC.SuppressFinalize(this);
+        }
 
         public bool MoveNext() => enumerator.MoveNext();
 
@@ -91,6 +95,8 @@ namespace NP.Lti13Platform
 
     public class ResourceLinkContentItem(JsonElement element) : ContentItem(element, [URL, TITLE, TEXT, ICON, THUMBNAIL, WINDOW, IFRAME, CUSTOM, LINE_ITEM, AVAILABLE, SUBMISSION])
     {
+        public Guid Id => Guid.NewGuid(); // TODO: Figure this out
+        public Guid ContextId => Guid.NewGuid(); // TODO: Figure this out
         public string? Url => TryGetValue(URL, out var x) ? x.GetString() : null;
         public string? Title => TryGetValue(TITLE, out var x) ? x.GetString() : null;
         public string? Text => TryGetValue(TEXT, out var x) ? x.GetString() : null;
