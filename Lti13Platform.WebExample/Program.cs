@@ -69,10 +69,10 @@ public class DataService : IDataService
         return Task.FromResult<IEnumerable<string>>([]);
     }
 
-    public Task<ResourceLinkContentItem?> GetResourceLinkAsync(Guid resourceLinkId)
+    public Task<LtiResourceLinkContentItem?> GetResourceLinkAsync(Guid resourceLinkId)
     {
-        var contentItem = _contentItems.Count > 0 ? _contentItems[0] as ResourceLinkContentItem : null;
-        return Task.FromResult<ResourceLinkContentItem?>(contentItem);
+        var contentItem = _contentItems.Count > 0 ? _contentItems[0] as LtiResourceLinkContentItem : null;
+        return Task.FromResult<LtiResourceLinkContentItem?>(contentItem);
     }
 
     public Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context)
@@ -177,7 +177,7 @@ public class DataService : IDataService
         throw new NotImplementedException();
     }
 
-    public Task<T?> GetContentItemAsync<T>(Guid deploymentId, Guid contentItemId) where T : ContentItem
+    public Task<T?> GetContentItemAsync<T>(Guid contentItemId) where T : ContentItem
     {
         throw new NotImplementedException();
     }

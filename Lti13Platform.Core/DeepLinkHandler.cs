@@ -59,14 +59,29 @@ namespace NP.Lti13Platform
                 return Results.BadRequest("BAD VERSION");
             }
 
+            var dataParts = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value.Split('|', 2) ?? [string.Empty, string.Empty];
+
             var response = new DeepLinkResponse
             {
-                Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
+                Data = dataParts[1],
                 Message = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/msg")?.Value,
                 Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
                 ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
                 ErrorLog = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog")?.Value,
-                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items").Select(x => ContentItem.Parse(JsonDocument.Parse(x.Value).RootElement)),
+                ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
+                    .Select(x =>
+                    {
+                        var document = JsonDocument.Parse(x.Value);
+                        var property = document.RootElement.GetProperty("type");
+                        var type = property.GetRawText();
+                        var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(client.Id, type)])!;
+
+                        contentItem.Id = Guid.NewGuid();
+                        contentItem.DeploymentId = deploymentId;
+                        contentItem.ContextId = Guid.TryParse(dataParts[0], out var contextId) ? contextId : null;
+
+                        return contentItem;
+                    })
             };
 
             if (!string.IsNullOrWhiteSpace(response.Log))
@@ -84,11 +99,10 @@ namespace NP.Lti13Platform
                 await dataService.SaveContentItemsAsync(response.ContentItems);
             }
 
-            // TODO: figure this out with the AGS spec
             if (config.CurrentValue.DeepLink.AcceptLineItem == true)
             {
                 var saveTasks = response.ContentItems
-                    .OfType<ResourceLinkContentItem>()
+                    .OfType<LtiResourceLinkContentItem>()
                     .Where(i => i.LineItem != null)
                     .Select(i => dataService.SaveLineItemAsync(new LineItem
                     {
@@ -98,7 +112,7 @@ namespace NP.Lti13Platform
                         GradesReleased = i.LineItem.GradesReleased,
                         Tag = i.LineItem.Tag,
                         ResourceId = i.LineItem.ResourceId,
-                        //ResourceLinkId = i. // TODO: get resource link id,
+                        ResourceLinkId = i.Id,
                         StartDateTime = i.Submission?.StartDateTime,
                         EndDateTime = i.Submission?.EndDateTime
                     }));

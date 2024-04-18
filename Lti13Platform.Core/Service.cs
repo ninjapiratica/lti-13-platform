@@ -87,7 +87,7 @@ namespace NP.Lti13Platform
         public Uri GetResourceLinkInitiationUrl(
             Client client,
             Deployment deployment,
-            ResourceLinkContentItem resourceLink,
+            LtiResourceLinkContentItem resourceLink,
             string userId,
             string? documentTarget = default,
             double? height = default,
@@ -116,13 +116,13 @@ namespace NP.Lti13Platform
                 return (null, null);
             }
 
-            var resourceLink = await dataService.GetContentItemAsync<ResourceLinkContentItem>(Guid.Parse(deploymentId), Guid.Parse(resourceLinkId));
+            var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(Guid.Parse(resourceLinkId));
             if (resourceLink == null)
             {
                 return (null, null);
             }
 
-            var context = await dataService.GetContextAsync(resourceLink.ContextId);
+            var context = await dataService.GetContextAsync(resourceLink.ContextId.GetValueOrDefault());
             if (context == null)
             {
                 return (null, null);
@@ -138,7 +138,7 @@ namespace NP.Lti13Platform
             context);
         }
 
-        private string GetResourceLinkUrl(ResourceLinkContentItem resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
+        private string GetResourceLinkUrl(LtiResourceLinkContentItem resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
 
         public async Task<(ILti13Message?, Context?)> ParseDeepLinkRequestHintAsync(string hint)
         {
@@ -157,7 +157,7 @@ namespace NP.Lti13Platform
                 Accept_Presentation_Document_Targets = config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets,
                 Accept_Types = config.CurrentValue.DeepLink.AcceptTypes,
                 Auto_Create = config.CurrentValue.DeepLink.AutoCreate,
-                Data = Base64Decode(data),
+                Data = $"{contextId}|{Base64Decode(data)}",
                 Deep_Link_Return_Url = config.CurrentValue.DeepLink.ReturnUrl,
                 Text = Base64Decode(text),
                 Title = Base64Decode(title)
@@ -203,7 +203,7 @@ namespace NP.Lti13Platform
         Task<Lti13OpenIdUser?> GetUserAsync(Client client, string userId);
 
         Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
-        Task<T?> GetContentItemAsync<T>(Guid deploymentId, Guid contentItemId) where T : ContentItem;
+        Task<T?> GetContentItemAsync<T>(Guid contentItemId) where T : ContentItem;
 
         Task<ServiceToken?> GetServiceTokenRequestAsync(string id);
         Task SaveServiceTokenRequestAsync(ServiceToken serviceToken);

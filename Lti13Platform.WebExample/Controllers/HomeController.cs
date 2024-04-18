@@ -22,7 +22,7 @@ namespace NP.Lti13PlatformExample.Controllers
             var width = 250;
             var locale = "en-US";
 
-            var resourceLink = await dataService.GetContentItemAsync<ResourceLinkContentItem>(new Guid(), new Guid());
+            var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(new Guid());
 
             return Results.Ok(new
             {

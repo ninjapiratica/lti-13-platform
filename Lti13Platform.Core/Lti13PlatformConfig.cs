@@ -1,4 +1,6 @@
-﻿namespace NP.Lti13Platform
+﻿using NP.Lti13Platform.Models;
+
+namespace NP.Lti13Platform
 {
     public class Lti13PlatformConfig
     {
@@ -52,6 +54,17 @@
         public int AccessTokenExpirationSeconds { get; set; } = 3600;
 
         public Lti13PlatformClaim? PlatformClaim { get; set; }
+
+        public IDictionary<(Guid? ClientId, string ContentItemType), Type> ContentItemTypes { get; set; } = new ContentItemDictionary();
+
+        public void AddDefaultContentItemMapping()
+        {
+            ContentItemTypes.Add((null, ContentItemType.File), typeof(FileContentItem));
+            ContentItemTypes.Add((null, ContentItemType.Html), typeof(HtmlContentItem));
+            ContentItemTypes.Add((null, ContentItemType.Image), typeof(ImageContentItem));
+            ContentItemTypes.Add((null, ContentItemType.Link), typeof(LinkContentItem));
+            ContentItemTypes.Add((null, ContentItemType.LtiResourceLink), typeof(LtiResourceLinkContentItem));
+        }
 
         public class Lti13DeepLinkConfig
         {

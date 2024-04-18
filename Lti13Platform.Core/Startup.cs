@@ -218,7 +218,7 @@ namespace NP.Lti13Platform
 
             if (request.ResourceLinkId.HasValue)
             {
-                var resourceLink = await dataService.GetContentItemAsync<ResourceLinkContentItem>(Guid.NewGuid(), request.ResourceLinkId.GetValueOrDefault()); // TODO: change to deployment id
+                var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(request.ResourceLinkId.GetValueOrDefault()); // TODO: change to deployment id
                 if (resourceLink?.ContextId != contextId)
                 {
                     return Results.NotFound();
