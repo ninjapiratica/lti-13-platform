@@ -111,11 +111,11 @@ namespace NP.Lti13Platform
 
             _ = Enum.TryParse(messageTypeHint, out Lti13MessageType messageType);
 
-            (ILti13Message? ltiMessage, Context? context) = messageType switch
+            (ILti13Message? ltiMessage, Context? context, Guid? resourceLinkId) = messageType switch
             {
                 Lti13MessageType.LtiResourceLinkRequest => await service.ParseResourceLinkRequestHintAsync(client, messageHint),
                 Lti13MessageType.LtiDeepLinkingRequest => await service.ParseDeepLinkRequestHintAsync(messageHint),
-                _ => (null, null)
+                _ => (null, null, null)
             };
 
             if (ltiMessage == null || context == null)
@@ -131,7 +131,7 @@ namespace NP.Lti13Platform
 
             var roles = await dataService.GetRolesAsync(userId, client, context);
             var mentoredUserIds = await dataService.GetMentoredUserIdsAsync(userId, client, context);
-            var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, null, null); // todo: get the resourcelinkid from the requestmessage
+            var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, resourceLinkId, null);
             
             var ltiClaims = service.GetClaims(
                 messageType,
@@ -142,7 +142,7 @@ namespace NP.Lti13Platform
                 // optional
                 context,
                 config.CurrentValue.PlatformClaim,
-                new Lti13AgsEndpointClaim(linkGenerator, httpContext) { ContextId = context?.Id, LineItemId = lineItems.TotalItems == 1 ? lineItems.Items.FirstOrDefault()!.Id : null, Scope = [] }, // todo: add scopes/permissions to client
+                new Lti13AgsEndpointClaim(linkGenerator, httpContext) { ContextId = context?.Id, LineItemId = lineItems.TotalItems == 1 ? lineItems.Items.FirstOrDefault()!.Id : null, Scope = client.Scopes },
                 new Lti13RoleScopeMentorClaim { UserIds = mentoredUserIds },
                 service.ParseLaunchPresentationHint(launchPresentationHint),
                 new Lti13CustomClaim());

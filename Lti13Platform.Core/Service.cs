@@ -109,23 +109,23 @@ namespace NP.Lti13Platform
             return builder.Uri;
         }
 
-        public async Task<(ILti13Message?, Context?)> ParseResourceLinkRequestHintAsync(Client client, string hint)
+        public async Task<(ILti13Message?, Context?, Guid?)> ParseResourceLinkRequestHintAsync(Client client, string hint)
         {
             if (hint.Split(',') is not [var deploymentId, var resourceLinkId])
             {
-                return (null, null);
+                return (null, null, null);
             }
 
             var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(Guid.Parse(resourceLinkId));
             if (resourceLink == null)
             {
-                return (null, null);
+                return (null, null, null);
             }
 
             var context = await dataService.GetContextAsync(resourceLink.ContextId.GetValueOrDefault());
             if (context == null)
             {
-                return (null, null);
+                return (null, null, null);
             }
 
             return (new LtiResourceLinkRequestMessage
@@ -135,16 +135,17 @@ namespace NP.Lti13Platform
                 Resource_Link_Description = resourceLink.Text,
                 Resource_Link_Title = resourceLink.Title
             },
-            context);
+            context,
+            Guid.Parse(resourceLinkId));
         }
 
         private string GetResourceLinkUrl(LtiResourceLinkContentItem resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
 
-        public async Task<(ILti13Message?, Context?)> ParseDeepLinkRequestHintAsync(string hint)
+        public async Task<(ILti13Message?, Context?, Guid?)> ParseDeepLinkRequestHintAsync(string hint)
         {
             if (hint.Split(',', 4) is not [var contextId, var title, var text, var data])
             {
-                return (null, null);
+                return (null, null, null);
             }
 
             var context = Guid.TryParse(contextId, out var resourceId) ? await dataService.GetContextAsync(resourceId) : null;
@@ -162,7 +163,8 @@ namespace NP.Lti13Platform
                 Text = Base64Decode(text),
                 Title = Base64Decode(title)
             },
-            context);
+            context,
+            null);
         }
 
         public Lti13LaunchPresentationClaim ParseLaunchPresentationHint(string hint)

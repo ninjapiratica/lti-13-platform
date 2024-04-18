@@ -13,5 +13,7 @@
         public IEnumerable<string> RedirectUrls => new[] { DeepLinkUrl, LaunchUrl }.Where(x => x != null).Select(x => x!);
 
         public Jwks? Jwks { get; set; }
+
+        public IEnumerable<string> Scopes { get; set; } = [];
     }
 }
