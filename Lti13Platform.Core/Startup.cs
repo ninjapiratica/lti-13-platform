@@ -774,7 +774,21 @@ namespace NP.Lti13Platform
         }
     }
 
+    internal record DeepLinkResponseRequest(string? Jwt);
+
+    internal record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, string? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
+
     internal record LineItemRequest(decimal ScoreMaximum, string Label, Guid? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTime? StartDateTime, DateTime? EndDateTime);
+
+    internal record LineItemPutRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId);
+
+    internal record LineItemsPostRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId, bool? GradesReleased);
+
+    internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submision, DateTime TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
+
+    internal record ScoreSubmissionRequest(DateTime? StartedAt, DateTime? SubmittedAt);
+
+    internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 
     internal static class Lti13ContentTypes
     {
@@ -819,14 +833,6 @@ namespace NP.Lti13Platform
         }
     }
 
-    public class TokenRequest
-    {
-        public string Grant_Type { get; set; }
-        public string Client_Assertion_Type { get; set; }
-        public string Client_Assertion { get; set; }
-        public string Scope { get; set; }
-    }
-
     public static class Lti13ServiceScopes
     {
         public static readonly string LineItem = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem";
@@ -841,47 +847,6 @@ namespace NP.Lti13Platform
         public required DateTime Expiration { get; set; }
     }
 
-    public class LineItemsPostRequest // same as LineItemPutRequest // same as LineItemResponse (minus id)
-    {
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
-        public decimal ScoreMaximum { get; set; }
-        public string Label { get; set; }
-        public string Tag { get; set; }
-        public string ResourceId { get; set; }
-        public string ResourceLinkId { get; set; }
-        public bool? GradesReleased { get; set; }
-    }
-
-    public class LineItemPutRequest
-    {
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
-        public decimal ScoreMaximum { get; set; }
-        public string Label { get; set; }
-        public string Tag { get; set; }
-        public string ResourceId { get; set; }
-        public string ResourceLinkId { get; set; }
-    }
-
-    public class ScoreRequest
-    {
-        public string UserId { get; set; }
-        public string ScoringUserId { get; set; }
-        public decimal ScoreGiven { get; set; }
-        public decimal ScoreMaximum { get; set; }
-        public string Comment { get; set; }
-        public ScoreSubmissionRequest? Submission { get; set; }
-        public DateTime TimeStamp { get; set; }
-        public ActivityProgress ActivityProgress { get; set; }
-        public GradingProgress GradingProgress { get; set; }
-
-        public class ScoreSubmissionRequest
-        {
-            public DateTime? StartedAt { get; set; }
-            public DateTime? SubmittedAt { get; set; }
-        }
-    }
 
     public enum ActivityProgress
     {

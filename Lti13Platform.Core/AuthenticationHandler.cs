@@ -36,7 +36,7 @@ namespace NP.Lti13Platform
 
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-        public static async Task<IResult> HandleAsync(
+        internal static async Task<IResult> HandleAsync(
             LinkGenerator linkGenerator,
             HttpContext httpContext,
             IOptionsMonitor<Lti13PlatformConfig> config,
