@@ -1,10 +1,32 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
+using System.Collections;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace NP.Lti13Platform
 {
     public class JwksHandler(IDataService dataService)
     {
+        private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver
+            {
+                Modifiers = 
+                {
+                    (typeInfo) => 
+                    {
+                        foreach(var prop in typeInfo.Properties.Where(p => p.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(p.PropertyType)))
+                        {
+                            prop.ShouldSerialize = (obj, val) => val is IEnumerable e && e.GetEnumerator().MoveNext();
+                        }
+                    }
+                }
+            }
+        };
+
         public async Task<IResult> HandleAsync()
         {
             var keys = await dataService.GetPublicKeysAsync();
@@ -18,18 +40,7 @@ namespace NP.Lti13Platform
                 keySet.Keys.Add(jwk);
             }
 
-            return Results.Json(new
-            {
-                Keys = keySet.Keys.Select(k => (object)new
-                {
-                    k.Kty,
-                    k.N,
-                    k.E,
-                    k.Alg,
-                    k.Use,
-                    k.Kid
-                })
-            });
+            return Results.Json(keySet, jsonOptions);
         }
     }
 }

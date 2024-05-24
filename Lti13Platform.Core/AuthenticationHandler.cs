@@ -8,12 +8,7 @@ using System.Net.Mime;
 
 namespace NP.Lti13Platform
 {
-    public class AuthenticationHandler(
-        LinkGenerator linkGenerator,
-        HttpContext httpContext,
-        IOptionsMonitor<Lti13PlatformConfig> config,
-        Service service,
-        IDataService dataService)
+    public static class AuthenticationHandler
     {
         private const string OPENID = "openid";
         private const string ID_TOKEN = "id_token";
@@ -41,7 +36,13 @@ namespace NP.Lti13Platform
 
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-        public async Task<IResult> HandleAsync(AuthenticationRequest request)
+        public static async Task<IResult> HandleAsync(
+            LinkGenerator linkGenerator,
+            HttpContext httpContext,
+            IOptionsMonitor<Lti13PlatformConfig> config,
+            Service service,
+            IDataService dataService,
+            AuthenticationRequest request)
         {
             /* https://datatracker.ietf.org/doc/html/rfc6749#section-5.2 */
             /* https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request */
@@ -132,7 +133,7 @@ namespace NP.Lti13Platform
             var roles = await dataService.GetRolesAsync(userId, client, context);
             var mentoredUserIds = await dataService.GetMentoredUserIdsAsync(userId, client, context);
             var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, resourceLinkId, null);
-            
+
             var ltiClaims = service.GetClaims(
                 messageType,
                 context.DeploymentId,
@@ -148,6 +149,10 @@ namespace NP.Lti13Platform
                 new Lti13CustomClaim());
 
             var privateKey = await dataService.GetPrivateKeyAsync();
+
+            //var token = new JsonWebTokenHandler().CreateToken(
+            //    JsonSerializer.Serialize(new { }, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }), 
+            //    new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
             var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
             {

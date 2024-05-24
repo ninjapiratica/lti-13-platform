@@ -33,7 +33,6 @@ namespace NP.Lti13Platform
             services.Configure(configure);
 
             services.AddTransient<Service>();
-            services.AddTransient<AuthenticationHandler>();
             services.AddTransient<DeepLinkHandler>();
             services.AddTransient<JwksHandler>();
             services.AddTransient<TokenHandler>();
@@ -51,14 +50,27 @@ namespace NP.Lti13Platform
 
             app.MapGet(config.JwksUrl, async (JwksHandler handler) => await handler.HandleAsync());
 
-            app.MapGet(config.AuthorizationUrl, async ([AsParameters] AuthenticationRequest request, AuthenticationHandler handler) => await handler.HandleAsync(request));
-            app.MapPost(config.AuthorizationUrl, async ([FromForm] AuthenticationRequest request, AuthenticationHandler handler) => await handler.HandleAsync(request)).DisableAntiforgery();
+            app.MapGet(config.AuthorizationUrl, async (
+                [AsParameters] AuthenticationRequest request,
+                LinkGenerator linkGenerator,
+                HttpContext httpContext,
+                IOptionsMonitor<Lti13PlatformConfig> config,
+                Service service,
+                IDataService dataService) => await AuthenticationHandler.HandleAsync(linkGenerator, httpContext, config, service, dataService, request));
+
+            app.MapPost(config.AuthorizationUrl, async (
+                [FromForm] AuthenticationRequest request,
+                LinkGenerator linkGenerator,
+                HttpContext httpContext,
+                IOptionsMonitor<Lti13PlatformConfig> config,
+                Service service,
+                IDataService dataService) => await AuthenticationHandler.HandleAsync(linkGenerator, httpContext, config, service, dataService, request)).DisableAntiforgery();
 
             app.MapPost(config.DeepLinkResponseUrl, async ([FromForm] DeepLinkResponseRequest request, DeepLinkHandler handler) => await handler.HandleAsync(request)).DisableAntiforgery();
 
             app.MapPost(config.TokenUrl, async ([FromForm] TokenRequest request, TokenHandler handler) => await handler.HandleAsync(request)).DisableAntiforgery();
 
-            app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl, Lti13Ags.GetLineItemAsync)
+            app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl, Lti13Ags.GetLineItemsAsync)
                 .WithName(RouteNames.GET_LINE_ITEMS)
                 .RequireAuthorization(policy =>
                  {
@@ -514,7 +526,7 @@ namespace NP.Lti13Platform
             result.Comment = request.Comment;
             result.ScoringUserId = request.ScoringUserId;
             result.Timestamp = request.TimeStamp;
-            
+
             await dataService.SaveLineItemResultAsync(result);
 
             return isNew ? Results.Created() : Results.NoContent();

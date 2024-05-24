@@ -6,9 +6,9 @@
 
         public Guid LineItemId { get; set; }
 
-        public string UserId { get; set; }
+        public required string UserId { get; set; }
 
-        public string ScoringUserId { get; set; }
+        public string? ScoringUserId { get; set; }
 
         public decimal ResultScore { get; set; }
 

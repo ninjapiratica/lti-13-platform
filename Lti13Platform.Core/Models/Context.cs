@@ -16,7 +16,7 @@ namespace NP.Lti13Platform.Models
 
         public string? Title { get; set; }
 
-        public IEnumerable<string> Types { get; set; } = Enumerable.Empty<string>();
+        public IEnumerable<string> Types { get; set; } = [];
 
         public IDictionary<string, object> GetClaims()
         {
