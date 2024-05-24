@@ -10,7 +10,7 @@ namespace NP.Lti13PlatformExample.Controllers
 
         public async Task<IResult> Index()
         {
-            var client = await dataService.GetClientAsync(new Guid());
+            var tool = await dataService.GetToolAsync(new Guid());
             var deployment = await dataService.GetDeploymentAsync(new Guid());
             var context = await dataService.GetContextAsync(new Guid());
             var userId = "asdf";
@@ -26,8 +26,8 @@ namespace NP.Lti13PlatformExample.Controllers
 
             return Results.Ok(new
             {
-                deepLinkUrl = service.GetDeepLinkInitiationUrl(client!, deployment!, context!, userId, title, text, data, documentTarget, height, width, locale),
-                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(client!, deployment!, resourceLink!, userId, documentTarget, height, width, locale) : null
+                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!, context!, userId, title, text, data, documentTarget, height, width, locale),
+                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, deployment!, resourceLink!, userId, documentTarget, height, width, locale) : null
             });
         }
     }

@@ -49,9 +49,9 @@ public class DataService : IDataService
 {
     private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-    public Task<Client?> GetClientAsync(Guid clientId)
+    public Task<Tool?> GetToolAsync(Guid clientId)
     {
-        return Task.FromResult<Client?>(new Client { Id = clientId, OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
+        return Task.FromResult<Tool?>(new Tool { ClientId = clientId, OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
     }
 
     public Task<Context?> GetContextAsync(Guid contextId)
@@ -64,7 +64,7 @@ public class DataService : IDataService
         return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ClientId = new Guid() });
     }
 
-    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Client client, Context? context)
+    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Tool tool, Context? context)
     {
         return Task.FromResult<IEnumerable<string>>([]);
     }
@@ -75,12 +75,12 @@ public class DataService : IDataService
         return Task.FromResult<LtiResourceLinkContentItem?>(contentItem);
     }
 
-    public Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context)
+    public Task<IEnumerable<string>> GetRolesAsync(string userId, Tool tool, Context? context)
     {
         return Task.FromResult<IEnumerable<string>>([]);
     }
 
-    public Task<Lti13OpenIdUser?> GetUserAsync(Client client, string userId)
+    public Task<Lti13OpenIdUser?> GetUserAsync(Tool tool, string userId)
     {
         return Task.FromResult<Lti13OpenIdUser?>(new Lti13OpenIdUser { });
     }

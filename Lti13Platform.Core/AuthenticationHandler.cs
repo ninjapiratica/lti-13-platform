@@ -77,20 +77,20 @@ namespace NP.Lti13Platform
                 return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LOGIN_HINT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
             }
 
-            Client? client;
+            Tool? tool;
             if (string.IsNullOrWhiteSpace(request.Client_Id) || !Guid.TryParse(request.Client_Id, out var clientId))
             {
                 return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
             }
             else
             {
-                client = await dataService.GetClientAsync(clientId);
-                if (client == null)
+                tool = await dataService.GetToolAsync(clientId);
+                if (tool == null)
                 {
                     return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
                 }
 
-                if (!client.RedirectUrls.Contains(request.Redirect_Uri))
+                if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
                 {
                     return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
                 }
@@ -103,7 +103,7 @@ namespace NP.Lti13Platform
             }
 
             var userId = request.Login_Hint;
-            var user = await dataService.GetUserAsync(client, userId);
+            var user = await dataService.GetUserAsync(tool, userId);
 
             if (user == null)
             {
@@ -114,7 +114,7 @@ namespace NP.Lti13Platform
 
             (ILti13Message? ltiMessage, Context? context, Guid? resourceLinkId) = messageType switch
             {
-                Lti13MessageType.LtiResourceLinkRequest => await service.ParseResourceLinkRequestHintAsync(client, messageHint),
+                Lti13MessageType.LtiResourceLinkRequest => await service.ParseResourceLinkRequestHintAsync(tool, messageHint),
                 Lti13MessageType.LtiDeepLinkingRequest => await service.ParseDeepLinkRequestHintAsync(messageHint),
                 _ => (null, null, null)
             };
@@ -125,13 +125,13 @@ namespace NP.Lti13Platform
             }
 
             var deployment = await dataService.GetDeploymentAsync(context.DeploymentId);
-            if (deployment?.ClientId != client.Id)
+            if (deployment?.ClientId != tool.ClientId)
             {
                 return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = INVALID_CLIENT_ID, Error_Uri = LTI_SPEC_URI });
             }
 
-            var roles = await dataService.GetRolesAsync(userId, client, context);
-            var mentoredUserIds = await dataService.GetMentoredUserIdsAsync(userId, client, context);
+            var roles = await dataService.GetRolesAsync(userId, tool, context);
+            var mentoredUserIds = await dataService.GetMentoredUserIdsAsync(userId, tool, context);
             var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, resourceLinkId, null);
 
             var ltiClaims = service.GetClaims(
@@ -143,7 +143,7 @@ namespace NP.Lti13Platform
                 // optional
                 context,
                 config.CurrentValue.PlatformClaim,
-                new Lti13AgsEndpointClaim(linkGenerator, httpContext) { ContextId = context?.Id, LineItemId = lineItems.TotalItems == 1 ? lineItems.Items.FirstOrDefault()!.Id : null, Scope = client.Scopes },
+                new Lti13AgsEndpointClaim(linkGenerator, httpContext) { ContextId = context?.Id, LineItemId = lineItems.TotalItems == 1 ? lineItems.Items.FirstOrDefault()!.Id : null, Scope = tool.Scopes },
                 new Lti13RoleScopeMentorClaim { UserIds = mentoredUserIds },
                 service.ParseLaunchPresentationHint(launchPresentationHint),
                 new Lti13CustomClaim());

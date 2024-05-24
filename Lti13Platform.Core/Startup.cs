@@ -112,17 +112,17 @@ namespace NP.Lti13Platform
                         return Results.BadRequest("BAD DEPLOYMENT ID");
                     }
 
-                    var client = await dataService.GetClientAsync(deployment.ClientId);
-                    if (client?.Jwks == null)
+                    var tool = await dataService.GetToolAsync(deployment.ClientId);
+                    if (tool?.Jwks == null)
                     {
                         return Results.BadRequest("BAD DEPLOYMENT ID");
                     }
 
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                     {
-                        IssuerSigningKeys = await client.Jwks.GetKeysAsync(),
+                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
                         ValidAudience = config.CurrentValue.Issuer,
-                        ValidIssuer = client.Id.ToString()
+                        ValidIssuer = tool.ClientId.ToString()
                     });
 
                     if (!validatedToken.IsValid)
@@ -155,7 +155,7 @@ namespace NP.Lti13Platform
                                 var document = JsonDocument.Parse(x.Value);
                                 var property = document.RootElement.GetProperty("type");
                                 var type = property.GetRawText();
-                                var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(client.Id, type)])!;
+                                var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
                                 contentItem.Id = Guid.NewGuid();
                                 contentItem.DeploymentId = deploymentId;
@@ -265,15 +265,15 @@ namespace NP.Lti13Platform
 
                     var jwt = new JsonWebToken(request.Client_Assertion);
 
-                    Client? client;
+                    Tool? tool;
                     if (jwt.Issuer != jwt.Subject || !Guid.TryParse(jwt.Issuer, out var issuer))
                     {
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                     }
                     else
                     {
-                        client = await dataService.GetClientAsync(issuer);
-                        if (client?.Jwks == null)
+                        tool = await dataService.GetToolAsync(issuer);
+                        if (tool?.Jwks == null)
                         {
                             return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                         }
@@ -281,9 +281,9 @@ namespace NP.Lti13Platform
 
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                     {
-                        IssuerSigningKeys = await client.Jwks.GetKeysAsync(),
+                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
                         ValidAudience = config.CurrentValue.TokenAudience,
-                        ValidIssuer = client.Id.ToString()
+                        ValidIssuer = tool.ClientId.ToString()
                     });
 
                     if (!validatedToken.IsValid)

@@ -58,7 +58,7 @@ namespace NP.Lti13Platform
         }
 
         public Uri GetDeepLinkInitiationUrl(
-            Client client,
+            Tool tool,
             Deployment deployment,
             Context context,
             string userId,
@@ -70,13 +70,13 @@ namespace NP.Lti13Platform
             double? width = default,
             string? locale = default)
         {
-            var builder = new UriBuilder(client.OidcInitiationUrl);
+            var builder = new UriBuilder(tool.OidcInitiationUrl);
 
             var query = HttpUtility.ParseQueryString(builder.Query);
             query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
-            query.Add("target_link_uri", client.DeepLinkUrl);
-            query.Add("client_id", client.Id.ToString());
+            query.Add("target_link_uri", tool.DeepLinkUrl);
+            query.Add("client_id", tool.ClientId.ToString());
             query.Add("lti_message_hint", $"{Lti13MessageType.LtiDeepLinkingRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale)}!{context.Id},{Base64Encode(title)},{Base64Encode(text)},{Base64Encode(data)}");
             query.Add("lti_deployment_id", deployment.Id.ToString());
             builder.Query = query.ToString();
@@ -85,7 +85,7 @@ namespace NP.Lti13Platform
         }
 
         public Uri GetResourceLinkInitiationUrl(
-            Client client,
+            Tool tool,
             Deployment deployment,
             LtiResourceLinkContentItem resourceLink,
             string userId,
@@ -95,13 +95,13 @@ namespace NP.Lti13Platform
             string? locale = default,
             string? returnUrl = default)
         {
-            var builder = new UriBuilder(client.OidcInitiationUrl);
+            var builder = new UriBuilder(tool.OidcInitiationUrl);
 
             var query = HttpUtility.ParseQueryString(builder.Query);
             query.Add("iss", config.CurrentValue.Issuer);
             query.Add("login_hint", userId);
-            query.Add("target_link_uri", GetResourceLinkUrl(resourceLink, client));
-            query.Add("client_id", client.Id.ToString());
+            query.Add("target_link_uri", GetResourceLinkUrl(resourceLink, tool));
+            query.Add("client_id", tool.ClientId.ToString());
             query.Add("lti_message_hint", $"{Lti13MessageType.LtiResourceLinkRequest}!{CreateLaunchPresentationHint(documentTarget, height, width, locale, returnUrl)}!{deployment.Id},{resourceLink.Id}");
             query.Add("lti_deployment_id", deployment.Id.ToString());
             builder.Query = query.ToString();
@@ -109,7 +109,7 @@ namespace NP.Lti13Platform
             return builder.Uri;
         }
 
-        public async Task<(ILti13Message?, Context?, Guid?)> ParseResourceLinkRequestHintAsync(Client client, string hint)
+        public async Task<(ILti13Message?, Context?, Guid?)> ParseResourceLinkRequestHintAsync(Tool tool, string hint)
         {
             if (hint.Split(',') is not [var deploymentId, var resourceLinkId])
             {
@@ -131,7 +131,7 @@ namespace NP.Lti13Platform
             return (new LtiResourceLinkRequestMessage
             {
                 Resource_Link_Id = resourceLink.Id.ToString(),
-                Target_Link_Uri = GetResourceLinkUrl(resourceLink, client),
+                Target_Link_Uri = GetResourceLinkUrl(resourceLink, tool),
                 Resource_Link_Description = resourceLink.Text,
                 Resource_Link_Title = resourceLink.Title
             },
@@ -139,7 +139,7 @@ namespace NP.Lti13Platform
             Guid.Parse(resourceLinkId));
         }
 
-        private string GetResourceLinkUrl(LtiResourceLinkContentItem resourceLink, Client client) => string.IsNullOrWhiteSpace(resourceLink.Url) ? client.LaunchUrl : resourceLink.Url!;
+        private string GetResourceLinkUrl(LtiResourceLinkContentItem resourceLink, Tool tool) => string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url!;
 
         public async Task<(ILti13Message?, Context?, Guid?)> ParseDeepLinkRequestHintAsync(string hint)
         {
@@ -196,13 +196,13 @@ namespace NP.Lti13Platform
 
     public interface IDataService
     {
-        Task<Client?> GetClientAsync(Guid clientId);
+        Task<Tool?> GetToolAsync(Guid clientId);
         Task<Deployment?> GetDeploymentAsync(Guid deploymentId);
         Task<Context?> GetContextAsync(Guid contextId);
 
-        Task<IEnumerable<string>> GetRolesAsync(string userId, Client client, Context? context);
-        Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Client client, Context? context);
-        Task<Lti13OpenIdUser?> GetUserAsync(Client client, string userId);
+        Task<IEnumerable<string>> GetRolesAsync(string userId, Tool tool, Context? context);
+        Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Tool tool, Context? context);
+        Task<Lti13OpenIdUser?> GetUserAsync(Tool tool, string userId);
 
         Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
         Task<T?> GetContentItemAsync<T>(Guid contentItemId) where T : ContentItem;

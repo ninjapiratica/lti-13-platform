@@ -1,8 +1,8 @@
 ﻿namespace NP.Lti13Platform.Models
 {
-    public class Client
+    public class Tool
     {
-        public required Guid Id { get; set; }
+        public required Guid ClientId { get; set; }
 
         public required string OidcInitiationUrl { get; set; }
 
