@@ -10,9 +10,9 @@ namespace NP.Lti13PlatformExample.Controllers
 
         public async Task<IResult> Index()
         {
-            var tool = await dataService.GetToolAsync(new Guid());
-            var deployment = await dataService.GetDeploymentAsync(new Guid());
-            var context = await dataService.GetContextAsync(new Guid());
+            var tool = await dataService.GetToolAsync(new Guid().ToString());
+            var deployment = await dataService.GetDeploymentAsync(new Guid().ToString());
+            var context = await dataService.GetContextAsync(new Guid().ToString());
             var userId = "asdf";
             var title = "TITLE";
             var text = "TEXT";
@@ -22,7 +22,7 @@ namespace NP.Lti13PlatformExample.Controllers
             var width = 250;
             var locale = "en-US";
 
-            var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(new Guid());
+            var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(new Guid().ToString());
 
             return Results.Ok(new
             {

@@ -2,9 +2,7 @@
 {
     public class Result
     {
-        public Guid Id { get; set; }
-
-        public Guid LineItemId { get; set; }
+        public required string LineItemId { get; set; }
 
         public required string UserId { get; set; }
 

@@ -2,7 +2,7 @@
 {
     public class Tool
     {
-        public required Guid ClientId { get; set; }
+        public required string ClientId { get; set; }
 
         public required string OidcInitiationUrl { get; set; }
 

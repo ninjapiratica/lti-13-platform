@@ -55,7 +55,7 @@ namespace NP.Lti13Platform
 
         public Lti13PlatformClaim? PlatformClaim { get; set; }
 
-        public IDictionary<(Guid? ClientId, string ContentItemType), Type> ContentItemTypes { get; set; } = new ContentItemDictionary();
+        public IDictionary<(string? ClientId, string ContentItemType), Type> ContentItemTypes { get; set; } = new ContentItemDictionary();
 
         public void AddDefaultContentItemMapping()
         {

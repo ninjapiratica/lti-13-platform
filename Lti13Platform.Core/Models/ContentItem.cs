@@ -4,17 +4,17 @@ using System.Text.Json;
 
 namespace NP.Lti13Platform.Models
 {
-    public class ContentItemDictionary() : IDictionary<(Guid?, string), Type>
+    public class ContentItemDictionary() : IDictionary<(string?, string), Type>
     {
-        private readonly IDictionary<(Guid?, string), Type> _items = new Dictionary<(Guid?, string), Type>();
+        private readonly IDictionary<(string?, string), Type> _items = new Dictionary<(string?, string), Type>();
 
-        public Type this[(Guid?, string) key]
+        public Type this[(string?, string) key]
         {
             get => _items.TryGetValue(key, out Type? value) ? value : key.Item1 != null && _items.TryGetValue((null, key.Item2), out value) ? value : typeof(DefaultContentItem);
             set => _items[key] = value;
         }
 
-        public ICollection<(Guid?, string)> Keys => _items.Keys;
+        public ICollection<(string?, string)> Keys => _items.Keys;
 
         public ICollection<Type> Values => _items.Values;
 
@@ -22,25 +22,25 @@ namespace NP.Lti13Platform.Models
 
         public bool IsReadOnly => _items.IsReadOnly;
 
-        public void Add((Guid?, string) key, Type value) => _items[key] = value;
+        public void Add((string?, string) key, Type value) => _items[key] = value;
 
-        public void Add(KeyValuePair<(Guid?, string), Type> item) => _items[item.Key] = item.Value;
+        public void Add(KeyValuePair<(string?, string), Type> item) => _items[item.Key] = item.Value;
 
         public void Clear() => _items.Clear();
 
-        public bool Contains(KeyValuePair<(Guid?, string), Type> item) => _items.Contains(item);
+        public bool Contains(KeyValuePair<(string?, string), Type> item) => _items.Contains(item);
 
-        public bool ContainsKey((Guid?, string) key) => _items.ContainsKey(key);
+        public bool ContainsKey((string?, string) key) => _items.ContainsKey(key);
 
-        public void CopyTo(KeyValuePair<(Guid?, string), Type>[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+        public void CopyTo(KeyValuePair<(string?, string), Type>[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
 
-        public IEnumerator<KeyValuePair<(Guid?, string), Type>> GetEnumerator() => _items.GetEnumerator();
+        public IEnumerator<KeyValuePair<(string?, string), Type>> GetEnumerator() => _items.GetEnumerator();
 
-        public bool Remove((Guid?, string) key) => _items.Remove(key);
+        public bool Remove((string?, string) key) => _items.Remove(key);
 
-        public bool Remove(KeyValuePair<(Guid?, string), Type> item) => _items.Remove(item.Key);
+        public bool Remove(KeyValuePair<(string?, string), Type> item) => _items.Remove(item.Key);
 
-        public bool TryGetValue((Guid?, string) key, [MaybeNullWhen(false)] out Type value)
+        public bool TryGetValue((string?, string) key, [MaybeNullWhen(false)] out Type value)
         {
             value = this[key];
             return true;
@@ -60,10 +60,10 @@ namespace NP.Lti13Platform.Models
 
     public abstract class ContentItem
     {
-        public required Guid Id { get; set; }
+        public required string Id { get; set; }
         public required string Type { get; set; }
-        public required Guid DeploymentId { get; set; }
-        public Guid? ContextId { get; set; }
+        public required string DeploymentId { get; set; }
+        public string? ContextId { get; set; }
     }
 
     public class LinkContentItem : ContentItem

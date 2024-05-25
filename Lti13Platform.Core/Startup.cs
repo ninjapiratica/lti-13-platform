@@ -101,12 +101,12 @@ namespace NP.Lti13Platform
 
                     var jwt = new JsonWebToken(request.Jwt);
 
-                    if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim) || Guid.TryParse(deploymentIdClaim.Value, out var deploymentId))
+                    if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
                     {
                         return Results.BadRequest("BAD DEPLOYMENT ID");
                     }
 
-                    var deployment = await dataService.GetDeploymentAsync(deploymentId);
+                    var deployment = await dataService.GetDeploymentAsync(deploymentIdClaim.Value);
                     if (deployment == null)
                     {
                         return Results.BadRequest("BAD DEPLOYMENT ID");
@@ -157,9 +157,9 @@ namespace NP.Lti13Platform
                                 var type = property.GetRawText();
                                 var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
-                                contentItem.Id = Guid.NewGuid();
-                                contentItem.DeploymentId = deploymentId;
-                                contentItem.ContextId = Guid.TryParse(dataParts[0], out var contextId) ? contextId : null;
+                                contentItem.Id = Guid.NewGuid().ToString();
+                                contentItem.DeploymentId = deployment.Id;
+                                contentItem.ContextId = dataParts[0];
 
                                 return contentItem;
                             })
@@ -188,7 +188,7 @@ namespace NP.Lti13Platform
                             .Where(i => i.LineItem != null)
                             .Select(i => dataService.SaveLineItemAsync(new LineItem
                             {
-                                Id = Guid.NewGuid(),
+                                Id = Guid.NewGuid().ToString(),
                                 Label = i.LineItem!.Label ?? i.Title ?? i.Type,
                                 ScoreMaximum = i.LineItem.ScoreMaximum,
                                 GradesReleased = i.LineItem.GradesReleased,
@@ -242,20 +242,17 @@ namespace NP.Lti13Platform
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_TYPE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    IEnumerable<string> scopes;
                     if (string.IsNullOrWhiteSpace(request.Scope))
                     {
                         return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                     }
-                    else
-                    {
-                        scopes = HttpUtility.UrlDecode(request.Scope).Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                            .Intersect(SCOPES);
 
-                        if (!scopes.Any())
-                        {
-                            return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
-                        }
+                    var scopes = HttpUtility.UrlDecode(request.Scope).Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                        .Intersect(SCOPES);
+
+                    if (!scopes.Any())
+                    {
+                        return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Client_Assertion))
@@ -265,18 +262,15 @@ namespace NP.Lti13Platform
 
                     var jwt = new JsonWebToken(request.Client_Assertion);
 
-                    Tool? tool;
-                    if (jwt.Issuer != jwt.Subject || !Guid.TryParse(jwt.Issuer, out var issuer))
+                    if (jwt.Issuer != jwt.Subject)
                     {
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                     }
-                    else
+
+                    var tool = await dataService.GetToolAsync(jwt.Issuer);
+                    if (tool?.Jwks == null)
                     {
-                        tool = await dataService.GetToolAsync(issuer);
-                        if (tool?.Jwks == null)
-                        {
-                            return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
-                        }
+                        return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                     }
 
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
@@ -327,7 +321,7 @@ namespace NP.Lti13Platform
                 .DisableAntiforgery();
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, string? resource_id, Guid? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
                 {
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
@@ -380,7 +374,7 @@ namespace NP.Lti13Platform
                 });
 
             app.MapPost(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, LineItemRequest request) =>
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -428,16 +422,16 @@ namespace NP.Lti13Platform
                         });
                     }
 
-                    if (request.ResourceLinkId.HasValue)
+                    if (!string.IsNullOrWhiteSpace(request.ResourceLinkId))
                     {
-                        var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(request.ResourceLinkId.GetValueOrDefault());
+                        var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(request.ResourceLinkId);
                         if (resourceLink?.ContextId != contextId)
                         {
                             return Results.NotFound();
                         }
                     }
 
-                    var lineItemId = Guid.NewGuid();
+                    var lineItemId = Guid.NewGuid().ToString();
                     await dataService.SaveLineItemAsync(new LineItem
                     {
                         Id = lineItemId,
@@ -473,7 +467,7 @@ namespace NP.Lti13Platform
                 .DisableAntiforgery();
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, Guid lineItemId) =>
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId) =>
                 {
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
@@ -507,7 +501,7 @@ namespace NP.Lti13Platform
                 });
 
             app.MapPut(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, Guid lineItemId, LineItemRequest request) =>
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -564,7 +558,7 @@ namespace NP.Lti13Platform
                         });
                     }
 
-                    if (request.ResourceLinkId.HasValue && request.ResourceLinkId != lineItem.ResourceLinkId)
+                    if (!string.IsNullOrWhiteSpace(request.ResourceLinkId) && request.ResourceLinkId != lineItem.ResourceLinkId)
                     {
                         return Results.BadRequest(new
                         {
@@ -606,7 +600,7 @@ namespace NP.Lti13Platform
                 .DisableAntiforgery();
 
             app.MapDelete(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (IDataService dataService, Guid contextId, Guid lineItemId) =>
+                async (IDataService dataService, string contextId, string lineItemId) =>
                 {
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
@@ -632,7 +626,7 @@ namespace NP.Lti13Platform
                 .DisableAntiforgery();
 
             app.MapGet($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/results",
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Guid contextId, Guid lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
                 {
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
@@ -687,7 +681,7 @@ namespace NP.Lti13Platform
                 });
 
             app.MapPost($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/scores",
-                async (IDataService dataService, Guid contextId, Guid lineItemId, ScoreRequest request) =>
+                async (IDataService dataService, string contextId, string lineItemId, ScoreRequest request) =>
                 {
                     const string RESULT_TOO_EARLY = "startDateTime";
                     const string RESULT_TOO_EARLY_DESCRIPTION = "lineItem startDateTime is in the future";
@@ -738,7 +732,6 @@ namespace NP.Lti13Platform
                         isNew = true;
                         result = new Result
                         {
-                            Id = Guid.NewGuid(),
                             LineItemId = lineItemId,
                             UserId = request.UserId
                         };
@@ -778,7 +771,7 @@ namespace NP.Lti13Platform
 
     internal record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, string? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
 
-    internal record LineItemRequest(decimal ScoreMaximum, string Label, Guid? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTime? StartDateTime, DateTime? EndDateTime);
+    internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTime? StartDateTime, DateTime? EndDateTime);
 
     internal record LineItemPutRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId);
 

@@ -2,8 +2,8 @@
 {
     public class Deployment
     {
-        public required Guid Id { get; set; }
+        public required string Id { get; set; }
 
-        public required Guid ClientId { get; set; }
+        public required string ClientId { get; set; }
     }
 }

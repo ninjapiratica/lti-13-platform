@@ -21,7 +21,7 @@
         public string? Phone_Number { get; set; }
         public bool? Phone_Number_Verified { get; set; }
         public AddressClaim? Address { get; set; }
-        public string? Updated_At { get; set; } // Convert to UNIX timestamp
+        public long? Updated_At { get; set; } // Convert to UNIX timestamp
 
         public class AddressClaim
         {

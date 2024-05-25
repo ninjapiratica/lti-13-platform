@@ -2,13 +2,13 @@
 {
     public class LineItem
     {
-        public required Guid Id { get; set; }
+        public required string Id { get; set; }
 
         public required decimal ScoreMaximum { get; set; }
 
         public required string Label { get; set; }
 
-        public Guid? ResourceLinkId { get; set; }
+        public string? ResourceLinkId { get; set; }
 
         public string? ResourceId { get; set; }
 

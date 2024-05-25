@@ -8,9 +8,9 @@ namespace NP.Lti13Platform.Models
         /// Max Length 255 characters
         /// Case sensitive
         /// </summary>
-        public required Guid Id { get; set; }
+        public required string Id { get; set; }
 
-        public required Guid DeploymentId { get; set; }
+        public required string DeploymentId { get; set; }
 
         public string? Label { get; set; }
 

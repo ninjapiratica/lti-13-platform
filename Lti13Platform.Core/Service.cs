@@ -29,7 +29,7 @@ namespace NP.Lti13Platform
         /// <returns></returns>
         public IDictionary<string, object> GetClaims(
             Lti13MessageType messageType,
-            Guid deploymentId,
+            string deploymentId,
             ILti13Message message,
             Lti13RolesClaim roles,
             Context? context = null,
@@ -109,20 +109,20 @@ namespace NP.Lti13Platform
             return builder.Uri;
         }
 
-        public async Task<(ILti13Message?, Context?, Guid?)> ParseResourceLinkRequestHintAsync(Tool tool, string hint)
+        public async Task<(ILti13Message?, Context?, string?)> ParseResourceLinkRequestHintAsync(Tool tool, string hint)
         {
             if (hint.Split(',') is not [var deploymentId, var resourceLinkId])
             {
                 return (null, null, null);
             }
 
-            var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(Guid.Parse(resourceLinkId));
+            var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(resourceLinkId);
             if (resourceLink == null)
             {
                 return (null, null, null);
             }
 
-            var context = await dataService.GetContextAsync(resourceLink.ContextId.GetValueOrDefault());
+            var context = await dataService.GetContextAsync(resourceLink.ContextId);
             if (context == null)
             {
                 return (null, null, null);
@@ -136,19 +136,19 @@ namespace NP.Lti13Platform
                 Resource_Link_Title = resourceLink.Title
             },
             context,
-            Guid.Parse(resourceLinkId));
+            resourceLinkId);
         }
 
         private string GetResourceLinkUrl(LtiResourceLinkContentItem resourceLink, Tool tool) => string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url!;
 
-        public async Task<(ILti13Message?, Context?, Guid?)> ParseDeepLinkRequestHintAsync(string hint)
+        public async Task<(ILti13Message?, Context?, string?)> ParseDeepLinkRequestHintAsync(string hint)
         {
             if (hint.Split(',', 4) is not [var contextId, var title, var text, var data])
             {
                 return (null, null, null);
             }
 
-            var context = Guid.TryParse(contextId, out var resourceId) ? await dataService.GetContextAsync(resourceId) : null;
+            var context = await dataService.GetContextAsync(contextId);
 
             return (new LtiDeepLinkingRequestMessage
             {
@@ -196,27 +196,27 @@ namespace NP.Lti13Platform
 
     public interface IDataService
     {
-        Task<Tool?> GetToolAsync(Guid clientId);
-        Task<Deployment?> GetDeploymentAsync(Guid deploymentId);
-        Task<Context?> GetContextAsync(Guid contextId);
+        Task<Tool?> GetToolAsync(string clientId);
+        Task<Deployment?> GetDeploymentAsync(string deploymentId);
+        Task<Context?> GetContextAsync(string contextId);
 
         Task<IEnumerable<string>> GetRolesAsync(string userId, Tool tool, Context? context);
         Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Tool tool, Context? context);
         Task<Lti13OpenIdUser?> GetUserAsync(Tool tool, string userId);
 
         Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems);
-        Task<T?> GetContentItemAsync<T>(Guid contentItemId) where T : ContentItem;
+        Task<T?> GetContentItemAsync<T>(string contentItemId) where T : ContentItem;
 
         Task<ServiceToken?> GetServiceTokenRequestAsync(string id);
         Task SaveServiceTokenRequestAsync(ServiceToken serviceToken);
 
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync();
         Task<SecurityKey> GetPrivateKeyAsync();
-        Task<PartialList<LineItem>> GetLineItemsAsync(Guid contextId, int pageIndex, int limit, string? resourceId, Guid? resourceLinkId, string? tag);
+        Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag);
         Task SaveLineItemAsync(LineItem lineItem);
-        Task<LineItem?> GetLineItemAsync(Guid lineItemId);
-        Task DeleteLineItemAsync(Guid lineItemId);
-        Task<PartialList<Result>> GetLineItemResultsAsync(Guid contextId, Guid lineItemId, int pageIndex, int limit, string? userId);
+        Task<LineItem?> GetLineItemAsync(string lineItemId);
+        Task DeleteLineItemAsync(string lineItemId);
+        Task<PartialList<Result>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int limit, string? userId);
         Task SaveLineItemResultAsync(Result result);
         // TODO: Figure out custom
     }
@@ -368,12 +368,12 @@ namespace NP.Lti13Platform
     public class Lti13AgsEndpointClaim(LinkGenerator linkGenerator, HttpContext httpContext) : ILti13Claim
     {
         public IEnumerable<string> Scope { get; set; } = [];
-        public Guid? ContextId { get; set; }
-        public Guid? LineItemId { get; set; }
+        public string? ContextId { get; set; }
+        public string? LineItemId { get; set; }
 
         public IDictionary<string, object> GetClaims()
         {
-            if (Scope.Any() && ContextId.HasValue)
+            if (Scope.Any() && !string.IsNullOrWhiteSpace(ContextId))
             {
                 var dict = new Dictionary<string, object>
                 {
@@ -382,12 +382,12 @@ namespace NP.Lti13Platform
 
                 if (Scope.Intersect([]).Any())
                 {
-                    dict.Add("lineitems", linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId = ContextId.Value })!);
+                    dict.Add("lineitems", linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId = ContextId })!);
                 }
 
-                if (LineItemId.HasValue && Scope.Intersect([]).Any())
+                if (!string.IsNullOrWhiteSpace(LineItemId) && Scope.Intersect([]).Any())
                 {
-                    dict.Add("lineitem", linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId = ContextId.Value, lineItemId = LineItemId.Value })!);
+                    dict.Add("lineitem", linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId = ContextId, lineItemId = LineItemId })!);
                 }
 
                 return new Dictionary<string, object> { { "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint", dict } };

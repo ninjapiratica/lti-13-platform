@@ -77,29 +77,27 @@ namespace NP.Lti13Platform
                 return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LOGIN_HINT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
             }
 
-            Tool? tool;
-            if (string.IsNullOrWhiteSpace(request.Client_Id) || !Guid.TryParse(request.Client_Id, out var clientId))
+            if (string.IsNullOrWhiteSpace(request.Client_Id))
             {
                 return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
-            }
-            else
-            {
-                tool = await dataService.GetToolAsync(clientId);
-                if (tool == null)
-                {
-                    return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
-                }
-
-                if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
-                {
-                    return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
-                }
             }
 
             if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint) ||
                 request.Lti_Message_Hint.Split('!', 3) is not [var messageTypeHint, var launchPresentationHint, var messageHint])
             {
                 return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = UNAUTHORIZED_CLIENT, Error_Uri = LTI_SPEC_URI });
+            }
+
+            var tool = await dataService.GetToolAsync(request.Client_Id);
+            
+            if (tool == null)
+            {
+                return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
+            }
+
+            if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
+            {
+                return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
             }
 
             var userId = request.Login_Hint;
@@ -112,7 +110,7 @@ namespace NP.Lti13Platform
 
             _ = Enum.TryParse(messageTypeHint, out Lti13MessageType messageType);
 
-            (ILti13Message? ltiMessage, Context? context, Guid? resourceLinkId) = messageType switch
+            (ILti13Message? ltiMessage, Context? context, string? resourceLinkId) = messageType switch
             {
                 Lti13MessageType.LtiResourceLinkRequest => await service.ParseResourceLinkRequestHintAsync(tool, messageHint),
                 Lti13MessageType.LtiDeepLinkingRequest => await service.ParseDeepLinkRequestHintAsync(messageHint),
