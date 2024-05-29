@@ -10,13 +10,10 @@ namespace NP.Lti13PlatformExample.Controllers
 
         public async Task<IResult> Index()
         {
-            var tool = await dataService.GetToolAsync(new Guid().ToString());
-            var deployment = await dataService.GetDeploymentAsync(new Guid().ToString());
+            var tool = await dataService.GetToolAsync("asdf");
+            var deployment = await dataService.GetDeploymentAsync("asdf");
             var context = await dataService.GetContextAsync(new Guid().ToString());
             var userId = "asdf";
-            var title = "TITLE";
-            var text = "TEXT";
-            var data = "DATA";
             var documentTarget = Lti13PresentationTargetDocuments.Window;
             var height = 200;
             var width = 250;
@@ -26,8 +23,8 @@ namespace NP.Lti13PlatformExample.Controllers
 
             return Results.Ok(new
             {
-                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!, context!, userId, title, text, data, documentTarget, height, width, locale),
-                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, deployment!, resourceLink!, userId, documentTarget, height, width, locale) : null
+                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, null, new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
+                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, resourceLink, userId, new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }) : null,
             });
         }
     }

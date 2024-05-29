@@ -14,7 +14,6 @@ builder.Services.AddLti13Platform(config =>
     config.DeepLink.AcceptMultiple = true;
     config.DeepLink.AcceptLineItem = true;
     config.DeepLink.AutoCreate = true;
-    config.DeepLink.ReturnUrl = "https://05e4-2601-1c1-8400-cd97-00-1005.ngrok-free.app/lti13/deeplink"; // todo: auto-set this from uselti13platform
     config.TokenAudience = "https://05e4-2601-1c1-8400-cd97-00-1005.ngrok-free.app/lti13/token";
 });
 builder.Services.AddSingleton<IDataService, DataService>();
@@ -39,6 +38,8 @@ app.UseAuthorization();
 
 app.UseLti13Platform();
 
+app.Map("/test/{x?}", (int? x) => x);
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
@@ -51,20 +52,20 @@ public class DataService : IDataService
 
     public Task<Tool?> GetToolAsync(string clientId)
     {
-        return Task.FromResult<Tool?>(new Tool { ClientId = clientId, OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/sa93b815340ebf1f01ddb17b76352fd2b" });
+        return Task.FromResult<Tool?>(new Tool { ClientId = clientId, OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d", UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true } });
     }
 
     public Task<Context?> GetContextAsync(string contextId)
     {
-        return Task.FromResult<Context?>(new Context { Id = contextId, DeploymentId = new Guid().ToString(), Label = "asdf_label", Title = "asdf_title", Types = [] });
+        return Task.FromResult<Context?>(new Context { Id = contextId, DeploymentId = "asdf", Label = "asdf_label", Title = "asdf_title", Types = [Lti13ContextTypes.CourseOffering] });
     }
 
     public Task<Deployment?> GetDeploymentAsync(string deploymentId)
     {
-        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ClientId = new Guid().ToString() });
+        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ClientId = "asdf" });
     }
 
-    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Tool tool, Context? context)
+    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Context? context)
     {
         return Task.FromResult<IEnumerable<string>>([]);
     }
@@ -75,14 +76,14 @@ public class DataService : IDataService
         return Task.FromResult<LtiResourceLinkContentItem?>(contentItem);
     }
 
-    public Task<IEnumerable<string>> GetRolesAsync(string userId, Tool tool, Context? context)
+    public Task<IEnumerable<string>> GetRolesAsync(string userId, Context? context)
     {
         return Task.FromResult<IEnumerable<string>>([]);
     }
 
-    public Task<Lti13OpenIdUser?> GetUserAsync(Tool tool, string userId)
+    public Task<User?> GetUserAsync(string userId)
     {
-        return Task.FromResult<Lti13OpenIdUser?>(new Lti13OpenIdUser { });
+        return Task.FromResult<User?>(new User { Id = userId, Name = "name", FamilyName = "familyname", GivenName = "givenname", Address = new Address { Id = "addressid", Country = "country" }, Email = "email@email.com" });
     }
 
     private List<ContentItem> _contentItems = [];
@@ -179,7 +180,7 @@ public class DataService : IDataService
 
     public Task<T?> GetContentItemAsync<T>(string contentItemId) where T : ContentItem
     {
-        throw new NotImplementedException();
+        return Task.FromResult(_contentItems.FirstOrDefault(c => c.Id == contentItemId) as T);
     }
 }
 

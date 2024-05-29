@@ -28,6 +28,7 @@ namespace NP.Lti13Platform
         public static string GET_LINE_ITEMS = "GET_LINE_ITEMS";
         public static string GET_LINE_ITEM = "GET_LINE_ITEM";
         public static string GET_LINE_ITEM_RESULTS = "GET_LINE_ITEM_RESULTS";
+        public static string DEEP_LINKING_RESPONSE = "DEEP_LINKING_RESPONSE";
     }
 
     public static class Startup
@@ -91,7 +92,7 @@ namespace NP.Lti13Platform
                 async ([FromForm] AuthenticationRequest request, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, Service service, IDataService dataService) => await AuthenticationHandler.HandleAsync(linkGenerator, httpContext, config, service, dataService, request))
                 .DisableAntiforgery();
 
-            app.MapPost(config.DeepLinkResponseUrl,
+            app.MapPost(config.DeepLinkingResponseUrl,
                 async ([FromForm] DeepLinkResponseRequest request, IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IServiceProvider serviceProvider) =>
                 {
                     if (string.IsNullOrWhiteSpace(request.Jwt))
@@ -152,9 +153,7 @@ namespace NP.Lti13Platform
                         ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
                             .Select(x =>
                             {
-                                var document = JsonDocument.Parse(x.Value);
-                                var property = document.RootElement.GetProperty("type");
-                                var type = property.GetRawText();
+                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetRawText();
                                 var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
                                 contentItem.Id = Guid.NewGuid().ToString();
@@ -204,6 +203,7 @@ namespace NP.Lti13Platform
 
                     return await serviceProvider.GetRequiredService<IDeepLinkContentHandler>().HandleAsync(response);
                 })
+                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                 .DisableAntiforgery();
 
             app.MapPost(config.TokenUrl,

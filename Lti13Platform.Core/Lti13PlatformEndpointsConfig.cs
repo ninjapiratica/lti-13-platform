@@ -11,9 +11,10 @@
 
         /// <summary>
         /// Endpoint for the response of LTI 1.3 deep link messages.
-        /// Default value is "/lti13/deeplink".
+        /// Must include route parameter for {contextId?}.
+        /// Default value is "/lti13/deeplinking/{contextId?}".
         /// </summary>
-        public string DeepLinkResponseUrl { get; set; } = "/lti13/deeplink";
+        public string DeepLinkingResponseUrl { get; set; } = "/lti13/deeplinking/{contextId?}";
 
         /// <summary>
         /// Endpoint for getting a set of public JWKs.
