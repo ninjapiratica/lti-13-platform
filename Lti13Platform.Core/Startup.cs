@@ -25,10 +25,41 @@ namespace NP.Lti13Platform
 {
     internal static class RouteNames
     {
-        public static string GET_LINE_ITEMS = "GET_LINE_ITEMS";
-        public static string GET_LINE_ITEM = "GET_LINE_ITEM";
-        public static string GET_LINE_ITEM_RESULTS = "GET_LINE_ITEM_RESULTS";
-        public static string DEEP_LINKING_RESPONSE = "DEEP_LINKING_RESPONSE";
+        public const string GET_LINE_ITEMS = "GET_LINE_ITEMS";
+        public const string GET_LINE_ITEM = "GET_LINE_ITEM";
+        public const string GET_LINE_ITEM_RESULTS = "GET_LINE_ITEM_RESULTS";
+        public const string DEEP_LINKING_RESPONSE = "DEEP_LINKING_RESPONSE";
+    }
+
+    internal class LtiMessageTypeResolver : DefaultJsonTypeInfoResolver
+    {
+        private static readonly HashSet<Type> derivedTypes = [];
+
+        public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            var jsonTypeInfo = base.GetTypeInfo(type, options);
+
+            var baseType = typeof(LtiMessage);
+            if (jsonTypeInfo.Type == baseType)
+            {
+                jsonTypeInfo.PolymorphismOptions = new JsonPolymorphismOptions
+                {
+                    IgnoreUnrecognizedTypeDiscriminators = true,
+                };
+
+                foreach (var derivedType in derivedTypes)
+                {
+                    jsonTypeInfo.PolymorphismOptions.DerivedTypes.Add(new JsonDerivedType(derivedType));
+                }
+            }
+
+            return jsonTypeInfo;
+        }
+
+        public static void AddDerivedType<T>() where T : LtiMessage
+        {
+            derivedTypes.Add(typeof(T));
+        }
     }
 
     public static class Startup
@@ -56,9 +87,24 @@ namespace NP.Lti13Platform
             services.Configure(configure);
 
             services.AddTransient<Service>();
+            services.AddKeyedTransient(typeof(Startup), (sp, key) => sp.GetRequiredService<ILoggerFactory>().CreateLogger("NP.Lti13Platform"));
+
+            services.AddMessageHandler<DeepLinkingMessageHandler, LtiDeepLinkingMessage>(Lti13MessageType.LtiDeepLinkingRequest);
+            services.AddMessageHandler<ResourceLinkMessageHandler, LtiResourceLinkMessage>(Lti13MessageType.LtiResourceLinkRequest);
 
             services.AddAuthentication()
                 .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
+
+            services.AddHttpContextAccessor();
+
+            return services;
+        }
+
+        public static IServiceCollection AddMessageHandler<T, U>(this IServiceCollection services, string messageType) where T : class, IMessageHandler where U : LtiMessage
+        {
+            services.AddKeyedTransient<IMessageHandler, T>(messageType);
+
+            LtiMessageTypeResolver.AddDerivedType<U>();
 
             return services;
         }
@@ -86,37 +132,47 @@ namespace NP.Lti13Platform
                 });
 
             app.MapGet(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest request, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, Service service, IDataService dataService) => await AuthenticationHandler.HandleAsync(linkGenerator, httpContext, config, service, dataService, request));
+                async ([AsParameters] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, linkGenerator, httpContext, config, dataService, request));
 
             app.MapPost(config.AuthorizationUrl,
-                async ([FromForm] AuthenticationRequest request, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, Service service, IDataService dataService) => await AuthenticationHandler.HandleAsync(linkGenerator, httpContext, config, service, dataService, request))
+                async ([FromForm] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, linkGenerator, httpContext, config, dataService, request))
                 .DisableAntiforgery();
 
             app.MapPost(config.DeepLinkingResponseUrl,
-                async ([FromForm] DeepLinkResponseRequest request, IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IServiceProvider serviceProvider) =>
+                async ([FromForm] DeepLinkResponseRequest request, string? contextId, [FromKeyedServices(typeof(Startup))] ILogger logger, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService, IDeepLinkContentHandler deepLinkContentHandler) =>
                 {
+                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
+                    const string INVALID_CLIENT = "invalid_client";
+                    const string INVALID_REQUEST = "invalid_request";
+                    const string JWT_REQUIRED = "JWT is required";
+                    const string DEPLOYMENT_ID_REQUIRED = "deployment_id is required";
+                    const string CLIENT_ID_REQUIRED = "client_id is required";
+                    const string DEPLOYMENT_ID_INVALID = "deployment_id is invalid";
+                    const string MESSAGE_TYPE_INVALID = "message_type is invalid";
+                    const string VERSION_INVALID = "version is invalid";
+
                     if (string.IsNullOrWhiteSpace(request.Jwt))
                     {
-                        return Results.BadRequest("NO JWT FOUND");
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = JWT_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
                     var jwt = new JsonWebToken(request.Jwt);
 
                     if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
                     {
-                        return Results.BadRequest("BAD DEPLOYMENT ID");
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
                     var deployment = await dataService.GetDeploymentAsync(deploymentIdClaim.Value);
                     if (deployment == null)
                     {
-                        return Results.BadRequest("BAD DEPLOYMENT ID");
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
                     var tool = await dataService.GetToolAsync(deployment.ClientId);
                     if (tool?.Jwks == null)
                     {
-                        return Results.BadRequest("BAD DEPLOYMENT ID");
+                        return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
@@ -128,24 +184,22 @@ namespace NP.Lti13Platform
 
                     if (!validatedToken.IsValid)
                     {
-                        return Results.BadRequest(validatedToken.Exception);
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = validatedToken.Exception.Message, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
                     if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != "LtiDeepLinkingResponse")
                     {
-                        return Results.BadRequest("BAD MESSAGE TYPE");
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = MESSAGE_TYPE_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
                     if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != "1.3.0")
                     {
-                        return Results.BadRequest("BAD VERSION");
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = VERSION_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                     }
-
-                    var dataParts = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value.Split('|', 2) ?? [string.Empty, string.Empty];
 
                     var response = new DeepLinkResponse
                     {
-                        Data = dataParts[1],
+                        Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
                         Message = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/msg")?.Value,
                         Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
                         ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
@@ -158,22 +212,22 @@ namespace NP.Lti13Platform
 
                                 contentItem.Id = Guid.NewGuid().ToString();
                                 contentItem.DeploymentId = deployment.Id;
-                                contentItem.ContextId = dataParts[0];
+                                contentItem.ContextId = contextId;
 
                                 return contentItem;
                             })
+                            .ToList()
                     };
 
-                    // TODO: Figure out logger with minimal api
-                    //if (!string.IsNullOrWhiteSpace(response.Log))
-                    //{
-                    //    logger.LogInformation(response.Log);
-                    //}
+                    if (!string.IsNullOrWhiteSpace(response.Log))
+                    {
+                        logger.LogInformation(response.Log);
+                    }
 
-                    //if (!string.IsNullOrWhiteSpace(response.ErrorLog))
-                    //{
-                    //    logger.LogError(response.ErrorLog);
-                    //}
+                    if (!string.IsNullOrWhiteSpace(response.ErrorLog))
+                    {
+                        logger.LogError(response.ErrorLog);
+                    }
 
                     if (config.CurrentValue.DeepLink.AutoCreate == true)
                     {
@@ -201,7 +255,7 @@ namespace NP.Lti13Platform
                         await Task.WhenAll(saveTasks);
                     }
 
-                    return await serviceProvider.GetRequiredService<IDeepLinkContentHandler>().HandleAsync(response);
+                    return await deepLinkContentHandler.HandleAsync(response);
                 })
                 .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                 .DisableAntiforgery();
@@ -394,32 +448,17 @@ namespace NP.Lti13Platform
 
                     if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_CONTENT_TYPE,
-                            Error_Description = CONTENT_TYPE_REQUIRED,
-                            Error_Uri = CONTENT_TYPE_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_CONTENT_TYPE, Error_Description = CONTENT_TYPE_REQUIRED, Error_Uri = CONTENT_TYPE_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Label))
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_LABEL,
-                            Error_Description = LABEL_REQUIRED,
-                            Error_Uri = LABEL_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_LABEL, Error_Description = LABEL_REQUIRED, Error_Uri = LABEL_SPEC_URI });
                     }
 
                     if (request.ScoreMaximum <= 0)
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_SCORE_MAXIMUM,
-                            Error_Description = SCORE_MAXIMUM_REQUIRED,
-                            Error_Uri = SCORE_MAXIUMUM_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_SCORE_MAXIMUM, Error_Description = SCORE_MAXIMUM_REQUIRED, Error_Uri = SCORE_MAXIUMUM_SPEC_URI });
                     }
 
                     if (!string.IsNullOrWhiteSpace(request.ResourceLinkId))
@@ -530,42 +569,22 @@ namespace NP.Lti13Platform
 
                     if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_CONTENT_TYPE,
-                            Error_Description = CONTENT_TYPE_REQUIRED,
-                            Error_Uri = CONTENT_TYPE_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_CONTENT_TYPE, Error_Description = CONTENT_TYPE_REQUIRED, Error_Uri = CONTENT_TYPE_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Label))
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_LABEL,
-                            Error_Description = LABEL_REQUIRED,
-                            Error_Uri = LABEL_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_LABEL, Error_Description = LABEL_REQUIRED, Error_Uri = LABEL_SPEC_URI });
                     }
 
                     if (request.ScoreMaximum <= 0)
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_SCORE_MAXIMUM,
-                            Error_Description = SCORE_MAXIMUM_REQUIRED,
-                            Error_Uri = SCORE_MAXIUMUM_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_SCORE_MAXIMUM, Error_Description = SCORE_MAXIMUM_REQUIRED, Error_Uri = SCORE_MAXIUMUM_SPEC_URI });
                     }
 
                     if (!string.IsNullOrWhiteSpace(request.ResourceLinkId) && request.ResourceLinkId != lineItem.ResourceLinkId)
                     {
-                        return Results.BadRequest(new
-                        {
-                            Error = INVALID_RESOURCE_LINK_ID,
-                            Error_Description = RESOURCE_LINK_ID_MODIFIED,
-                            Error_Uri = LINE_ITEM_UPDATE_SPEC_URI
-                        });
+                        return Results.BadRequest(new { Error = INVALID_RESOURCE_LINK_ID, Error_Description = RESOURCE_LINK_ID_MODIFIED, Error_Uri = LINE_ITEM_UPDATE_SPEC_URI });
                     }
 
                     lineItem.Label = request.Label;
@@ -794,7 +813,7 @@ namespace NP.Lti13Platform
     internal class LtiServicesAuthHandler(IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) :
         AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
-        public static string SchemeName = "NP.Lti13Platform.Services";
+        public const string SchemeName = "NP.Lti13Platform.Services";
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
@@ -828,18 +847,11 @@ namespace NP.Lti13Platform
 
     public static class Lti13ServiceScopes
     {
-        public static readonly string LineItem = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem";
-        public static readonly string LineItemReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly";
-        public static readonly string ResultReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
-        public static readonly string Score = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
+        public const string LineItem = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem";
+        public const string LineItemReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly";
+        public const string ResultReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
+        public const string Score = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
     }
-
-    public class ServiceToken
-    {
-        public required string Id { get; set; }
-        public required DateTime Expiration { get; set; }
-    }
-
 
     public enum ActivityProgress
     {

@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.Models
 {
@@ -51,118 +53,216 @@ namespace NP.Lti13Platform.Models
 
     public static class ContentItemType
     {
-        public static readonly string Html = "html";
-        public static readonly string Link = "link";
-        public static readonly string LtiResourceLink = "ltiResourceLink";
-        public static readonly string File = "file";
-        public static readonly string Image = "image";
+        public const string Html = "html";
+        public const string Link = "link";
+        public const string LtiResourceLink = "ltiResourceLink";
+        public const string File = "file";
+        public const string Image = "image";
     }
 
-    public abstract class ContentItem
+    [JsonDerivedType(typeof(LinkContentItem))]
+    [JsonDerivedType(typeof(LtiResourceLinkContentItem))]
+    [JsonDerivedType(typeof(FileContentItem))]
+    [JsonDerivedType(typeof(HtmlContentItem))]
+    [JsonDerivedType(typeof(ImageContentItem))]
+    [JsonDerivedType(typeof(DefaultContentItem))]
+    public abstract partial class ContentItem
     {
         public required string Id { get; set; }
-        public required string Type { get; set; }
         public required string DeploymentId { get; set; }
         public string? ContextId { get; set; }
+
+        [JsonPropertyName("type")]
+        public required string Type { get; set; }
     }
 
     public class LinkContentItem : ContentItem
     {
+        [JsonPropertyName("url")]
         public required string Url { get; set; }
+
+        [JsonPropertyName("title")]
         public string? Title { get; set; }
+
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
+
+        [JsonPropertyName("icon")]
         public ContentItemIcon? Icon { get; set; }
+
+        [JsonPropertyName("thumbnail")]
         public ContentItemThumbnail? Thumbnail { get; set; }
+
+        [JsonPropertyName("window")]
         public ContentItemWindow? Window { get; set; }
+
+        [JsonPropertyName("iframe")]
         public LinkIframe? Iframe { get; set; }
+
+        [JsonPropertyName("embed")]
         public LinkEmbed? Embed { get; set; }
 
         public class LinkIframe
         {
+            [JsonPropertyName("width")]
             public int? Width { get; set; }
+
+            [JsonPropertyName("height")]
             public int? Height { get; set; }
+
+            [JsonPropertyName("src")]
             public string? Src { get; set; }
         }
 
         public class LinkEmbed
         {
+            [JsonPropertyName("html")]
             public required string Html { get; set; }
         }
     }
 
     public class LtiResourceLinkContentItem : ContentItem
     {
+        [JsonPropertyName("url")]
         public string? Url { get; set; }
+
+        [JsonPropertyName("title")]
         public string? Title { get; set; }
+
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
+
+        [JsonPropertyName("icon")]
         public ContentItemIcon? Icon { get; set; }
+
+        [JsonPropertyName("thumbnail")]
         public ContentItemThumbnail? Thumbnail { get; set; }
+
+        [JsonPropertyName("window")]
         public ContentItemWindow? Window { get; set; }
+
+        [JsonPropertyName("iframe")]
         public LtiResourceLinkIframe? Iframe { get; set; }
+
+        [JsonPropertyName("custom")]
         public IDictionary<string, string>? Custom { get; set; }
+
+        [JsonPropertyName("lineItem")]
         public LtiResourceLinkLineItem? LineItem { get; set; }
+
+        [JsonPropertyName("available")]
         public LtiResourceLinkAvailable? Available { get; set; }
+
+        [JsonPropertyName("submission")]
         public LtiResourceLinkSubmission? Submission { get; set; }
 
         public class LtiResourceLinkIframe
         {
+            [JsonPropertyName("width")]
             public int? Width { get; set; }
+
+            [JsonPropertyName("height")]
             public int? Height { get; set; }
         }
 
         public class LtiResourceLinkLineItem
         {
+            [JsonPropertyName("label")]
             public string? Label { get; set; }
+
+            [JsonPropertyName("scoreMaximum")]
             public decimal ScoreMaximum { get; set; }
+
+            [JsonPropertyName("resourceId")]
             public string? ResourceId { get; set; }
+
+            [JsonPropertyName("tag")]
             public string? Tag { get; set; }
+
+            [JsonPropertyName("gradesReleased")]
             public bool? GradesReleased { get; set; }
         }
 
         public class LtiResourceLinkAvailable
         {
+            [JsonPropertyName("startDateTime")]
             public DateTime? StartDateTime { get; set; }
+
+            [JsonPropertyName("endDateTime")]
             public DateTime? EndDateTime { get; set; }
         }
 
         public class LtiResourceLinkSubmission
         {
+            [JsonPropertyName("startDateTime")]
             public DateTime? StartDateTime { get; set; }
+
+            [JsonPropertyName("endDateTime")]
             public DateTime? EndDateTime { get; set; }
         }
     }
 
     public class FileContentItem : ContentItem
     {
+        [JsonPropertyName("url")]
         public required string Url { get; set; }
+        
+        [JsonPropertyName("title")]
         public string? Title { get; set; }
+        
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
+        
+        [JsonPropertyName("icon")]
         public ContentItemIcon? Icon { get; set; }
+        
+        [JsonPropertyName("thumbnail")]
         public ContentItemThumbnail? Thumbnail { get; set; }
+        
+        [JsonPropertyName("expiresAt")]
         public DateTime? ExpiresAt { get; set; }
     }
 
     public class HtmlContentItem : ContentItem
     {
+        [JsonPropertyName("html")]
         public required string Html { get; set; }
+
+        [JsonPropertyName("title")]
         public string? Title { get; set; }
+
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
     }
 
     public class ImageContentItem : ContentItem
     {
+        [JsonPropertyName("url")]
         public required string Url { get; set; }
+        
+        [JsonPropertyName("title")]
         public string? Title { get; set; }
+        
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
+        
+        [JsonPropertyName("icon")]
         public ContentItemIcon? Icon { get; set; }
+        
+        [JsonPropertyName("thumbnail")]
         public ContentItemThumbnail? Thumbnail { get; set; }
+        
+        [JsonPropertyName("width")]
         public int? Width { get; set; }
+        
+        [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
 
     public class DefaultContentItem : ContentItem, IDictionary<string, JsonElement>
     {
         private readonly IDictionary<string, JsonElement> _items = new Dictionary<string, JsonElement>();
+        private static readonly string TypePropertyName = typeof(ContentItem).GetProperty(nameof(Type))?.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? string.Empty;
 
         public JsonElement this[string key]
         {
@@ -236,7 +336,7 @@ namespace NP.Lti13Platform.Models
 
         private void SetKnownProperty(string key, JsonElement? value)
         {
-            if (key == nameof(Type))
+            if (key == TypePropertyName)
             {
                 Type = value?.GetString() ?? string.Empty;
             }
@@ -245,23 +345,40 @@ namespace NP.Lti13Platform.Models
 
     public class ContentItemWindow
     {
+        [JsonPropertyName("targetName")]
         public string? TargetName { get; set; }
+        
+        [JsonPropertyName("windowFeatures")]
         public string? WindowFeatures { get; set; }
+        
+        [JsonPropertyName("width")]
         public int? Width { get; set; }
+        
+        [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
 
     public class ContentItemThumbnail
     {
+        [JsonPropertyName("url")]
         public required string Url { get; set; }
+        
+        [JsonPropertyName("width")]
         public int? Width { get; set; }
+        
+        [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
 
     public class ContentItemIcon
     {
+        [JsonPropertyName("url")]
         public required string Url { get; set; }
+        
+        [JsonPropertyName("width")]
         public int? Width { get; set; }
+        
+        [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
 }

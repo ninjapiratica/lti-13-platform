@@ -38,8 +38,6 @@ app.UseAuthorization();
 
 app.UseLti13Platform();
 
-app.Map("/test/{x?}", (int? x) => x);
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
@@ -189,5 +187,26 @@ public class DeepLinkContentHandler : IDeepLinkContentHandler
     public Task<IResult> HandleAsync(DeepLinkResponse response)
     {
         return Task.FromResult(Results.Ok(response));
+    }
+}
+
+public interface IMessageHandler
+{
+    Task Handle();
+}
+
+public class X: IMessageHandler
+{
+    public Task Handle()
+    {
+        return Task.CompletedTask;
+    }
+}
+
+public class Y : IMessageHandler
+{
+    public Task Handle()
+    {
+        return Task.CompletedTask;
     }
 }

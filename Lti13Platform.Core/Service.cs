@@ -17,7 +17,7 @@ namespace NP.Lti13Platform
         public Uri GetResourceLinkInitiationUrl(Tool tool, LtiResourceLinkContentItem resourceLink, string? userId = null, LaunchPresentation? launchPresentation = null)
             => GetUrl(Lti13MessageType.LtiResourceLinkRequest, tool, resourceLink.DeploymentId, string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.OidcInitiationUrl : resourceLink.Url, resourceLink.ContextId, userId, resourceLink.Id, launchPresentation);
 
-        private Uri GetUrl(Lti13MessageType messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? userId = null, string? messageHint = null, LaunchPresentation? launchPresentation = null)
+        public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? userId = null, string? messageHint = null, LaunchPresentation? launchPresentation = null)
         {
             var launchPresentationString = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(launchPresentation)));
 
@@ -36,11 +36,10 @@ namespace NP.Lti13Platform
         }
     }
 
-    public enum Lti13MessageType
+    public static class Lti13MessageType
     {
-        Unknown = 0,
-        LtiResourceLinkRequest = 1,
-        LtiDeepLinkingRequest = 2
+        public const string LtiResourceLinkRequest = "LtiResourceLinkRequest";
+        public const string LtiDeepLinkingRequest = "LtiDeepLinkingRequest";
     }
 
     public interface IDataService
@@ -128,63 +127,63 @@ namespace NP.Lti13Platform
 
     public static class Lti13ContextTypes
     {
-        public static readonly string CourseTemplate = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseTemplate";
-        public static readonly string CourseOffering = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering";
-        public static readonly string CourseSection = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseSection";
-        public static readonly string Group = "http://purl.imsglobal.org/vocab/lis/v2/course#Group";
+        public const string CourseTemplate = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseTemplate";
+        public const string CourseOffering = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering";
+        public const string CourseSection = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseSection";
+        public const string Group = "http://purl.imsglobal.org/vocab/lis/v2/course#Group";
     }
 
     public static class Lti13SystemRoles
     {
         // Core Roles
-        public static readonly string Administrator = "http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator";
-        public static readonly string None = "http://purl.imsglobal.org/vocab/lis/v2/system/person#None";
+        public const string Administrator = "http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator";
+        public const string None = "http://purl.imsglobal.org/vocab/lis/v2/system/person#None";
 
         // Non-Core Roles
-        public static readonly string AccountAdmin = "http://purl.imsglobal.org/vocab/lis/v2/system/person#AccountAdmin";
-        public static readonly string Creator = "http://purl.imsglobal.org/vocab/lis/v2/system/person#Creator";
-        public static readonly string SysAdmin = "http://purl.imsglobal.org/vocab/lis/v2/system/person#SysAdmin";
-        public static readonly string SysSupport = "http://purl.imsglobal.org/vocab/lis/v2/system/person#SysSupport";
-        public static readonly string User = "http://purl.imsglobal.org/vocab/lis/v2/system/person#User";
+        public const string AccountAdmin = "http://purl.imsglobal.org/vocab/lis/v2/system/person#AccountAdmin";
+        public const string Creator = "http://purl.imsglobal.org/vocab/lis/v2/system/person#Creator";
+        public const string SysAdmin = "http://purl.imsglobal.org/vocab/lis/v2/system/person#SysAdmin";
+        public const string SysSupport = "http://purl.imsglobal.org/vocab/lis/v2/system/person#SysSupport";
+        public const string User = "http://purl.imsglobal.org/vocab/lis/v2/system/person#User";
 
         // LTI Launch Only
-        public static readonly string TestUser = "http://purl.imsglobal.org/vocab/lti/system/person#TestUser";
+        public const string TestUser = "http://purl.imsglobal.org/vocab/lti/system/person#TestUser";
     }
 
     public static class Lti13InstitutionRoles
     {
         // Core Roles
-        public static readonly string Administrator = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator";
-        public static readonly string Faculty = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Faculty";
-        public static readonly string Guest = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Guest";
-        public static readonly string None = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#None";
-        public static readonly string Other = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Other";
-        public static readonly string Staff = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Staff";
-        public static readonly string Student = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student";
+        public const string Administrator = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator";
+        public const string Faculty = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Faculty";
+        public const string Guest = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Guest";
+        public const string None = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#None";
+        public const string Other = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Other";
+        public const string Staff = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Staff";
+        public const string Student = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student";
 
         // Non-Core Roles
-        public static readonly string Alumni = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Alumni";
-        public static readonly string Instructor = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor";
-        public static readonly string Learner = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Learner";
-        public static readonly string Member = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Member";
-        public static readonly string Mentor = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Mentor";
-        public static readonly string Observer = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Observer";
-        public static readonly string ProspectiveStudent = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#ProspectiveStudent";
+        public const string Alumni = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Alumni";
+        public const string Instructor = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor";
+        public const string Learner = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Learner";
+        public const string Member = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Member";
+        public const string Mentor = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Mentor";
+        public const string Observer = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Observer";
+        public const string ProspectiveStudent = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#ProspectiveStudent";
     }
 
     public static class Lti13ContextRoles
     {
         // Core Roles
-        public static readonly string Administrator = "http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator";
-        public static readonly string ContentDeveloper = "http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper";
-        public static readonly string Instructor = "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor";
-        public static readonly string Learner = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
-        public static readonly string Mentor = "http://purl.imsglobal.org/vocab/lis/v2/membership#Mentor";
+        public const string Administrator = "http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator";
+        public const string ContentDeveloper = "http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper";
+        public const string Instructor = "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor";
+        public const string Learner = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
+        public const string Mentor = "http://purl.imsglobal.org/vocab/lis/v2/membership#Mentor";
 
         // Non-Core Roles
-        public static readonly string Manager = "http://purl.imsglobal.org/vocab/lis/v2/membership#Manager";
-        public static readonly string Member = "http://purl.imsglobal.org/vocab/lis/v2/membership#Member";
-        public static readonly string Officer = "http://purl.imsglobal.org/vocab/lis/v2/membership#Officer";
+        public const string Manager = "http://purl.imsglobal.org/vocab/lis/v2/membership#Manager";
+        public const string Member = "http://purl.imsglobal.org/vocab/lis/v2/membership#Member";
+        public const string Officer = "http://purl.imsglobal.org/vocab/lis/v2/membership#Officer";
 
         // Sub Roles exist (not currently implemented)
         // https://www.imsglobal.org/spec/lti/v1p3/#context-sub-roles
@@ -195,17 +194,17 @@ namespace NP.Lti13Platform
     /// </summary>
     public static class Lti13DeepLinkingTypes
     {
-        public static readonly string Link = "link";
-        public static readonly string File = "file";
-        public static readonly string Html = "html";
-        public static readonly string LtiResourceLink = "ltiResourceLink";
-        public static readonly string Image = "image";
+        public const string Link = "link";
+        public const string File = "file";
+        public const string Html = "html";
+        public const string LtiResourceLink = "ltiResourceLink";
+        public const string Image = "image";
     }
 
     public static class Lti13PresentationTargetDocuments
     {
-        public static readonly string Embed = "embed";
-        public static readonly string Window = "window";
-        public static readonly string Iframe = "iframe";
+        public const string Embed = "embed";
+        public const string Window = "window";
+        public const string Iframe = "iframe";
     }
 }
