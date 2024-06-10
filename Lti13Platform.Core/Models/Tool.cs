@@ -14,9 +14,11 @@
 
         public Jwks? Jwks { get; set; }
 
-        public IEnumerable<string> Scopes { get; set; } = [];
-
         public required UserPermissions UserPermissions { get; set; }
+
+        public required ServicePermissions ServicePermissions { get; set; }
+
+        public required CustomPermissions CustomPermissions { get; set; }
     }
 
     public class UserPermissions
@@ -46,5 +48,15 @@
         public bool UpdatedAt { get; set; }
         public bool Website { get; set; }
         public bool TimeZone { get; set; }
+    }
+
+    public class ServicePermissions
+    {
+        public IEnumerable<string> Scopes { get; set; } = [];
+    }
+
+    public class CustomPermissions
+    {
+
     }
 }

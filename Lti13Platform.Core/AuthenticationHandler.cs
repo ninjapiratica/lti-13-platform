@@ -125,67 +125,7 @@ namespace NP.Lti13Platform
 
             var launchPresentation = string.IsNullOrWhiteSpace(launchPresentationString) ? null : JsonSerializer.Deserialize<LaunchPresentation>(Convert.FromBase64String(launchPresentationString));
 
-            var roles = context != null ? await dataService.GetRolesAsync(user.Id, context) : [];
-
-            var serviceEndpoints = context == null ? null : new ServiceEndpoints
-            {
-                Scopes = tool.Scopes,
-                LineItemsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId = contextId })
-            };
-
-            var baseLtiMessage = new LtiMessage(messageTypeString, config.CurrentValue.Issuer, user.Id, request.Client_Id, request.Nonce, deploymentId, roles)
-            {
-                ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds),
-
-                Context = context == null ? null : new MessageContext
-                {
-                    Id = contextId,
-                    Label = context.Label,
-                    Title = context.Title,
-                    Types = context.Types
-                },
-
-                // TODO: figure out custom replacements
-                Custom = null,
-
-                LaunchPresentation = string.IsNullOrWhiteSpace(launchPresentationString) ? null : JsonSerializer.Deserialize<LaunchPresentation>(Convert.FromBase64String(launchPresentationString)),
-
-                Platform = config.CurrentValue.Platform,
-
-                RoleScopeMentor = roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null,
-
-                ServiceEndpoints = serviceEndpoints,
-
-                Birthdate = tool.UserPermissions.Birthdate ? user.Birthdate : null,
-                Email = tool.UserPermissions.Email ? user.Email : null,
-                EmailVerified = tool.UserPermissions.EmailVerified ? user.EmailVerified : null,
-                FamilyName = tool.UserPermissions.FamilyName ? user.FamilyName : null,
-                Gender = tool.UserPermissions.Gender ? user.Gender : null,
-                GivenName = tool.UserPermissions.GivenName ? user.GivenName : null,
-                Locale = tool.UserPermissions.Locale ? user.Locale : null,
-                MiddleName = tool.UserPermissions.MiddleName ? user.MiddleName : null,
-                Name = tool.UserPermissions.Name ? user.Name : null,
-                Nickname = tool.UserPermissions.Nickname ? user.Nickname : null,
-                PhoneNumber = tool.UserPermissions.PhoneNumber ? user.PhoneNumber : null,
-                PhoneNumberVerified = tool.UserPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null,
-                Picture = tool.UserPermissions.Picture ? user.Picture : null,
-                PreferredUsername = tool.UserPermissions.PreferredUsername ? user.PreferredUsername : null,
-                Profile = tool.UserPermissions.Profile ? user.Profile : null,
-                UpdatedAt = tool.UserPermissions.UpdatedAt ? user.UpdatedAt : null,
-                Website = tool.UserPermissions.Website ? user.Website : null,
-                TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null,
-                Address = user.Address == null || !tool.UserPermissions.Address ? null : new AddressClaim
-                {
-                    Country = tool.UserPermissions.AddressCountry ? user.Address.Country : null,
-                    Formatted = tool.UserPermissions.AddressFormatted ? user.Address.Formatted : null,
-                    Locality = tool.UserPermissions.AddressLocality ? user.Address.Locality : null,
-                    PostalCode = tool.UserPermissions.AddressPostalCode ? user.Address.PostalCode : null,
-                    Region = tool.UserPermissions.AddressRegion ? user.Address.Region : null,
-                    StreetAddress = tool.UserPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
-                },
-            };
-
-            var ltiMessage = await messageHandler.HandleAsync(baseLtiMessage, tool, deployment, user, context, launchPresentation, messageString);
+            var ltiMessage = await messageHandler.HandleAsync(tool, deployment, user, context, launchPresentation, messageString, request);
 
             var privateKey = await dataService.GetPrivateKeyAsync();
 
@@ -210,96 +150,18 @@ namespace NP.Lti13Platform
 
     public class LtiMessage
     {
-        public LtiMessage(string messageType, string issuer, string subject, string audience, string nonce, string deploymentId, IEnumerable<string> roles)
+        public LtiMessage(string messageType, string issuer, string audience, string nonce, string deploymentId, IEnumerable<string> roles)
         {
             MessageType = messageType;
             Issuer = issuer;
-            Subject = subject;
             Audience = audience;
             Nonce = nonce;
             DeploymentId = deploymentId;
             Roles = roles;
         }
 
-        public LtiMessage(LtiMessage baseLtiMessage)
-        {
-            Issuer = baseLtiMessage.Issuer;
-            Subject = baseLtiMessage.Subject;
-            Audience = baseLtiMessage.Audience;
-            ExpirationDate = baseLtiMessage.ExpirationDate;
-            IssuedDate = baseLtiMessage.IssuedDate;
-            Nonce = baseLtiMessage.Nonce;
-            MessageType = baseLtiMessage.MessageType;
-            DeploymentId = baseLtiMessage.DeploymentId;
-            Roles = baseLtiMessage.Roles.ToList();
-            RoleScopeMentor = baseLtiMessage.RoleScopeMentor?.ToList();
-            Context = baseLtiMessage.Context == null ? null : new MessageContext
-            {
-                Id = baseLtiMessage.Context.Id,
-                Label = baseLtiMessage.Context.Label,
-                Title = baseLtiMessage.Context.Title,
-                Types = baseLtiMessage.Context.Types.ToList()
-            };
-            Platform = baseLtiMessage.Platform == null ? null : new Platform
-            {
-                Guid = baseLtiMessage.Platform.Guid,
-                ContactEmail = baseLtiMessage.Platform.ContactEmail,
-                Description = baseLtiMessage.Platform.Description,
-                Name = baseLtiMessage.Platform.Name,
-                ProductFamilyCode = baseLtiMessage.Platform.ProductFamilyCode,
-                Url = baseLtiMessage.Platform.Url,
-                Version = baseLtiMessage.Platform.Version
-            };
-            LaunchPresentation = baseLtiMessage.LaunchPresentation == null ? null : new LaunchPresentation
-            {
-                DocumentTarget = baseLtiMessage.LaunchPresentation.DocumentTarget,
-                Height = baseLtiMessage.LaunchPresentation.Height,
-                Locale = baseLtiMessage.LaunchPresentation.Locale,
-                ReturnUrl = baseLtiMessage.LaunchPresentation.ReturnUrl,
-                Width = baseLtiMessage.LaunchPresentation.Width
-            };
-            ServiceEndpoints = baseLtiMessage.ServiceEndpoints == null ? null : new ServiceEndpoints
-            {
-                Scopes = baseLtiMessage.ServiceEndpoints.Scopes.ToList(),
-                LineItemsUrl = baseLtiMessage.ServiceEndpoints.LineItemsUrl,
-                LineItemUrl = baseLtiMessage.ServiceEndpoints.LineItemUrl
-            };
-            Custom = baseLtiMessage.Custom?.ToDictionary();
-
-            Name = baseLtiMessage.Name;
-            GivenName = baseLtiMessage.GivenName;
-            FamilyName = baseLtiMessage.FamilyName;
-            MiddleName = baseLtiMessage.MiddleName;
-            Nickname = baseLtiMessage.Nickname;
-            PreferredUsername = baseLtiMessage.PreferredUsername;
-            Profile = baseLtiMessage.Profile;
-            Picture = baseLtiMessage.Picture;
-            Website = baseLtiMessage.Website;
-            Email = baseLtiMessage.Email;
-            EmailVerified = baseLtiMessage.EmailVerified;
-            Gender = baseLtiMessage.Gender;
-            Birthdate = baseLtiMessage.Birthdate;
-            TimeZone = baseLtiMessage.TimeZone;
-            Locale = baseLtiMessage.Locale;
-            PhoneNumber = baseLtiMessage.PhoneNumber;
-            PhoneNumberVerified = baseLtiMessage.PhoneNumberVerified;
-            UpdatedAt = baseLtiMessage.UpdatedAt;
-            Address = baseLtiMessage.Address == null ? null : new AddressClaim
-            {
-                Country = baseLtiMessage.Address.Country,
-                Formatted = baseLtiMessage.Address.Formatted,
-                Locality = baseLtiMessage.Address.Locality,
-                PostalCode = baseLtiMessage.Address.PostalCode,
-                Region = baseLtiMessage.Address.Region,
-                StreetAddress = baseLtiMessage.Address.StreetAddress
-            };
-        }
-
         [JsonPropertyName("iss")]
         public string Issuer { get; set; }
-
-        [JsonPropertyName("sub")]
-        public string Subject { get; set; }
 
         [JsonPropertyName("aud")]
         public string Audience { get; set; }
@@ -347,7 +209,10 @@ namespace NP.Lti13Platform
         public ServiceEndpoints? ServiceEndpoints { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/custom")]
-        public Dictionary<string, string>? Custom { get; set; }
+        public IDictionary<string, string>? Custom { get; set; }
+
+        [JsonPropertyName("sub")]
+        public string? Subject { get; set; }
 
         [JsonPropertyName("name")]
         public string? Name { get; set; }
@@ -408,12 +273,93 @@ namespace NP.Lti13Platform
 
         [JsonPropertyName("updated_at")]
         public long? UpdatedAtUnix => !UpdatedAt.HasValue ? null : new DateTimeOffset(UpdatedAt.Value).ToUnixTimeSeconds();
+
+        public void SetUser(User user, UserPermissions permissions)
+        {
+            if (user == null)
+            {
+                return;
+            }
+
+            Subject = user.Id;
+
+            Address = user.Address == null || !permissions.Address ? null : new AddressClaim
+            {
+                Country = permissions.AddressCountry ? user.Address.Country : null,
+                Formatted = permissions.AddressFormatted ? user.Address.Formatted : null,
+                Locality = permissions.AddressLocality ? user.Address.Locality : null,
+                PostalCode = permissions.AddressPostalCode ? user.Address.PostalCode : null,
+                Region = permissions.AddressRegion ? user.Address.Region : null,
+                StreetAddress = permissions.AddressStreetAddress ? user.Address.StreetAddress : null
+            };
+
+            Birthdate = permissions.Birthdate ? user.Birthdate : null;
+            Email = permissions.Email ? user.Email : null;
+            EmailVerified = permissions.EmailVerified ? user.EmailVerified : null;
+            FamilyName = permissions.FamilyName ? user.FamilyName : null;
+            Gender = permissions.Gender ? user.Gender : null;
+            GivenName = permissions.GivenName ? user.GivenName : null;
+            Locale = permissions.Locale ? user.Locale : null;
+            MiddleName = permissions.MiddleName ? user.MiddleName : null;
+            Name = permissions.Name ? user.Name : null;
+            Nickname = permissions.Nickname ? user.Nickname : null;
+            PhoneNumber = permissions.PhoneNumber ? user.PhoneNumber : null;
+            PhoneNumberVerified = permissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
+            Picture = permissions.Picture ? user.Picture : null;
+            PreferredUsername = permissions.PreferredUsername ? user.PreferredUsername : null;
+            Profile = permissions.Profile ? user.Profile : null;
+            UpdatedAt = permissions.UpdatedAt ? user.UpdatedAt : null;
+            Website = permissions.Website ? user.Website : null;
+            TimeZone = permissions.TimeZone ? user.TimeZone : null;
+        }
+
+        public async Task SetCustomAsync(IDictionary<string, string>? custom, CustomPermissions permissions)
+        {
+            // TODO: Figure out the replacements
+            Custom = custom;
+
+            await Task.CompletedTask;
+        }
+
+        public void SetServiceEndpoints(string? lineItemsUrl, string? lineItemUrl, ServicePermissions permissions)
+        {
+            ServiceEndpoints = !permissions.Scopes.Any() || (string.IsNullOrWhiteSpace(lineItemsUrl) && string.IsNullOrWhiteSpace(lineItemUrl)) ? null : new ServiceEndpoints
+            {
+                Scopes = permissions.Scopes.ToList(),
+                LineItemsUrl = lineItemsUrl,
+                LineItemUrl = lineItemUrl
+            };
+        }
+
+        public void SetLaunchPresentation(LaunchPresentation? launchPresentation)
+        {
+            LaunchPresentation = launchPresentation;
+        }
+
+        public void SetPlatform(Platform? platform)
+        {
+            Platform = platform;
+        }
+
+        public void SetContext(Context? context)
+        {
+            Context = context == null ? null : new MessageContext
+            {
+                Id = context.Id,
+                Label = context.Label,
+                Title = context.Title,
+                Types = context.Types
+            };
+        }
+
+        public void SetRoleScopeMentor(IEnumerable<string>? roleScopeMentor)
+        {
+            RoleScopeMentor = roleScopeMentor?.ToList();
+        }
     }
 
-    internal class LtiResourceLinkMessage : LtiMessage
+    internal class LtiResourceLinkMessage(string issuer, string audience, string nonce, string deploymentId, IEnumerable<string> roles) : LtiMessage(Lti13MessageType.LtiResourceLinkRequest, issuer, audience, nonce, deploymentId, roles)
     {
-        internal LtiResourceLinkMessage(LtiMessage baseLtiMessage) : base(baseLtiMessage) { }
-
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/target_link_uri")]
         public required string TargetLinkUri { get; set; }
 
@@ -423,10 +369,8 @@ namespace NP.Lti13Platform
         //new Claim("https://purl.imsglobal.org/spec/lti/claim/lis", "") // https://www.imsglobal.org/spec/lti/v1p3/#learning-information-services-lis-claim
     }
 
-    internal class LtiDeepLinkingMessage : LtiMessage
+    internal class LtiDeepLinkingMessage(string issuer, string audience, string nonce, string deploymentId, IEnumerable<string> roles) : LtiMessage(Lti13MessageType.LtiDeepLinkingRequest, issuer, audience, nonce, deploymentId, roles)
     {
-        internal LtiDeepLinkingMessage(LtiMessage baseLtiMessage) : base(baseLtiMessage) { }
-
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings")]
         public required DeepLinkSettings DeepLinkSettings { get; set; }
     }
@@ -574,18 +518,21 @@ namespace NP.Lti13Platform
 
     public interface IMessageHandler
     {
-        Task<LtiMessage> HandleAsync(LtiMessage baseLtiMessage, Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message);
+        Task<LtiMessage> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request);
     }
 
-    internal class DeepLinkingMessageHandler(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<Lti13PlatformConfig> config) : IMessageHandler
+    internal class DeepLinkingMessageHandler(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) : IMessageHandler
     {
-        public Task<LtiMessage> HandleAsync(LtiMessage baseLtiMessage, Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message)
+        public async Task<LtiMessage> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request)
         {
             var httpContext = httpContextAccessor.HttpContext!;
             var deepLinkSettings = string.IsNullOrWhiteSpace(message) ? null : JsonSerializer.Deserialize<DeepLinkSettings>(Convert.FromBase64String(message));
 
-            return Task.FromResult<LtiMessage>(new LtiDeepLinkingMessage(baseLtiMessage)
+            var roles = context != null ? await dataService.GetRolesAsync(user.Id, context) : [];
+
+            var ltiMessage = new LtiDeepLinkingMessage(config.CurrentValue.Issuer, tool.ClientId, request.Nonce!, deployment.Id, roles)
             {
+                ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds),
                 DeepLinkSettings = new DeepLinkSettings
                 {
                     AcceptPresentationDocumentTargets = new[] { deepLinkSettings?.AcceptPresentationDocumentTargets, config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets }.FirstOrDefault(x => x != null && x.Any()) ?? [],
@@ -599,13 +546,26 @@ namespace NP.Lti13Platform
                     Text = deepLinkSettings?.Text,
                     Title = deepLinkSettings?.Title,
                 }
-            });
+            };
+
+            ltiMessage.SetContext(context);
+            //ltiMessage.SetCustomAsync(tool.Custom, tool.CustomPermissions); // TODO: Figure out tool/deployment custom
+            ltiMessage.SetLaunchPresentation(launchPresentation);
+            ltiMessage.SetPlatform(config.CurrentValue.Platform);
+            ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
+            ltiMessage.SetServiceEndpoints(
+                context == null ? null : linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.GET_LINE_ITEMS, new { contextId = context.Id }),
+                null,
+                tool.ServicePermissions);
+            ltiMessage.SetUser(user, tool.UserPermissions);
+
+            return ltiMessage;
         }
     }
 
-    internal class ResourceLinkMessageHandler(IDataService dataService, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor) : IMessageHandler
+    internal class ResourceLinkMessageHandler(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) : IMessageHandler
     {
-        public async Task<LtiMessage> HandleAsync(LtiMessage baseLtiMessage, Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message)
+        public async Task<LtiMessage> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request)
         {
             var resourceLinkId = message;
             var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(resourceLinkId);
@@ -616,10 +576,13 @@ namespace NP.Lti13Platform
             //    return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
             //}
 
-            string? lineItemUrl = null;
+            string? lineItemsUrl = null,
+                lineItemUrl = null;
 
-            if (context != null && baseLtiMessage.ServiceEndpoints != null)
+            if (context != null)
             {
+                lineItemsUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.GET_LINE_ITEMS, new { contextId = context.Id });
+
                 var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, resourceLinkId, null);
 
                 if (lineItems.TotalItems == 1)
@@ -628,8 +591,11 @@ namespace NP.Lti13Platform
                 }
             }
 
-            return new LtiResourceLinkMessage(baseLtiMessage)
+            var roles = context != null ? await dataService.GetRolesAsync(user.Id, context) : [];
+
+            var ltiMessage = new LtiResourceLinkMessage(config.CurrentValue.Issuer, tool.ClientId, request.Nonce!, deployment.Id, roles)
             {
+                ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds),
                 ResourceLink = new ResourceLink
                 {
                     Id = resourceLink.Id,
@@ -637,13 +603,20 @@ namespace NP.Lti13Platform
                     Title = resourceLink.Title
                 },
                 TargetLinkUri = string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url,
-                ServiceEndpoints = baseLtiMessage.ServiceEndpoints == null ? null : new ServiceEndpoints
-                {
-                    Scopes = baseLtiMessage.ServiceEndpoints.Scopes.ToList(),
-                    LineItemsUrl = baseLtiMessage.ServiceEndpoints.LineItemsUrl,
-                    LineItemUrl = lineItemUrl
-                }
             };
+
+            ltiMessage.SetContext(context);
+            //ltiMessage.SetCustomAsync(resourceLink.Custom, tool.CustomPermissions); // TODO: Figure out tool/deployment custom
+            ltiMessage.SetLaunchPresentation(launchPresentation);
+            ltiMessage.SetPlatform(config.CurrentValue.Platform);
+            ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
+            ltiMessage.SetServiceEndpoints(
+                lineItemsUrl,
+                lineItemUrl,
+                tool.ServicePermissions);
+            ltiMessage.SetUser(user, tool.UserPermissions);
+
+            return ltiMessage;
         }
     }
 }

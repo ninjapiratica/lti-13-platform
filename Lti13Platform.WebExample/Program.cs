@@ -50,7 +50,17 @@ public class DataService : IDataService
 
     public Task<Tool?> GetToolAsync(string clientId)
     {
-        return Task.FromResult<Tool?>(new Tool { ClientId = clientId, OidcInitiationUrl = "https://saltire.lti.app/tool", LaunchUrl = "https://saltire.lti.app/tool", DeepLinkUrl = "https://saltire.lti.app/tool", Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d", UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true } });
+        return Task.FromResult<Tool?>(new Tool
+        {
+            ClientId = clientId,
+            OidcInitiationUrl = "https://saltire.lti.app/tool",
+            LaunchUrl = "https://saltire.lti.app/tool",
+            DeepLinkUrl = "https://saltire.lti.app/tool",
+            Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
+            UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
+            CustomPermissions = new CustomPermissions(),
+            ServicePermissions = new ServicePermissions { Scopes = [] }
+        });
     }
 
     public Task<Context?> GetContextAsync(string contextId)
@@ -195,7 +205,7 @@ public interface IMessageHandler
     Task Handle();
 }
 
-public class X: IMessageHandler
+public class X : IMessageHandler
 {
     public Task Handle()
     {
