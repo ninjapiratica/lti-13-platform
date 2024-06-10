@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Extensions;
 using NP.Lti13Platform.Models;
 using System.Net.Mime;
 using System.Text.Json;
@@ -549,7 +550,7 @@ namespace NP.Lti13Platform
             };
 
             ltiMessage.SetContext(context);
-            //ltiMessage.SetCustomAsync(tool.Custom, tool.CustomPermissions); // TODO: Figure out tool/deployment custom
+            await ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom), tool.CustomPermissions);
             ltiMessage.SetLaunchPresentation(launchPresentation);
             ltiMessage.SetPlatform(config.CurrentValue.Platform);
             ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
@@ -605,8 +606,10 @@ namespace NP.Lti13Platform
                 TargetLinkUri = string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url,
             };
 
+
+
             ltiMessage.SetContext(context);
-            //ltiMessage.SetCustomAsync(resourceLink.Custom, tool.CustomPermissions); // TODO: Figure out tool/deployment custom
+            await ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom).Merge(resourceLink.Custom), tool.CustomPermissions);
             ltiMessage.SetLaunchPresentation(launchPresentation);
             ltiMessage.SetPlatform(config.CurrentValue.Platform);
             ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);

@@ -14,6 +14,8 @@
 
         public Jwks? Jwks { get; set; }
 
+        public IDictionary<string, string>? Custom { get; set; }
+
         public required UserPermissions UserPermissions { get; set; }
 
         public required ServicePermissions ServicePermissions { get; set; }
