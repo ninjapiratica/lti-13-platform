@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Models;
@@ -9,7 +10,7 @@ using System.Web;
 
 namespace NP.Lti13Platform
 {
-    public class Service(IOptionsMonitor<Lti13PlatformConfig> config)
+    public class Service(IOptionsMonitor<Lti13PlatformConfig> config, LinkGenerator linkGenerator, HttpContextAccessor httpContextAccessor)
     {
         public Uri GetDeepLinkInitiationUrl(Tool tool, string deploymentId, string? contextId, string? userId = null, DeepLinkSettings? deepLinkSettings = null, LaunchPresentation? launchPresentation = null)
             => GetUrl(Lti13MessageType.LtiDeepLinkingRequest, tool, deploymentId, tool.DeepLinkUrl, contextId, userId, Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings))), launchPresentation);
@@ -33,6 +34,21 @@ namespace NP.Lti13Platform
             builder.Query = query.ToString();
 
             return builder.Uri;
+        }
+
+        public ServiceEndpoints? GetServiceEndpoints(string? contextId, string? lineItemId, ServicePermissions permissions)
+        {
+            if (!permissions.Scopes.Any() || string.IsNullOrWhiteSpace(contextId) || httpContextAccessor.HttpContext == null)
+            {
+                return null;
+            }
+
+            return new ServiceEndpoints
+            {
+                Scopes = permissions.Scopes.ToList(),
+                LineItemsUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_LINE_ITEMS, new { contextId = contextId }),
+                LineItemUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_LINE_ITEM, new { contextId = contextId, lineItemId = lineItemId }),
+            };
         }
     }
 
@@ -71,6 +87,11 @@ namespace NP.Lti13Platform
         Task SaveLineItemResultAsync(Result result);
 
         // TODO: Figure out custom
+    }
+
+    public interface IPlatformService
+    {
+        Task<Platform?> GetPlatformAsync(string clientId);
     }
 
     public class PartialList<T>

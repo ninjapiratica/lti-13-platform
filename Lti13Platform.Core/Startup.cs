@@ -87,6 +87,7 @@ namespace NP.Lti13Platform
             services.Configure(configure);
 
             services.AddTransient<Service>();
+            services.AddTransient<IPlatformService, PlatformService>();
             services.AddKeyedTransient(typeof(Startup), (sp, key) => sp.GetRequiredService<ILoggerFactory>().CreateLogger("NP.Lti13Platform"));
 
             services.AddMessageHandler<DeepLinkingMessageHandler, LtiDeepLinkingMessage>(Lti13MessageType.LtiDeepLinkingRequest);
@@ -132,10 +133,10 @@ namespace NP.Lti13Platform
                 });
 
             app.MapGet(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, linkGenerator, httpContext, config, dataService, request));
+                async ([AsParameters] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, dataService, request));
 
             app.MapPost(config.AuthorizationUrl,
-                async ([FromForm] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, linkGenerator, httpContext, config, dataService, request))
+                async ([FromForm] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, dataService, request))
                 .DisableAntiforgery();
 
             app.MapPost(config.DeepLinkingResponseUrl,
@@ -405,14 +406,14 @@ namespace NP.Lti13Platform
                             links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
                         }
 
-                        httpContext.Response.Headers.Link = new StringValues(links.ToArray());
+                        httpContext.Response.Headers.Link = new StringValues([..links]);
                     }
 
                     return Results.Json(lineItemsResponse.Items.Select(i => new
                     {
                         Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.Id }),
-                        StartDateTime = i.StartDateTime,
-                        EndDateTime = i.EndDateTime,
+                        i.StartDateTime,
+                        i.EndDateTime,
                         i.ScoreMaximum,
                         i.Label,
                         i.Tag,
@@ -528,8 +529,8 @@ namespace NP.Lti13Platform
                         lineItem.ResourceLinkId,
                         lineItem.ScoreMaximum,
                         lineItem.Tag,
-                        StartDateTime = lineItem.StartDateTime,
-                        EndDateTime = lineItem.EndDateTime,
+                        lineItem.StartDateTime,
+                        lineItem.EndDateTime,
                     }, contentType: Lti13ContentTypes.LineItem);
                 })
                 .WithName(RouteNames.GET_LINE_ITEM)
@@ -607,8 +608,8 @@ namespace NP.Lti13Platform
                         lineItem.ScoreMaximum,
                         lineItem.Tag,
                         lineItem.GradesReleased,
-                        StartDateTime = lineItem.StartDateTime,
-                        EndDateTime = lineItem.EndDateTime,
+                        lineItem.StartDateTime,
+                        lineItem.EndDateTime,
                     }, contentType: Lti13ContentTypes.LineItem);
                 })
                 .RequireAuthorization(policy =>
@@ -678,7 +679,7 @@ namespace NP.Lti13Platform
                         {
                             links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
                         }
-                        httpContext.Response.Headers.Link = new StringValues(links.ToArray());
+                        httpContext.Response.Headers.Link = new StringValues([..links]);
                     }
 
                     return Results.Json(lineItemsResponse.Items.Select(i => new

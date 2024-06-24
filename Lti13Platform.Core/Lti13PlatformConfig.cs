@@ -57,7 +57,6 @@ namespace NP.Lti13Platform
 
         public IDictionary<(string? ClientId, string ContentItemType), Type> ContentItemTypes { get; set; } = new ContentItemDictionary();
 
-
         public void AddDefaultContentItemMapping()
         {
             ContentItemTypes.Add((null, ContentItemType.File), typeof(FileContentItem));

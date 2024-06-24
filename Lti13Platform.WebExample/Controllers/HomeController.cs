@@ -6,8 +6,6 @@ namespace NP.Lti13PlatformExample.Controllers
 {
     public class HomeController(ILogger<HomeController> logger, Service service, IDataService dataService) : Controller
     {
-        private readonly ILogger<HomeController> _logger = logger;
-
         public async Task<IResult> Index()
         {
             var tool = await dataService.GetToolAsync("asdf");

@@ -11,10 +11,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddLti13Platform(config =>
 {
     config.Issuer = "https://mytest.com";
-    config.DeepLink.AcceptMultiple = true;
-    config.DeepLink.AcceptLineItem = true;
-    config.DeepLink.AutoCreate = true;
-    config.TokenAudience = "https://05e4-2601-1c1-8400-cd97-00-1005.ngrok-free.app/lti13/token";
 });
 builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddTransient<IDeepLinkContentHandler, DeepLinkContentHandler>();
@@ -197,26 +193,5 @@ public class DeepLinkContentHandler : IDeepLinkContentHandler
     public Task<IResult> HandleAsync(DeepLinkResponse response)
     {
         return Task.FromResult(Results.Ok(response));
-    }
-}
-
-public interface IMessageHandler
-{
-    Task Handle();
-}
-
-public class X : IMessageHandler
-{
-    public Task Handle()
-    {
-        return Task.CompletedTask;
-    }
-}
-
-public class Y : IMessageHandler
-{
-    public Task Handle()
-    {
-        return Task.CompletedTask;
     }
 }

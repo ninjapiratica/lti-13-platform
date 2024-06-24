@@ -32,21 +32,18 @@ namespace NP.Lti13Platform
         private const string NONCE_REQUIRED = "nonce is required.";
         private const string CLIENT_ID_REQUIRED = "client_id is required.";
         private const string UNKNOWN_CLIENT_ID = "client_id is unknown";
-        private const string INVALID_CLIENT_ID = "client_id is invalid";
         private const string UNKNOWN_REDIRECT_URI = "redirect_uri is unknown";
         private const string LTI_MESSAGE_HINT_INVALID = "lti_message_hint is invalid";
         private const string LOGIN_HINT_REQUIRED = "login_hint is required";
         private const string USER_CLIENT_MISMATCH = "client is not authorized for user";
         private const string DEPLOYMENT_CLIENT_MISMATCH = "deployment is not for client";
+        private const string UNKNOWN_MESSAGE_PARAMETERS = "unknown message parameters";
 
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
         private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
         internal static async Task<IResult> HandleAsync(
             IServiceProvider serviceProvider,
-            LinkGenerator linkGenerator,
-            HttpContext httpContext,
-            IOptionsMonitor<Lti13PlatformConfig> config,
             IDataService dataService,
             AuthenticationRequest request)
         {
@@ -128,6 +125,11 @@ namespace NP.Lti13Platform
 
             var ltiMessage = await messageHandler.HandleAsync(tool, deployment, user, context, launchPresentation, messageString, request);
 
+            if (ltiMessage == null)
+            {
+                return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = UNKNOWN_MESSAGE_PARAMETERS, Error_Uri = AUTH_SPEC_URI });
+            }
+
             var privateKey = await dataService.GetPrivateKeyAsync();
 
             var token = new JsonWebTokenHandler().CreateToken(
@@ -151,48 +153,38 @@ namespace NP.Lti13Platform
 
     public class LtiMessage
     {
-        public LtiMessage(string messageType, string issuer, string audience, string nonce, string deploymentId, IEnumerable<string> roles)
-        {
-            MessageType = messageType;
-            Issuer = issuer;
-            Audience = audience;
-            Nonce = nonce;
-            DeploymentId = deploymentId;
-            Roles = roles;
-        }
-
         [JsonPropertyName("iss")]
-        public string Issuer { get; set; }
+        public required string Issuer { get; set; }
 
         [JsonPropertyName("aud")]
-        public string Audience { get; set; }
+        public required string Audience { get; set; }
 
         [JsonPropertyName("exp")]
         public long ExpirationDateUnix => new DateTimeOffset(IssuedDate).ToUnixTimeSeconds();
 
         [JsonIgnore]
-        public DateTime ExpirationDate { get; set; } = DateTime.UtcNow;
+        public required DateTime ExpirationDate { get; set; } = DateTime.UtcNow;
 
         [JsonPropertyName("iat")]
         public long IssuedDateUnix => new DateTimeOffset(IssuedDate).ToUnixTimeSeconds();
 
         [JsonIgnore]
-        public DateTime IssuedDate { get; set; } = DateTime.UtcNow;
+        public required DateTime IssuedDate { get; set; } = DateTime.UtcNow;
 
         [JsonPropertyName("nonce")]
-        public string Nonce { get; set; }
+        public required string Nonce { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/message_type")]
-        public string MessageType { get; }
+        public required string MessageType { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/version")]
         public string LtiVersion { get; } = "1.3.0";
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/deployment_id")]
-        public string DeploymentId { get; set; }
+        public required string DeploymentId { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/roles")]
-        public IEnumerable<string> Roles { get; set; }
+        public required IEnumerable<string> Roles { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor")]
         public IEnumerable<string>? RoleScopeMentor { get; set; }
@@ -322,14 +314,9 @@ namespace NP.Lti13Platform
             await Task.CompletedTask;
         }
 
-        public void SetServiceEndpoints(string? lineItemsUrl, string? lineItemUrl, ServicePermissions permissions)
+        public void SetServiceEndpoints(ServiceEndpoints? serviceEndpoints, ServicePermissions permissions)
         {
-            ServiceEndpoints = !permissions.Scopes.Any() || (string.IsNullOrWhiteSpace(lineItemsUrl) && string.IsNullOrWhiteSpace(lineItemUrl)) ? null : new ServiceEndpoints
-            {
-                Scopes = permissions.Scopes.ToList(),
-                LineItemsUrl = lineItemsUrl,
-                LineItemUrl = lineItemUrl
-            };
+            ServiceEndpoints = permissions.Scopes.Any() ? serviceEndpoints : null;
         }
 
         public void SetLaunchPresentation(LaunchPresentation? launchPresentation)
@@ -359,7 +346,7 @@ namespace NP.Lti13Platform
         }
     }
 
-    internal class LtiResourceLinkMessage(string issuer, string audience, string nonce, string deploymentId, IEnumerable<string> roles) : LtiMessage(Lti13MessageType.LtiResourceLinkRequest, issuer, audience, nonce, deploymentId, roles)
+    internal class LtiResourceLinkMessage : LtiMessage
     {
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/target_link_uri")]
         public required string TargetLinkUri { get; set; }
@@ -370,7 +357,7 @@ namespace NP.Lti13Platform
         //new Claim("https://purl.imsglobal.org/spec/lti/claim/lis", "") // https://www.imsglobal.org/spec/lti/v1p3/#learning-information-services-lis-claim
     }
 
-    internal class LtiDeepLinkingMessage(string issuer, string audience, string nonce, string deploymentId, IEnumerable<string> roles) : LtiMessage(Lti13MessageType.LtiDeepLinkingRequest, issuer, audience, nonce, deploymentId, roles)
+    internal class LtiDeepLinkingMessage : LtiMessage
     {
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings")]
         public required DeepLinkSettings DeepLinkSettings { get; set; }
@@ -519,26 +506,38 @@ namespace NP.Lti13Platform
 
     public interface IMessageHandler
     {
-        Task<LtiMessage> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request);
+        Task<LtiMessage?> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request);
     }
 
-    internal class DeepLinkingMessageHandler(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) : IMessageHandler
+    internal class DeepLinkingMessageHandler(
+        LinkGenerator linkGenerator,
+        IHttpContextAccessor httpContextAccessor,
+        IOptionsMonitor<Lti13PlatformConfig> config,
+        IDataService dataService,
+        IPlatformService platformService,
+        Service service) : IMessageHandler
     {
-        public async Task<LtiMessage> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request)
+        public async Task<LtiMessage?> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request)
         {
-            var httpContext = httpContextAccessor.HttpContext!;
             var deepLinkSettings = string.IsNullOrWhiteSpace(message) ? null : JsonSerializer.Deserialize<DeepLinkSettings>(Convert.FromBase64String(message));
 
             var roles = context != null ? await dataService.GetRolesAsync(user.Id, context) : [];
 
-            var ltiMessage = new LtiDeepLinkingMessage(config.CurrentValue.Issuer, tool.ClientId, request.Nonce!, deployment.Id, roles)
+            var ltiMessage = new LtiDeepLinkingMessage
             {
+                Audience = tool.ClientId,
+                DeploymentId = deployment.Id,
+                IssuedDate = DateTime.UtcNow,
+                Issuer = config.CurrentValue.Issuer,
+                MessageType = Lti13MessageType.LtiDeepLinkingRequest,
+                Nonce = request.Nonce!,
+                Roles = roles,
                 ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds),
                 DeepLinkSettings = new DeepLinkSettings
                 {
                     AcceptPresentationDocumentTargets = new[] { deepLinkSettings?.AcceptPresentationDocumentTargets, config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets }.FirstOrDefault(x => x != null && x.Any()) ?? [],
                     AcceptTypes = new[] { deepLinkSettings?.AcceptTypes, config.CurrentValue.DeepLink.AcceptTypes }.FirstOrDefault(x => x != null && x.Any()) ?? [],
-                    DeepLinkReturnUrl = linkGenerator.GetUriByName(httpContext, RouteNames.DEEP_LINKING_RESPONSE, new { contextId = context?.Id }) ?? string.Empty,
+                    DeepLinkReturnUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.DEEP_LINKING_RESPONSE, new { contextId = context?.Id }) ?? string.Empty,
                     AcceptLineItem = new[] { deepLinkSettings?.AcceptLineItem, config.CurrentValue.DeepLink.AcceptLineItem }.FirstOrDefault(x => x.HasValue),
                     AcceptMediaTypes = new[] { deepLinkSettings?.AcceptMediaTypes, config.CurrentValue.DeepLink.AcceptMediaTypes }.FirstOrDefault(x => x != null && x.Any()),
                     AcceptMultiple = new[] { deepLinkSettings?.AcceptMultiple, config.CurrentValue.DeepLink.AcceptMultiple }.FirstOrDefault(x => x.HasValue),
@@ -552,50 +551,54 @@ namespace NP.Lti13Platform
             ltiMessage.SetContext(context);
             await ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom), tool.CustomPermissions);
             ltiMessage.SetLaunchPresentation(launchPresentation);
-            ltiMessage.SetPlatform(config.CurrentValue.Platform);
+            ltiMessage.SetPlatform(await platformService.GetPlatformAsync(tool.ClientId));
             ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
-            ltiMessage.SetServiceEndpoints(
-                context == null ? null : linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.GET_LINE_ITEMS, new { contextId = context.Id }),
-                null,
-                tool.ServicePermissions);
+            ltiMessage.SetServiceEndpoints(service.GetServiceEndpoints(context?.Id, null, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
 
             return ltiMessage;
         }
     }
 
-    internal class ResourceLinkMessageHandler(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) : IMessageHandler
+    internal class ResourceLinkMessageHandler(
+        IOptionsMonitor<Lti13PlatformConfig> config,
+        IDataService dataService,
+        IPlatformService platformService,
+        Service service) : IMessageHandler
     {
-        public async Task<LtiMessage> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request)
+        public async Task<LtiMessage?> HandleAsync(Tool tool, Deployment deployment, User user, Context? context, LaunchPresentation? launchPresentation, string message, AuthenticationRequest request)
         {
             var resourceLinkId = message;
             var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(resourceLinkId);
 
-            // TODO: Figure this out
-            //if (resourceLink == null || resourceLink.ContextId != null && context != null && context.Id != resourceLink.ContextId || resourceLink.DeploymentId != deploymentId)
-            //{
-            //    return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
-            //}
+            if (resourceLink == null || resourceLink.DeploymentId != deployment.Id || resourceLink.ContextId != null && context != null && context.Id != resourceLink.ContextId)
+            {
+                return null;
+            }
 
-            string? lineItemsUrl = null,
-                lineItemUrl = null;
+            LineItem? lineItem = null;
 
             if (context != null)
             {
-                lineItemsUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.GET_LINE_ITEMS, new { contextId = context.Id });
-
                 var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, resourceLinkId, null);
 
                 if (lineItems.TotalItems == 1)
                 {
-                    lineItemUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.GET_LINE_ITEM, new { contextId = context.Id, lineItemId = lineItems.Items.First().Id });
+                    lineItem = lineItems.Items.FirstOrDefault();
                 }
             }
 
             var roles = context != null ? await dataService.GetRolesAsync(user.Id, context) : [];
 
-            var ltiMessage = new LtiResourceLinkMessage(config.CurrentValue.Issuer, tool.ClientId, request.Nonce!, deployment.Id, roles)
+            var ltiMessage = new LtiResourceLinkMessage
             {
+                Audience = tool.ClientId,
+                DeploymentId = deployment.Id,
+                IssuedDate = DateTime.UtcNow,
+                Issuer = config.CurrentValue.Issuer,
+                MessageType = Lti13MessageType.LtiResourceLinkRequest,
+                Nonce = request.Nonce!,
+                Roles = roles,
                 ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds),
                 ResourceLink = new ResourceLink
                 {
@@ -606,17 +609,12 @@ namespace NP.Lti13Platform
                 TargetLinkUri = string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url,
             };
 
-
-
             ltiMessage.SetContext(context);
             await ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom).Merge(resourceLink.Custom), tool.CustomPermissions);
             ltiMessage.SetLaunchPresentation(launchPresentation);
-            ltiMessage.SetPlatform(config.CurrentValue.Platform);
+            ltiMessage.SetPlatform(await platformService.GetPlatformAsync(tool.ClientId));
             ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
-            ltiMessage.SetServiceEndpoints(
-                lineItemsUrl,
-                lineItemUrl,
-                tool.ServicePermissions);
+            ltiMessage.SetServiceEndpoints(service.GetServiceEndpoints(context?.Id, lineItem?.Id, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
 
             return ltiMessage;
