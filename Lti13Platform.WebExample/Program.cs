@@ -44,10 +44,27 @@ public class DataService : IDataService
 {
     private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-    public Task<Tool?> GetToolAsync(string clientId)
+    public Task<Tool?> GetToolAsync(string toolId)
     {
         return Task.FromResult<Tool?>(new Tool
         {
+            Id = toolId,
+            ClientId = toolId,
+            OidcInitiationUrl = "https://saltire.lti.app/tool",
+            LaunchUrl = "https://saltire.lti.app/tool",
+            DeepLinkUrl = "https://saltire.lti.app/tool",
+            Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
+            UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
+            CustomPermissions = new CustomPermissions(),
+            ServicePermissions = new ServicePermissions { LineItemScopes = [] }
+        });
+    }
+
+    public Task<Tool?> GetToolByClientIdAsync(string clientId)
+    {
+        return Task.FromResult<Tool?>(new Tool
+        {
+            Id = clientId,
             ClientId = clientId,
             OidcInitiationUrl = "https://saltire.lti.app/tool",
             LaunchUrl = "https://saltire.lti.app/tool",
@@ -55,7 +72,7 @@ public class DataService : IDataService
             Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
             UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
             CustomPermissions = new CustomPermissions(),
-            ServicePermissions = new ServicePermissions { Scopes = [] }
+            ServicePermissions = new ServicePermissions { LineItemScopes = [] }
         });
     }
 
@@ -66,7 +83,7 @@ public class DataService : IDataService
 
     public Task<Deployment?> GetDeploymentAsync(string deploymentId)
     {
-        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ClientId = "asdf" });
+        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ToolId = "asdf" });
     }
 
     public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Context? context)
@@ -185,6 +202,21 @@ public class DataService : IDataService
     public Task<T?> GetContentItemAsync<T>(string contentItemId) where T : ContentItem
     {
         return Task.FromResult(_contentItems.FirstOrDefault(c => c.Id == contentItemId) as T);
+    }
+
+    public Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<PartialList<User>> GetUsersAsync(IEnumerable<string> userIds, DateTime? asOfDate = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null)
+    {
+        throw new NotImplementedException();
     }
 }
 

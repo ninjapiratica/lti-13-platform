@@ -2,6 +2,8 @@
 {
     public class Tool
     {
+        public required string Id { get; set; }
+
         public required string ClientId { get; set; }
 
         public required string OidcInitiationUrl { get; set; }
@@ -54,7 +56,9 @@
 
     public class ServicePermissions
     {
-        public IEnumerable<string> Scopes { get; set; } = [];
+        public IEnumerable<string> LineItemScopes { get; set; } = [];
+
+        public bool AllowNameRoleProvisioningService { get; set; }
     }
 
     public class CustomPermissions

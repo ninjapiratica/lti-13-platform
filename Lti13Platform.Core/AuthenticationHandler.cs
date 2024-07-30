@@ -85,7 +85,7 @@ namespace NP.Lti13Platform
                 return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
             }
 
-            var tool = await dataService.GetToolAsync(request.Client_Id);
+            var tool = await dataService.GetToolByClientIdAsync(request.Client_Id);
 
             if (tool == null)
             {
@@ -113,7 +113,7 @@ namespace NP.Lti13Platform
 
             var deployment = await dataService.GetDeploymentAsync(deploymentId);
 
-            if (deployment?.ClientId != tool.ClientId)
+            if (deployment?.ToolId != tool.ClientId)
             {
                 return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
             }
@@ -199,7 +199,10 @@ namespace NP.Lti13Platform
         public LaunchPresentation? LaunchPresentation { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti-ags/claim/endpoint")]
-        public ServiceEndpoints? ServiceEndpoints { get; set; }
+        public LineItemServiceEndpoints? ServiceEndpoints { get; set; }
+
+        [JsonPropertyName("https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice")]
+        public NamesRoleService? NamesRoleService { get; set; }
 
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/custom")]
         public IDictionary<string, string>? Custom { get; set; }
@@ -265,7 +268,7 @@ namespace NP.Lti13Platform
         public DateTime? UpdatedAt { get; set; }
 
         [JsonPropertyName("updated_at")]
-        public long? UpdatedAtUnix => !UpdatedAt.HasValue ? null : new DateTimeOffset(UpdatedAt.Value).ToUnixTimeSeconds();
+        public long? UpdatedAtUnix => !UpdatedAt.HasValue ? null : new DateTimeOffset(UpdatedAt.GetValueOrDefault()).ToUnixTimeSeconds();
 
         public void SetUser(User user, UserPermissions permissions)
         {
@@ -314,9 +317,14 @@ namespace NP.Lti13Platform
             await Task.CompletedTask;
         }
 
-        public void SetServiceEndpoints(ServiceEndpoints? serviceEndpoints, ServicePermissions permissions)
+        public void SetLineItemServiceEndpoints(LineItemServiceEndpoints? serviceEndpoints, ServicePermissions permissions)
         {
-            ServiceEndpoints = permissions.Scopes.Any() ? serviceEndpoints : null;
+            ServiceEndpoints = permissions.LineItemScopes.Any() ? serviceEndpoints : null;
+        }
+
+        public void SetNamesRoleService(NamesRoleService? namesRoleService, ServicePermissions permissions)
+        {
+            NamesRoleService = permissions.AllowNameRoleProvisioningService ? namesRoleService: null;
         }
 
         public void SetLaunchPresentation(LaunchPresentation? launchPresentation)
@@ -492,7 +500,7 @@ namespace NP.Lti13Platform
         public string? Locale { get; set; }
     }
 
-    public class ServiceEndpoints
+    public class LineItemServiceEndpoints
     {
         [JsonPropertyName("scope")]
         public required IEnumerable<string> Scopes { get; set; }
@@ -502,6 +510,15 @@ namespace NP.Lti13Platform
 
         [JsonPropertyName("lineitem")]
         public string? LineItemUrl { get; set; }
+    }
+
+    public class NamesRoleService
+    {
+        [JsonPropertyName("context_memberships_url")]
+        public required string ContextMembershipUrl { get; set; }
+
+        [JsonPropertyName("service_versions")]
+        public required IEnumerable<string> ServiceVersions { get; set; }
     }
 
     public interface IMessageHandler
@@ -553,8 +570,9 @@ namespace NP.Lti13Platform
             ltiMessage.SetLaunchPresentation(launchPresentation);
             ltiMessage.SetPlatform(await platformService.GetPlatformAsync(tool.ClientId));
             ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
-            ltiMessage.SetServiceEndpoints(service.GetServiceEndpoints(context?.Id, null, tool.ServicePermissions), tool.ServicePermissions);
+            ltiMessage.SetLineItemServiceEndpoints(service.GetServiceEndpoints(context?.Id, null, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
+            ltiMessage.SetNamesRoleService(service.GetNamesRoleService(context?.Id, tool.ServicePermissions), tool.ServicePermissions);
 
             return ltiMessage;
         }
@@ -614,8 +632,9 @@ namespace NP.Lti13Platform
             ltiMessage.SetLaunchPresentation(launchPresentation);
             ltiMessage.SetPlatform(await platformService.GetPlatformAsync(tool.ClientId));
             ltiMessage.SetRoleScopeMentor(roles.Contains(Lti13ContextRoles.Mentor) && context != null ? await dataService.GetMentoredUserIdsAsync(user.Id, context) : null);
-            ltiMessage.SetServiceEndpoints(service.GetServiceEndpoints(context?.Id, lineItem?.Id, tool.ServicePermissions), tool.ServicePermissions);
+            ltiMessage.SetLineItemServiceEndpoints(service.GetServiceEndpoints(context?.Id, lineItem?.Id, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
+            ltiMessage.SetNamesRoleService(service.GetNamesRoleService(context?.Id, tool.ServicePermissions), tool.ServicePermissions);
 
             return ltiMessage;
         }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,7 @@ namespace NP.Lti13Platform
         public const string GET_LINE_ITEM = "GET_LINE_ITEM";
         public const string GET_LINE_ITEM_RESULTS = "GET_LINE_ITEM_RESULTS";
         public const string DEEP_LINKING_RESPONSE = "DEEP_LINKING_RESPONSE";
+        public const string GET_MEMBERSHIPS = "GET_MEMBERSHIPS";
     }
 
     internal class LtiMessageTypeResolver : DefaultJsonTypeInfoResolver
@@ -170,7 +172,7 @@ namespace NP.Lti13Platform
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                     }
 
-                    var tool = await dataService.GetToolAsync(deployment.ClientId);
+                    var tool = await dataService.GetToolAsync(deployment.ToolId);
                     if (tool?.Jwks == null)
                     {
                         return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
@@ -322,7 +324,7 @@ namespace NP.Lti13Platform
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                     }
 
-                    var tool = await dataService.GetToolAsync(jwt.Issuer);
+                    var tool = await dataService.GetToolByClientIdAsync(jwt.Issuer);
                     if (tool?.Jwks == null)
                     {
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
@@ -386,7 +388,7 @@ namespace NP.Lti13Platform
 
                     var lineItemsResponse = await dataService.GetLineItemsAsync(contextId, pageIndex, limit ?? int.MaxValue, resource_id, resource_link_id, tag);
 
-                    if (lineItemsResponse.TotalItems > 0)
+                    if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
                     {
                         var links = new Collection<string>();
                         if (pageIndex > 0)
@@ -401,12 +403,9 @@ namespace NP.Lti13Platform
 
                         links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = 0 })}>; rel=\"first\"");
 
-                        if (limit.HasValue)
-                        {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
-                        }
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
 
-                        httpContext.Response.Headers.Link = new StringValues([..links]);
+                        httpContext.Response.Headers.Link = new StringValues([.. links]);
                     }
 
                     return Results.Json(lineItemsResponse.Items.Select(i => new
@@ -662,7 +661,7 @@ namespace NP.Lti13Platform
 
                     var lineItemsResponse = await dataService.GetLineItemResultsAsync(contextId, lineItemId, pageIndex, limit ?? int.MaxValue, user_id);
 
-                    if (lineItemsResponse.TotalItems > 0)
+                    if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
                     {
                         var links = new Collection<string>();
                         if (pageIndex > 0)
@@ -674,12 +673,12 @@ namespace NP.Lti13Platform
                         {
                             links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
                         }
+
                         links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = 0 })}>; rel=\"first\"");
-                        if (limit.HasValue)
-                        {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
-                        }
-                        httpContext.Response.Headers.Link = new StringValues([..links]);
+
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
+
+                        httpContext.Response.Headers.Link = new StringValues([.. links]);
                     }
 
                     return Results.Json(lineItemsResponse.Items.Select(i => new
@@ -783,6 +782,117 @@ namespace NP.Lti13Platform
                 })
                 .DisableAntiforgery();
 
+            app.MapGet(config.NamesAndRoleProvisioningServiceUrl,
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Service service, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                {
+                    const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
+                    const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
+                    const string RESOURCE_LINK_UNAVAILABLE_URI = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction";
+
+                    var context = await dataService.GetContextAsync(contextId);
+                    if (context == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = (await dataService.GetDeploymentAsync(context.DeploymentId))!;
+                    var tool = (await dataService.GetToolAsync(deployment.ToolId))!;
+
+                    var membersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
+                    var usersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId));
+
+                    var links = new Collection<string>();
+
+                    if (membersResponse.TotalItems > limit * (pageIndex + 1))
+                    {
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
+                    }
+
+                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
+
+                    httpContext.Response.Headers.Link = new StringValues([.. links]);
+
+                    var currentUsers = membersResponse.Items.Join(usersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = true });
+
+                    if (since.HasValue)
+                    {
+                        var oldMembersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid, new DateTime(since.GetValueOrDefault()));
+                        var oldUsersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), new DateTime(since.GetValueOrDefault()));
+
+                        var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
+
+                        currentUsers = oldUsers
+                            .Concat(currentUsers)
+                            .GroupBy(x => x.User.Id)
+                            .Where(x => x.Count() == 1 ||
+                                x.First().Membership.Status != x.Last().Membership.Status ||
+                                x.First().Membership.Roles.OrderBy(y => y).SequenceEqual(x.Last().Membership.Roles.OrderBy(y => y)))
+                            .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
+                    }
+
+                    var messages = new Dictionary<string, dynamic>();
+                    if (!string.IsNullOrWhiteSpace(rlid))
+                    {
+                        var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(rlid);
+
+                        if (resourceLink == null || resourceLink?.ContextId != context.Id)
+                        {
+                            return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
+                        }
+
+                        List<string> replacementValues = new List<string>();
+
+                        var customDictionary = tool.Custom
+                            .Merge(deployment.Custom)
+                            .Merge(resourceLink.Custom);
+
+                        if (customDictionary != null)
+                        { 
+                            customDictionary = customDictionary
+                                .Where(x => replacementValues.Contains(x.Value))
+                                .ToDictionary(x => x.Key, x => x.Value);
+
+                            foreach (var currentUser in currentUsers)
+                            {
+
+                            }
+                        }
+                    }
+
+                    return Results.Json(new
+                    {
+                        id = httpContext.Request.GetDisplayUrl(),
+                        context = new
+                        {
+                            id = context.Id,
+                            label = context.Label,
+                            title = context.Title
+                        },
+                        members = currentUsers.Select(x => new
+                        {
+                            user_id = x.User.Id,
+                            roles = x.Membership.Roles,
+                            name = x.User.Name,
+                            given_name = x.User.GivenName,
+                            family_name = x.User.FamilyName,
+                            email = x.User.Email,
+                            picture = x.User.Picture,
+                            status = x.Membership.Status switch
+                            {
+                                MembershipStatus.Active when x.IsCurrent => "Active",
+                                MembershipStatus.Inactive when x.IsCurrent => "Inactive",
+                                _ => "Deleted"
+                            },
+                            message = messages.TryGetValue(x.User.Id, out var message) ? message : null
+                        })
+                    }, contentType: Lti13ContentTypes.MembershipContainer);
+                })
+                .RequireAuthorization(policy =>
+                {
+                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                    policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
+                });
+
             return app;
         }
     }
@@ -809,6 +919,7 @@ namespace NP.Lti13Platform
         internal const string LineItem = "application/vnd.ims.lis.v2.lineitem+json";
         internal const string ResultContainer = "application/vnd.ims.lis.v2.resultcontainer+json";
         internal const string Score = "application/vnd.ims.lis.v1.score+json";
+        internal const string MembershipContainer = "application/vnd.ims.lti-nrps.v2.membershipcontainer+json";
     }
 
     internal class LtiServicesAuthHandler(IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) :
@@ -852,6 +963,8 @@ namespace NP.Lti13Platform
         public const string LineItemReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly";
         public const string ResultReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
         public const string Score = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
+
+        public const string MembershipReadOnly = "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly";
     }
 
     public enum ActivityProgress

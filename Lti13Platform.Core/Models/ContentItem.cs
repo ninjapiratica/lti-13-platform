@@ -6,13 +6,13 @@ using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.Models
 {
-    public class ContentItemDictionary() : IDictionary<(string?, string), Type>
+    public class ContentItemDictionary() : IDictionary<(string? ToolId, string ContentItemType), Type>
     {
         private readonly IDictionary<(string?, string), Type> _items = new Dictionary<(string?, string), Type>();
 
-        public Type this[(string?, string) key]
+        public Type this[(string? ToolId, string ContentItemType) key]
         {
-            get => _items.TryGetValue(key, out Type? value) ? value : key.Item1 != null && _items.TryGetValue((null, key.Item2), out value) ? value : typeof(DefaultContentItem);
+            get => _items.TryGetValue(key, out Type? value) ? value : key.ToolId != null && _items.TryGetValue((null, key.ContentItemType), out value) ? value : typeof(DefaultContentItem);
             set => _items[key] = value;
         }
 
