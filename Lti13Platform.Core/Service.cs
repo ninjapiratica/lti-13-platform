@@ -281,6 +281,12 @@ namespace NP.Lti13Platform
         /// The permitted vocabulary is from the 'grades' field utilized in OneRoster Users.
         /// </summary>
         public const string GradeLevelsOneRoster = "$User.gradeLevels.oneRoster";
+
+        /// <summary>
+        /// A comma-separated list of grade(s) for which the user is enrolled.
+        /// The permitted vocabulary is from the organization or vendor specified in the place of the * in the field name.
+        /// </summary>
+        public const string LtiContextGradeLevelsVendor = "$User.gradeLevels.*";
     }
 
     public static class Lti13ContextVariables
@@ -307,7 +313,7 @@ namespace NP.Lti13Platform
         public const string LtiContextLabel = "$Context.label";
 
         /// <summary>
-        /// (context.label property)
+        /// (context.title property)
         /// </summary>
         public const string LtiContextTitle = "$Context.title";
 
