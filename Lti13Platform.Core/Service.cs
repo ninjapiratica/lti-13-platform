@@ -248,6 +248,8 @@ namespace NP.Lti13Platform
         public const string Iframe = "iframe";
     }
 
+    // BELOW ARE THE LTI 1.3 VARIABLES
+
     public static class Lti13UserVariables
     {
         /// <summary>
@@ -286,7 +288,7 @@ namespace NP.Lti13Platform
         /// A comma-separated list of grade(s) for which the user is enrolled.
         /// The permitted vocabulary is from the organization or vendor specified in the place of the * in the field name.
         /// </summary>
-        public const string LtiContextGradeLevelsVendor = "$User.gradeLevels.*";
+        public const string GradeLevelsVendor = "$User.gradeLevels.*";
     }
 
     public static class Lti13ContextVariables
@@ -294,52 +296,52 @@ namespace NP.Lti13Platform
         /// <summary>
         /// (Context.id property)
         /// </summary>
-        public const string LtiContextId = "$Context.id";
+        public const string Id = "$Context.id";
 
         /// <summary>
         /// A URI describing the context's organizational properties; for example, an ldap:// URI.
         /// By best practice, message senders should separate URIs using commas.
         /// </summary>
-        public const string LtiContextOrg = "$Context.org";
+        public const string Org = "$Context.org";
 
         /// <summary>
         /// (context.type property)
         /// </summary>
-        public const string LtiContextType = "$Context.type";
+        public const string Type = "$Context.type";
 
         /// <summary>
         /// (context.label property)
         /// </summary>
-        public const string LtiContextLabel = "$Context.label";
+        public const string Label = "$Context.label";
 
         /// <summary>
         /// (context.title property)
         /// </summary>
-        public const string LtiContextTitle = "$Context.title";
+        public const string Title = "$Context.title";
 
         /// <summary>
         /// The sourced ID of the context.
         /// </summary>
-        public const string LtiContextSourcedId = "$Context.sourcedId";
+        public const string SourcedId = "$Context.sourcedId";
 
         /// <summary>
         /// A comma-separated list of URL-encoded context ID values representing previous copies of the context;
         /// the ID of most recent copy should appear first in the list followed by any earlier IDs in reverse chronological order.
         /// If the context was created from scratch, not as a copy of an existing context, then this variable should have an empty value.
         /// </summary>
-        public const string LtiContextIdHistory = "$Context.id.history";
+        public const string IdHistory = "$Context.id.history";
 
         /// <summary>
         /// A comma-separated list of grade(s) for which the context is attended.
         /// The permitted vocabulary is from the grades field utilized in OneRoster Classes.
         /// </summary>
-        public const string LtiContextGradeLevelsOneRoster = "$Context.gradeLevels.oneRoster";
+        public const string GradeLevelsOneRoster = "$Context.gradeLevels.oneRoster";
 
         /// <summary>
         /// A comma-separated list of grade(s) for which the context is attended.
         /// The permitted vocabulary is from the organization or vendor specified in the place of the * in the field name.
         /// </summary>
-        public const string LtiContextGradeLevelsVendor = "$Context.gradeLevels.*";
+        public const string GradeLevelsVendor = "$Context.gradeLevels.*";
     }
 
     public static class Lti13ResourceLinkVariables
@@ -410,14 +412,14 @@ namespace NP.Lti13Platform
         /// <summary>
         /// The ISO 8601 date and time set when the grades for the associated line item can be released to learner.
         /// </summary>
-        public const string LineitemReleaseDateTime = "$ResourceLink.lineitem.releaseDateTime";
+        public const string LineItemReleaseDateTime = "$ResourceLink.lineitem.releaseDateTime";
 
         /// <summary>
         /// The ISO 8601 date and time set when the current user's grade for the associated line item can be released to the user.
         /// This date overrides that of ResourceLink.lineitem.releaseDateTime.
         /// A value of an empty string indicates that the date for the resource should be used.
         /// </summary>
-        public const string LineitemUserReleaseDateTime = "$ResourceLink.lineitem.user.releaseDateTime";
+        public const string LineItemUserReleaseDateTime = "$ResourceLink.lineitem.user.releaseDateTime";
 
         /// <summary>
         /// A comma-separated list of URL-encoded resource link ID values representing the ID of the link from a previous copy of the context;
@@ -427,8 +429,47 @@ namespace NP.Lti13Platform
         public const string IdHistory = "$ResourceLink.id.history";
     }
 
+    public static class Lti13ToolPlatformVariables
+    {
+        /// <summary>
+        /// Corresponds to the tool_platform.product_family_code property.
+        /// </summary>
+        public const string ProductFamilyCode = "$ToolPlatform.productFamilyCode";
+
+        /// <summary>
+        /// Corresponds to the tool_platform.version property.
+        /// </summary>
+        public const string Version = "$ToolPlatform.version";
+
+        /// <summary>
+        /// Corresponds to the tool_platform.instance_guid property.
+        /// </summary>
+        public const string InstanceGuid = "$ToolPlatformInstance.guid";
+
+        /// <summary>
+        /// Corresponds to the tool_platform.instance_name property.
+        /// </summary>
+        public const string InstanceName = "$ToolPlatformInstance.name";
+
+        /// <summary>
+        /// Corresponds to the tool_platform.instance_description property.
+        /// </summary>
+        public const string InstanceDescription = "$ToolPlatformInstance.description";
+
+        /// <summary>
+        /// Corresponds to the tool_platform.instance_url property.
+        /// </summary>
+        public const string InstanceUrl = "$ToolPlatformInstance.url";
+
+        /// <summary>
+        /// Corresponds to the tool_platform.instance_contact_email property.
+        /// </summary>
+        public const string InstanceContactEmail = "$ToolPlatformInstance.contactEmail";
+    }
+
     // BELOW ARE THE LIS VARIABLES
 
+    // TODO: ActualPerson
     public static class LisPersonVariables
     {
         /// <summary>
@@ -871,43 +912,5 @@ namespace NP.Lti13Platform
         /// Corresponds to the launch_presentation.locale property.
         /// </summary>
         public const string Locale = "$Message.locale";
-    }
-
-    public static class LisToolPlatformVariables
-    {
-        /// <summary>
-        /// Corresponds to the tool_platform.product_family_code property.
-        /// </summary>
-        public const string ProductFamilyCode = "$ToolPlatform.productFamilyCode";
-
-        /// <summary>
-        /// Corresponds to the tool_platform.version property.
-        /// </summary>
-        public const string Version = "$ToolPlatform.version";
-
-        /// <summary>
-        /// Corresponds to the tool_platform.instance_guid property.
-        /// </summary>
-        public const string InstanceGuid = "$ToolPlatformInstance.guid";
-
-        /// <summary>
-        /// Corresponds to the tool_platform.instance_name property.
-        /// </summary>
-        public const string InstanceName = "$ToolPlatformInstance.name";
-
-        /// <summary>
-        /// Corresponds to the tool_platform.instance_description property.
-        /// </summary>
-        public const string InstanceDescription = "$ToolPlatformInstance.description";
-
-        /// <summary>
-        /// Corresponds to the tool_platform.instance_url property.
-        /// </summary>
-        public const string InstanceUrl = "$ToolPlatformInstance.url";
-
-        /// <summary>
-        /// Corresponds to the tool_platform.instance_contact_email property.
-        /// </summary>
-        public const string InstanceContactEmail = "$ToolPlatformInstance.contactEmail";
     }
 }

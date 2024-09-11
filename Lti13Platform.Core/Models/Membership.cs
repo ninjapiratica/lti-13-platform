@@ -2,7 +2,7 @@
 {
     public class Membership
     {
-        public MembershipStatus Status { get; set; }
+        public required MembershipStatus Status { get; set; }
 
         public required string ContextId { get; set; }
 

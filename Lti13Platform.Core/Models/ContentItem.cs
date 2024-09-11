@@ -156,6 +156,8 @@ namespace NP.Lti13Platform.Models
         [JsonPropertyName("submission")]
         public LtiResourceLinkSubmission? Submission { get; set; }
 
+        public IEnumerable<string> ClonedIdHistory { get; set; } = [];
+
         public class LtiResourceLinkIframe
         {
             [JsonPropertyName("width")]
@@ -181,6 +183,8 @@ namespace NP.Lti13Platform.Models
 
             [JsonPropertyName("gradesReleased")]
             public bool? GradesReleased { get; set; }
+
+            public DateTime? GradesReleasedDateTime { get; set; }
         }
 
         public class LtiResourceLinkAvailable
