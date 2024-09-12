@@ -99,10 +99,11 @@ namespace NP.Lti13Platform
         Task<LineItem?> GetLineItemAsync(string lineItemId);
         Task DeleteLineItemAsync(string lineItemId);
 
-        Task<PartialList<Result>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int limit, string? userId);
-        Task SaveLineItemResultAsync(Result result);
+        Task<PartialList<Grade>> GetGradesAsync(string contextId, string lineItemId, int pageIndex, int limit, string? userId);
+        Task SaveGradeAsync(Grade result);
 
         Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null);
+        Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId);
 
         // TODO: Figure out custom
     }

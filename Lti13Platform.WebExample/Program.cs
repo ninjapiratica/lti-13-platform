@@ -189,12 +189,12 @@ public class DataService : IDataService
         throw new NotImplementedException();
     }
 
-    public Task<PartialList<Result>> GetLineItemResultsAsync(string contextId, string lineItemId, int pageIndex, int limit, string? userId)
+    public Task<PartialList<Grade>> GetGradesAsync(string contextId, string lineItemId, int pageIndex, int limit, string? userId)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveLineItemResultAsync(Result result)
+    public Task SaveGradeAsync(Grade result)
     {
         throw new NotImplementedException();
     }
@@ -215,6 +215,11 @@ public class DataService : IDataService
     }
 
     public Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId)
     {
         throw new NotImplementedException();
     }

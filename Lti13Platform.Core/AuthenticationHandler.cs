@@ -309,7 +309,7 @@ namespace NP.Lti13Platform
             TimeZone = permissions.TimeZone ? user.TimeZone : null;
         }
 
-        public async Task SetCustomAsync(IDictionary<string, string>? custom, User? user, Context? context, LtiResourceLinkContentItem? resourceLink, CustomPermissions permissions)
+        public void SetCustomAsync(IDictionary<string, string>? custom, User? user, Context? context, LtiResourceLinkContentItem? resourceLink, Attempt? attempt, LineItem? lineItem, Grade? grade, CustomPermissions permissions)
         {
             Custom = custom?.ToDictionary();
 
@@ -346,15 +346,15 @@ namespace NP.Lti13Platform
                     Lti13ResourceLinkVariables.Title when permissions.ResourceLinkTitle => resourceLink?.Title,
                     Lti13ResourceLinkVariables.Description when permissions.ResourceLinkDescription => resourceLink?.Text,
                     Lti13ResourceLinkVariables.AvailableStartDateTime when permissions.ResourceLinkAvailableStartDateTime => resourceLink?.Available?.StartDateTime?.ToString("O"),
-                    //Lti13ResourceLinkVariables.AvailableUserStartDateTime when permissions.ResourceLinkAvailableUserStartDateTime =>                  ,
+                    Lti13ResourceLinkVariables.AvailableUserStartDateTime when permissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.AvailableEndDateTime when permissions.ResourceLinkAvailableEndDateTime => resourceLink?.Available?.EndDateTime?.ToString("O"),
-                    //Lti13ResourceLinkVariables.AvailableUserEndDateTime when permissions.ResourceLinkAvailableUserEndDateTime =>                    ,
+                    Lti13ResourceLinkVariables.AvailableUserEndDateTime when permissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.SubmissionStartDateTime when permissions.ResourceLinkSubmissionStartDateTime => resourceLink?.Submission?.StartDateTime?.ToString("O"),
-                    //Lti13ResourceLinkVariables.SubmissionUserStartDateTime when permissions.ResourceLinkSubmissionUserStartDateTime =>                 ,
+                    Lti13ResourceLinkVariables.SubmissionUserStartDateTime when permissions.ResourceLinkSubmissionUserStartDateTime => attempt?.SubmisstionStartDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.SubmissionEndDateTime when permissions.ResourceLinkSubmissionEndDateTime => resourceLink?.Submission?.EndDateTime?.ToString("O"),
-                    //Lti13ResourceLinkVariables.SubmissionUserEndDateTime when permissions.ResourceLinkSubmissionUserEndDateTime =>                   ,
-                    Lti13ResourceLinkVariables.LineItemReleaseDateTime when permissions.ResourceLinkLineItemReleaseDateTime => resourceLink?.LineItem?.GradesReleasedDateTime?.ToString("O"),
-                    //Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when permissions.ResourceLinkLineItemUserReleaseDateTime =>                 ,
+                    Lti13ResourceLinkVariables.SubmissionUserEndDateTime when permissions.ResourceLinkSubmissionUserEndDateTime => attempt?.SubmissionEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.LineItemReleaseDateTime when permissions.ResourceLinkLineItemReleaseDateTime => lineItem?.GradesReleasedDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when permissions.ResourceLinkLineItemUserReleaseDateTime => grade?.ReleaseDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.IdHistory when permissions.ResourceLinkIdHistory => resourceLink != null ? string.Join(',', resourceLink.ClonedIdHistory) : string.Empty,
 
                     Lti13ToolPlatformVariables.ProductFamilyCode when permissions.ToolPlatformProductFamilyCode => Platform?.ProductFamilyCode,
@@ -367,9 +367,6 @@ namespace NP.Lti13Platform
                     _ => kvp.Value
                 } ?? string.Empty;
             }
-
-
-            await Task.CompletedTask;
         }
 
         public void SetLineItemServiceEndpoints(LineItemServiceEndpoints? serviceEndpoints, ServicePermissions permissions)
@@ -627,7 +624,7 @@ namespace NP.Lti13Platform
             ltiMessage.SetLineItemServiceEndpoints(service.GetServiceEndpoints(context?.Id, null, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
             ltiMessage.SetNamesRoleService(service.GetNamesRoleService(context?.Id, tool.ServicePermissions), tool.ServicePermissions);
-            await ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom), user, context, null, tool.CustomPermissions);
+            ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom), user, context, null, null, null, null, tool.CustomPermissions);
 
             return ltiMessage;
         }
@@ -649,15 +646,21 @@ namespace NP.Lti13Platform
                 return null;
             }
 
+            Attempt? attempt = null;
             LineItem? lineItem = null;
+            Grade? grade = null;
 
             if (context != null)
             {
+                attempt = await dataService.GetAttemptAsync(context.Id, resourceLinkId, user.Id);
+
                 var lineItems = await dataService.GetLineItemsAsync(context.Id, 0, 1, null, resourceLinkId, null);
 
                 if (lineItems.TotalItems == 1)
                 {
                     lineItem = lineItems.Items.FirstOrDefault();
+
+                    grade = (await dataService.GetGradesAsync(context.Id, lineItem!.Id, 0, 1, user.Id))?.Items.FirstOrDefault();
                 }
             }
 
@@ -689,7 +692,7 @@ namespace NP.Lti13Platform
             ltiMessage.SetLineItemServiceEndpoints(service.GetServiceEndpoints(context?.Id, lineItem?.Id, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
             ltiMessage.SetNamesRoleService(service.GetNamesRoleService(context?.Id, tool.ServicePermissions), tool.ServicePermissions);
-            await ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom).Merge(resourceLink.Custom), user, context, resourceLink, tool.CustomPermissions);
+            ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom).Merge(resourceLink.Custom), user, context, resourceLink, attempt, lineItem, grade, tool.CustomPermissions);
 
             return ltiMessage;
         }

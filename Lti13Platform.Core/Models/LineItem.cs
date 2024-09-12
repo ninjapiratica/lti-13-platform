@@ -16,6 +16,8 @@
 
         public bool? GradesReleased { get; set; }
 
+        public DateTime? GradesReleasedDateTime { get; set; }
+
         public DateTime? StartDateTime { get; set; }
 
         public DateTime? EndDateTime { get; set; }

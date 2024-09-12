@@ -1,6 +1,6 @@
 ﻿namespace NP.Lti13Platform.Models
 {
-    public class Result
+    public class Grade
     {
         public required string LineItemId { get; set; }
 
@@ -15,5 +15,7 @@
         public string? Comment { get; set; }
 
         public DateTime Timestamp { get; set; }
+
+        public DateTime? ReleaseDateTime { get; set; }
     }
 }

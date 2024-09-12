@@ -224,12 +224,12 @@ namespace NP.Lti13Platform
 
                     if (!string.IsNullOrWhiteSpace(response.Log))
                     {
-                        logger.LogInformation(response.Log);
+                        logger.LogInformation("Deep Link Log: {DeepLinkingLog}", response.Log);
                     }
 
                     if (!string.IsNullOrWhiteSpace(response.ErrorLog))
                     {
-                        logger.LogError(response.ErrorLog);
+                        logger.LogError("Deep Link Error: {DeepLinkingError}", response.ErrorLog);
                     }
 
                     if (config.CurrentValue.DeepLink.AutoCreate == true)
@@ -659,7 +659,7 @@ namespace NP.Lti13Platform
                         return Results.NotFound();
                     }
 
-                    var lineItemsResponse = await dataService.GetLineItemResultsAsync(contextId, lineItemId, pageIndex, limit ?? int.MaxValue, user_id);
+                    var lineItemsResponse = await dataService.GetGradesAsync(contextId, lineItemId, pageIndex, limit ?? int.MaxValue, user_id);
 
                     if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
                     {
@@ -745,11 +745,11 @@ namespace NP.Lti13Platform
                     }
 
                     var isNew = false;
-                    var result = (await dataService.GetLineItemResultsAsync(contextId, lineItemId, 0, 1, request.UserId)).Items.FirstOrDefault();
+                    var result = (await dataService.GetGradesAsync(contextId, lineItemId, 0, 1, request.UserId)).Items.FirstOrDefault();
                     if (result == null)
                     {
                         isNew = true;
-                        result = new Result
+                        result = new Grade
                         {
                             LineItemId = lineItemId,
                             UserId = request.UserId
@@ -771,7 +771,7 @@ namespace NP.Lti13Platform
                     result.ScoringUserId = request.ScoringUserId;
                     result.Timestamp = request.TimeStamp;
 
-                    await dataService.SaveLineItemResultAsync(result);
+                    await dataService.SaveGradeAsync(result);
 
                     return isNew ? Results.Created() : Results.NoContent();
                 })

@@ -183,8 +183,6 @@ namespace NP.Lti13Platform.Models
 
             [JsonPropertyName("gradesReleased")]
             public bool? GradesReleased { get; set; }
-
-            public DateTime? GradesReleasedDateTime { get; set; }
         }
 
         public class LtiResourceLinkAvailable
