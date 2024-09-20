@@ -47,5 +47,7 @@
         public string? Username { get; set; }
 
         public IEnumerable<string> Orgs { get; set; } = [];
+
+        public IEnumerable<string> OneRosterGrades { get; set; } = [];
     }
 }

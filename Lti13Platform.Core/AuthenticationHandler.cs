@@ -309,7 +309,7 @@ namespace NP.Lti13Platform
             TimeZone = permissions.TimeZone ? user.TimeZone : null;
         }
 
-        public void SetCustomAsync(IDictionary<string, string>? custom, User? user, Context? context, LtiResourceLinkContentItem? resourceLink, Attempt? attempt, LineItem? lineItem, Grade? grade, CustomPermissions permissions)
+        public void SetCustom(IDictionary<string, string>? custom, Context? context, User? user, LtiResourceLinkContentItem? resourceLink, Attempt? attempt, LineItem? lineItem, Grade? grade, CustomPermissions permissions)
         {
             Custom = custom?.ToDictionary();
 
@@ -329,8 +329,7 @@ namespace NP.Lti13Platform
                     Lti13UserVariables.Username when permissions.UserUsername => user?.Username,
                     Lti13UserVariables.Org when permissions.UserOrg => user != null ? string.Join(',', user.Orgs) : string.Empty,
                     Lti13UserVariables.ScopeMentor when permissions.UserScopeMentor => RoleScopeMentor != null ? string.Join(',', RoleScopeMentor) : string.Empty,
-                    //Lti13UserVariables.GradeLevelsOneRoster when permissions.UserGradeLevelsOneRoster => user != null ? string.Join(',', user.OneRosterGrades) : string.Empty,
-                    //Lti13UserVariables.GradeLevelsVendor when permissions.UserGradeLevelsVendor => user != null ? string.Join(',', user.VendorGrades) : string.Empty,
+                    Lti13UserVariables.GradeLevelsOneRoster when permissions.UserGradeLevelsOneRoster => user != null ? string.Join(',', user.OneRosterGrades) : string.Empty,
 
                     Lti13ContextVariables.Id when permissions.ContextId => context?.Id,
                     Lti13ContextVariables.Org when permissions.ContextOrg => context != null ? string.Join(',', context.Orgs) : string.Empty,
@@ -339,8 +338,7 @@ namespace NP.Lti13Platform
                     Lti13ContextVariables.Title when permissions.ContextTitle => context?.Title,
                     Lti13ContextVariables.SourcedId when permissions.ContextSourcedId => context?.SourcedId,
                     Lti13ContextVariables.IdHistory when permissions.ContextIdHistory => context != null ? string.Join(',', context.ClonedIdHistory) : string.Empty,
-                    //Lti13ContextVariables.GradeLevelsOneRoster when permissions.ContextGradeLevelsOneRoster => context != null ? string.Join(',', context?.OneRosterGrades) : string.Empty,
-                    //Lti13ContextVariables.GradeLevelsVendor when permissions.ContextGradeLevelsVendor => context != null ? string.Join(',', context?.VendorGrades) : string.Empty,
+                    Lti13ContextVariables.GradeLevelsOneRoster when permissions.ContextGradeLevelsOneRoster => context != null ? string.Join(',', context.OneRosterGrades) : string.Empty,
 
                     Lti13ResourceLinkVariables.Id when permissions.ResourceLinkId => resourceLink?.Id,
                     Lti13ResourceLinkVariables.Title when permissions.ResourceLinkTitle => resourceLink?.Title,
@@ -624,7 +622,7 @@ namespace NP.Lti13Platform
             ltiMessage.SetLineItemServiceEndpoints(service.GetServiceEndpoints(context?.Id, null, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
             ltiMessage.SetNamesRoleService(service.GetNamesRoleService(context?.Id, tool.ServicePermissions), tool.ServicePermissions);
-            ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom), user, context, null, null, null, null, tool.CustomPermissions);
+            ltiMessage.SetCustom(tool.Custom.Merge(deployment.Custom), context, user, null, null, null, null, tool.CustomPermissions);
 
             return ltiMessage;
         }
@@ -692,7 +690,7 @@ namespace NP.Lti13Platform
             ltiMessage.SetLineItemServiceEndpoints(service.GetServiceEndpoints(context?.Id, lineItem?.Id, tool.ServicePermissions), tool.ServicePermissions);
             ltiMessage.SetUser(user, tool.UserPermissions);
             ltiMessage.SetNamesRoleService(service.GetNamesRoleService(context?.Id, tool.ServicePermissions), tool.ServicePermissions);
-            ltiMessage.SetCustomAsync(tool.Custom.Merge(deployment.Custom).Merge(resourceLink.Custom), user, context, resourceLink, attempt, lineItem, grade, tool.CustomPermissions);
+            ltiMessage.SetCustom(tool.Custom.Merge(deployment.Custom).Merge(resourceLink.Custom), context, user, resourceLink, attempt, lineItem, grade, tool.CustomPermissions);
 
             return ltiMessage;
         }

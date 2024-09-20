@@ -69,7 +69,6 @@
         public bool UserOrg { get; set; }
         public bool UserScopeMentor { get; set; }
         public bool UserGradeLevelsOneRoster { get; set; }
-        public bool UserGradeLevelsVendor { get; set; }
 
         public bool ContextId { get; set; }
         public bool ContextOrg { get; set; }

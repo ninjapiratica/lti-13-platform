@@ -21,5 +21,7 @@
         public IEnumerable<string> Orgs { get; set; } = [];
 
         public IEnumerable<string> ClonedIdHistory { get; set; } = [];
+
+        public IEnumerable<string> OneRosterGrades { get; set; } = [];
     }
 }
