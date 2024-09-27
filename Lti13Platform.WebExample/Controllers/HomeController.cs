@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using NP.Lti13Platform;
-using NP.Lti13Platform.Models;
+using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.DeepLinking;
 
 namespace NP.Lti13PlatformExample.Controllers
 {
@@ -21,8 +22,8 @@ namespace NP.Lti13PlatformExample.Controllers
 
             return Results.Ok(new
             {
-                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, null, new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
-                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, resourceLink, userId, new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }) : null,
+                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, null), //new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
+                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, resourceLink, userId) : null // new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }) : null,
             });
         }
     }

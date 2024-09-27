@@ -1,6 +1,9 @@
 using Microsoft.IdentityModel.Tokens;
-using NP.Lti13Platform;
-using NP.Lti13Platform.Models;
+using NP.Lti13Platform.AssignmentGradeServices;
+using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.DeepLinking;
+using NP.Lti13Platform.NameRoleProvisioningServices;
 using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,10 +11,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddLti13Platform(config =>
-{
-    config.Issuer = "https://mytest.com";
-});
+builder.Services
+    .AddLti13PlatformCore(config =>
+    {
+        config.Issuer = "https://mytest.com";
+    })
+    .AddLti13PlatformDeepLinking()
+    .AddLti13PlatformAssignmentGradeServices()
+    .AddLti13PlatformNameRoleProvisioningServices();
+
 builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddTransient<IDeepLinkContentHandler, DeepLinkContentHandler>();
 
@@ -32,7 +40,10 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13Platform();
+app.UseLti13PlatformCore()
+    .UseLti13PlatformDeepLinking()
+    .UseLti13PlatformAssignmentGradeServices()
+    .UseLti13PlatformNameRoleProvisioningServices();
 
 app.MapControllerRoute(
     name: "default",
@@ -72,7 +83,16 @@ public class DataService : IDataService
             Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
             UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
             CustomPermissions = new CustomPermissions(),
-            ServicePermissions = new ServicePermissions { LineItemScopes = [] }
+            ServicePermissions = new ServicePermissions
+            {
+                LineItemScopes = [
+                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItem,
+                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItemReadOnly,
+                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.ResultReadOnly,
+                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.Score
+                ],
+                AllowNameRoleProvisioningService = true
+            }
         });
     }
 

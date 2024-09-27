@@ -1,6 +1,6 @@
-﻿using NP.Lti13Platform.Models;
+﻿using NP.Lti13Platform.Core.Models;
 
-namespace NP.Lti13Platform
+namespace NP.Lti13Platform.Core
 {
     public class Lti13PlatformConfig
     {

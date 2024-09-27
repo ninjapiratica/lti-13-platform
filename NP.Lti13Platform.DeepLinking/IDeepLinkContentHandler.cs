@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace NP.Lti13Platform
+namespace NP.Lti13Platform.DeepLinking
 {
     public interface IDeepLinkContentHandler
     {

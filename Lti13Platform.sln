@@ -3,11 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform", "Lti13Platform.Core\NP.Lti13Platform.csproj", "{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Core", "Lti13Platform.Core\NP.Lti13Platform.Core.csproj", "{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Test", "Lti13Platform.Test\NP.Lti13Platform.Test.csproj", "{FFA6228F-50F4-4D72-A644-CD64A7F549FF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.WebExample", "Lti13Platform.WebExample\NP.Lti13Platform.WebExample.csproj", "{EA964601-16BF-447B-B4B1-AE510F1E3A94}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.AssignmentGradeServices", "NP.Lti13Platform.AssignmentGradeServices\NP.Lti13Platform.AssignmentGradeServices.csproj", "{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.DeepLinking", "NP.Lti13Platform.DeepLinking\NP.Lti13Platform.DeepLinking.csproj", "{77EDBF5D-0981-4DF5-9CBA-318111238806}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.NameRoleProvisioningServices", "NP.Lti13Platform.NameRoleProvisioningServices\NP.Lti13Platform.NameRoleProvisioningServices.csproj", "{F66A42F5-6EB2-4488-A620-36FF6B2685A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +33,18 @@ Global
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77EDBF5D-0981-4DF5-9CBA-318111238806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77EDBF5D-0981-4DF5-9CBA-318111238806}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77EDBF5D-0981-4DF5-9CBA-318111238806}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77EDBF5D-0981-4DF5-9CBA-318111238806}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

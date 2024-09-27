@@ -1,27 +1,19 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using NP.Lti13Platform.Models;
+using NP.Lti13Platform.Core.Models;
 using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using System.Web;
 
-namespace NP.Lti13Platform
+namespace NP.Lti13Platform.Core
 {
-    public class Service(IOptionsMonitor<Lti13PlatformConfig> config, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor)
+    public class Service(IOptionsMonitor<Lti13PlatformConfig> config)
     {
-        public Uri GetDeepLinkInitiationUrl(Tool tool, string deploymentId, string? contextId, string? userId = null, DeepLinkSettings? deepLinkSettings = null, LaunchPresentation? launchPresentation = null)
-            => GetUrl(Lti13MessageType.LtiDeepLinkingRequest, tool, deploymentId, tool.DeepLinkUrl, contextId, userId, Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings))), launchPresentation);
+        public Uri GetResourceLinkInitiationUrl(Tool tool, LtiResourceLinkContentItem resourceLink, string? userId = null)
+            => GetUrl(Lti13MessageType.LtiResourceLinkRequest, tool, resourceLink.DeploymentId, string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.OidcInitiationUrl : resourceLink.Url, resourceLink.ContextId, resourceLink.Id, userId, null);
 
-        public Uri GetResourceLinkInitiationUrl(Tool tool, LtiResourceLinkContentItem resourceLink, string? userId = null, LaunchPresentation? launchPresentation = null)
-            => GetUrl(Lti13MessageType.LtiResourceLinkRequest, tool, resourceLink.DeploymentId, string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.OidcInitiationUrl : resourceLink.Url, resourceLink.ContextId, userId, resourceLink.Id, launchPresentation);
-
-        public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? userId = null, string? messageHint = null, LaunchPresentation? launchPresentation = null)
+        public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? resourceLinkId = null, string? userId = null, string? messageHint = null)
         {
-            var launchPresentationString = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(launchPresentation)));
-
             var builder = new UriBuilder(tool.OidcInitiationUrl);
 
             var query = HttpUtility.ParseQueryString(builder.Query);
@@ -29,40 +21,11 @@ namespace NP.Lti13Platform
             query.Add("login_hint", userId);
             query.Add("target_link_uri", targetLinkUri);
             query.Add("client_id", tool.ClientId.ToString());
-            query.Add("lti_message_hint", $"{messageType}|{deploymentId}|{contextId}|{launchPresentationString}|{messageHint}");
+            query.Add("lti_message_hint", $"{messageType}|{deploymentId}|{contextId}|{resourceLinkId}|{messageHint}");
             query.Add("lti_deployment_id", deploymentId);
             builder.Query = query.ToString();
 
             return builder.Uri;
-        }
-
-        public LineItemServiceEndpoints? GetServiceEndpoints(string? contextId, string? lineItemId, ServicePermissions permissions)
-        {
-            if (!permissions.LineItemScopes.Any() || string.IsNullOrWhiteSpace(contextId) || httpContextAccessor.HttpContext == null)
-            {
-                return null;
-            }
-
-            return new LineItemServiceEndpoints
-            {
-                Scopes = permissions.LineItemScopes.ToList(),
-                LineItemsUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_LINE_ITEMS, new { contextId = contextId }),
-                LineItemUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_LINE_ITEM, new { contextId = contextId, lineItemId = lineItemId }),
-            };
-        }
-
-        public NamesRoleService? GetNamesRoleService(string? contextId, ServicePermissions permissions)
-        {
-            if (!permissions.AllowNameRoleProvisioningService || string.IsNullOrWhiteSpace(contextId) || httpContextAccessor.HttpContext == null)
-            {
-                return null;
-            }
-
-            return new NamesRoleService
-            {
-                ContextMembershipUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_MEMBERSHIPS, new { contextId = contextId })!,
-                ServiceVersions = ["2.0"]
-            };
         }
     }
 

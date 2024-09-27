@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Models
+﻿namespace NP.Lti13Platform.Core.Models
 {
     public class LineItem
     {

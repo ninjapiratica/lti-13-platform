@@ -1,38 +1,30 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using NP.Lti13Platform.Extensions;
-using NP.Lti13Platform.Models;
+using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.Populators;
 using System.Collections;
 using System.Collections.ObjectModel;
-using System.Net;
+using System.Net.Mime;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
 using System.Web;
 
-namespace NP.Lti13Platform
+namespace NP.Lti13Platform.Core
 {
-    internal static class RouteNames
-    {
-        public const string GET_LINE_ITEMS = "GET_LINE_ITEMS";
-        public const string GET_LINE_ITEM = "GET_LINE_ITEM";
-        public const string GET_LINE_ITEM_RESULTS = "GET_LINE_ITEM_RESULTS";
-        public const string DEEP_LINKING_RESPONSE = "DEEP_LINKING_RESPONSE";
-        public const string GET_MEMBERSHIPS = "GET_MEMBERSHIPS";
-    }
-
     internal class LtiMessageTypeResolver : DefaultJsonTypeInfoResolver
     {
         private static readonly HashSet<Type> derivedTypes = [];
@@ -58,15 +50,211 @@ namespace NP.Lti13Platform
             return jsonTypeInfo;
         }
 
-        public static void AddDerivedType<T>() where T : LtiMessage
+        public static void AddDerivedType(Type type)
         {
-            derivedTypes.Add(typeof(T));
+            derivedTypes.Add(type);
+        }
+    }
+
+    public class Lti13PlatformServiceCollection(IServiceCollection baseCollection) : IServiceCollection
+    {
+        private static readonly ModuleBuilder dynamicModule = AssemblyBuilder
+            .DefineDynamicAssembly(new AssemblyName(Assembly.GetExecutingAssembly().GetName().Name + ".DynamicAssembly"), AssemblyBuilderAccess.Run)
+            .DefineDynamicModule("DynamicModule");
+
+        internal static readonly Dictionary<string, TypeBuilder> LtiMessageTypeBuilders = [];
+
+        private static readonly Dictionary<string, Type> LtiMessageTypes = [];
+
+        public Lti13PlatformServiceCollection ExtendLti13Message<T, U>(string? messageType = null)
+            where T : class
+            where U : Populator<T>
+        {
+            var tType = typeof(T);
+
+            if (!tType.IsInterface)
+            {
+                throw new Exception("T must be an interface");
+            }
+
+            if (tType.GetMethods().Any(m => !m.IsSpecialName))
+            {
+                throw new Exception("Interfaces may only have properties.");
+            }
+
+            void AddInterface(TypeBuilder typeBuilder)
+            {
+                typeBuilder.AddInterfaceImplementation(tType);
+
+                foreach (var propertyInfo in tType.GetProperties())
+                {
+                    var fieldBuilder = typeBuilder.DefineField("_" + propertyInfo.Name.ToLower(), propertyInfo.PropertyType, FieldAttributes.Private);
+                    var propertyBuilder = typeBuilder.DefineProperty(propertyInfo.Name, PropertyAttributes.None, propertyInfo.PropertyType, Type.EmptyTypes);
+
+                    foreach (var customAttribute in propertyInfo.CustomAttributes)
+                    {
+                        var propertyArguments = customAttribute.NamedArguments.Where(a => !a.IsField).Select(a => new { PropertyInfo = (PropertyInfo)a.MemberInfo, a.TypedValue.Value }).ToArray();
+                        var fieldArguments = customAttribute.NamedArguments.Where(a => a.IsField).Select(a => new { FieldInfo = (FieldInfo)a.MemberInfo, a.TypedValue.Value }).ToArray();
+
+                        var constructorArgs = customAttribute.ConstructorArguments.Select(a => a.Value is ReadOnlyCollection<CustomAttributeTypedArgument> collection ? collection.Select(c => c.Value).ToArray() : a.Value).ToArray();
+                        var propertyArgs = propertyArguments.Select(a => a.PropertyInfo).ToArray();
+                        var propertyValues = propertyArguments.Select(a => a.Value).ToArray();
+                        var fieldArgs = fieldArguments.Select(a => a.FieldInfo).ToArray();
+                        var fieldValues = fieldArguments.Select(a => a.Value).ToArray();
+
+                        var customBuilder = new CustomAttributeBuilder(
+                            customAttribute.Constructor,
+                            constructorArgs,
+                            propertyArgs,
+                            propertyValues,
+                            fieldArgs,
+                            fieldValues);
+
+                        propertyBuilder.SetCustomAttribute(customBuilder);
+                    }
+
+                    var getter = typeBuilder.DefineMethod("get_" + propertyInfo.Name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Virtual, propertyInfo.PropertyType, Type.EmptyTypes);
+                    var getGenerator = getter.GetILGenerator();
+                    getGenerator.Emit(OpCodes.Ldarg_0);
+                    getGenerator.Emit(OpCodes.Ldfld, fieldBuilder);
+                    getGenerator.Emit(OpCodes.Ret);
+                    propertyBuilder.SetGetMethod(getter);
+                    var getMethod = propertyInfo.GetGetMethod();
+                    if (getMethod != null)
+                    {
+                        typeBuilder.DefineMethodOverride(getter, getMethod);
+                    }
+
+                    var setter = typeBuilder.DefineMethod("set_" + propertyInfo.Name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Virtual, null, [propertyInfo.PropertyType]);
+                    var setGenerator = setter.GetILGenerator();
+                    setGenerator.Emit(OpCodes.Ldarg_0);
+                    setGenerator.Emit(OpCodes.Ldarg_1);
+                    setGenerator.Emit(OpCodes.Stfld, fieldBuilder);
+                    setGenerator.Emit(OpCodes.Ret);
+                    propertyBuilder.SetSetMethod(setter);
+                    var setMethod = propertyInfo.GetSetMethod();
+                    if (setMethod != null)
+                    {
+                        typeBuilder.DefineMethodOverride(setter, setMethod);
+                    }
+                }
+            }
+
+            if (messageType == null)
+            {
+                foreach (var typeBuilder in LtiMessageTypeBuilders)
+                {
+                    AddInterface(typeBuilder.Value);
+                    baseCollection.AddKeyedTransient<Populator, U>(typeBuilder.Key);
+                }
+            }
+            else if (LtiMessageTypeBuilders.TryGetValue(messageType, out var typeBuilder))
+            {
+                AddInterface(typeBuilder);
+                baseCollection.AddKeyedTransient<Populator, U>(messageType);
+            }
+
+            return this;
+        }
+
+        public Lti13PlatformServiceCollection AddMessageHandler(string messageType)
+        {
+            if (!LtiMessageTypeBuilders.TryAdd(messageType, dynamicModule.DefineType("Dynamic" + Regex.Replace(messageType.Trim(), "[^a-zA-Z0-9]", "_"), TypeAttributes.Public, typeof(LtiMessage))))
+            {
+                throw new Exception("Message Type already added");
+            }
+
+            baseCollection.AddKeyedTransient<LtiMessage>(messageType, (sp, obj) =>
+            {
+                if (!LtiMessageTypes.TryGetValue(messageType, out var type))
+                {
+                    if (LtiMessageTypeBuilders.TryGetValue(messageType, out var typeBuilder))
+                    {
+                        type = typeBuilder.CreateType();
+                        LtiMessageTypeResolver.AddDerivedType(type);
+                        LtiMessageTypes.TryAdd(messageType, type);
+                    }
+                    else
+                    {
+                        throw new Exception();
+                    }
+                }
+
+                return (LtiMessage)Activator.CreateInstance(type)!;
+            });
+
+            return this;
+        }
+
+        public ServiceDescriptor this[int index] { get => baseCollection[index]; set => baseCollection[index] = value; }
+
+        public int Count => baseCollection.Count;
+
+        public bool IsReadOnly => baseCollection.IsReadOnly;
+
+        public void Add(ServiceDescriptor item) => baseCollection.Add(item);
+
+        public void Clear() => baseCollection.Clear();
+
+        public bool Contains(ServiceDescriptor item) => baseCollection.Contains(item);
+
+        public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => baseCollection.CopyTo(array, arrayIndex);
+
+        public IEnumerator<ServiceDescriptor> GetEnumerator() => baseCollection.GetEnumerator();
+
+        public int IndexOf(ServiceDescriptor item) => baseCollection.IndexOf(item);
+
+        public void Insert(int index, ServiceDescriptor item) => baseCollection.Insert(index, item);
+
+        public bool Remove(ServiceDescriptor item) => baseCollection.Remove(item);
+
+        public void RemoveAt(int index) => baseCollection.RemoveAt(index);
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)baseCollection).GetEnumerator();
+    }
+
+    public class Lti13PlatformEndpointRouteBuilder(IEndpointRouteBuilder builder) : IEndpointRouteBuilder
+    {
+        public IServiceProvider ServiceProvider => builder.ServiceProvider;
+
+        public ICollection<EndpointDataSource> DataSources => builder.DataSources;
+
+        public IApplicationBuilder CreateApplicationBuilder() => builder.CreateApplicationBuilder();
+    }
+
+    public class Lti13MessageScope
+    {
+        public required Tool Tool { get; set; }
+
+        public required User User { get; set; }
+
+        public required Deployment Deployment { get; set; }
+
+        public Context? Context { get; set; }
+
+        public LtiResourceLinkContentItem? ResourceLink { get; set; }
+
+        public required string MessageHint { get; set; }
+    }
+
+    public abstract class Populator
+    {
+        public abstract Task Populate(object obj, Lti13MessageScope scope);
+    }
+
+    public abstract class Populator<T> : Populator
+    {
+        public abstract Task Populate(T obj, Lti13MessageScope scope);
+
+        public override async Task Populate(object obj, Lti13MessageScope scope)
+        {
+            await Populate((T)obj, scope);
         }
     }
 
     public static class Startup
     {
-        private static readonly JsonSerializerOptions jsonOptions = new()
+        private static readonly JsonSerializerOptions JSON_OPTIONS = new()
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             TypeInfoResolver = new DefaultJsonTypeInfoResolver
@@ -83,41 +271,56 @@ namespace NP.Lti13Platform
                 }
             }
         };
+        private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
+        private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
-        public static IServiceCollection AddLti13Platform(this IServiceCollection services, Action<Lti13PlatformConfig> configure)
+        public static Lti13PlatformServiceCollection AddLti13PlatformCore(this IServiceCollection services, Action<Lti13PlatformConfig> configure)
         {
-            services.Configure(configure);
+            var lti13PlatformServiceCollection = new Lti13PlatformServiceCollection(services);
 
-            services.AddTransient<Service>();
-            services.AddTransient<IPlatformService, PlatformService>();
-            services.AddKeyedTransient(typeof(Startup), (sp, key) => sp.GetRequiredService<ILoggerFactory>().CreateLogger("NP.Lti13Platform"));
+            lti13PlatformServiceCollection.Configure(configure);
 
-            services.AddMessageHandler<DeepLinkingMessageHandler, LtiDeepLinkingMessage>(Lti13MessageType.LtiDeepLinkingRequest);
-            services.AddMessageHandler<ResourceLinkMessageHandler, LtiResourceLinkMessage>(Lti13MessageType.LtiResourceLinkRequest);
+            lti13PlatformServiceCollection.AddTransient<Service>();
+            lti13PlatformServiceCollection.AddTransient<IPlatformService, PlatformService>();
+            lti13PlatformServiceCollection.AddKeyedTransient(typeof(Startup), (sp, key) => sp.GetRequiredService<ILoggerFactory>().CreateLogger("NP.Lti13Platform"));
 
-            services.AddAuthentication()
+            lti13PlatformServiceCollection.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IPlatformMessage, PlatformPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<ILaunchPresentationMessage, LaunchPresentationPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IContextMessage, ContextPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiResourceLinkRequest);
+
+            lti13PlatformServiceCollection.AddAuthentication()
                 .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
 
-            services.AddHttpContextAccessor();
+            lti13PlatformServiceCollection.AddHttpContextAccessor();
 
-            return services;
+            return lti13PlatformServiceCollection;
         }
 
-        public static IServiceCollection AddMessageHandler<T, U>(this IServiceCollection services, string messageType) where T : class, IMessageHandler where U : LtiMessage
+        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
         {
-            services.AddKeyedTransient<IMessageHandler, T>(messageType);
+            var lti13PlatformEndpointRouteBuilder = new Lti13PlatformEndpointRouteBuilder(routeBuilder);
 
-            LtiMessageTypeResolver.AddDerivedType<U>();
-
-            return services;
-        }
-
-        public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformEndpointsConfig>? configure = null)
-        {
-            var config = new Lti13PlatformEndpointsConfig();
+            var config = new Lti13PlatformCoreEndpointsConfig();
             configure?.Invoke(config);
 
-            app.MapGet(config.JwksUrl,
+            if (routeBuilder is IApplicationBuilder appBuilder)
+            {
+                appBuilder.Use((context, next) =>
+                {
+                    if (context.Request.Path == config.AuthorizationUrl && new HttpMethod(context.Request.Method) == HttpMethod.Get)
+                    {
+                        context.Request.Form = new FormCollection([]);
+                    }
+
+                    return next(context);
+                });
+            }
+
+            lti13PlatformEndpointRouteBuilder.MapGet(config.JwksUrl,
                 async (IDataService dataService) =>
                 {
                     var keys = await dataService.GetPublicKeysAsync();
@@ -131,139 +334,205 @@ namespace NP.Lti13Platform
                         keySet.Keys.Add(jwk);
                     }
 
-                    return Results.Json(keySet, jsonOptions);
+                    return Results.Json(keySet, JSON_OPTIONS);
                 });
 
-            app.MapGet(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, dataService, request));
-
-            app.MapPost(config.AuthorizationUrl,
-                async ([FromForm] AuthenticationRequest request, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) => await AuthenticationHandler.HandleAsync(serviceProvider, dataService, request))
-                .DisableAntiforgery();
-
-            app.MapPost(config.DeepLinkingResponseUrl,
-                async ([FromForm] DeepLinkResponseRequest request, string? contextId, [FromKeyedServices(typeof(Startup))] ILogger logger, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService, IDeepLinkContentHandler deepLinkContentHandler) =>
+            lti13PlatformEndpointRouteBuilder.Map(config.AuthorizationUrl,
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService, IPlatformService platformService) =>
                 {
-                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
-                    const string INVALID_CLIENT = "invalid_client";
+                    const string OPENID = "openid";
+                    const string ID_TOKEN = "id_token";
+                    const string FORM_POST = "form_post";
+                    const string NONE = "none";
+                    const string INVALID_SCOPE = "invalid_scope";
                     const string INVALID_REQUEST = "invalid_request";
-                    const string JWT_REQUIRED = "JWT is required";
-                    const string DEPLOYMENT_ID_REQUIRED = "deployment_id is required";
-                    const string CLIENT_ID_REQUIRED = "client_id is required";
-                    const string DEPLOYMENT_ID_INVALID = "deployment_id is invalid";
-                    const string MESSAGE_TYPE_INVALID = "message_type is invalid";
-                    const string VERSION_INVALID = "version is invalid";
+                    const string INVALID_CLIENT = "invalid_client";
+                    const string INVALID_GRANT = "invalid_grant";
+                    const string UNAUTHORIZED_CLIENT = "unauthorized_client";
+                    const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request";
+                    const string LTI_SPEC_URI = "https://www.imsglobal.org/spec/lti/v1p3/#lti_message_hint-login-parameter";
+                    const string SCOPE_REQUIRED = "scope must be 'openid'.";
+                    const string RESPONSE_TYPE_REQUIRED = "response_type must be 'id_token'.";
+                    const string RESPONSE_MODE_REQUIRED = "response_mode must be 'form_post'.";
+                    const string PROMPT_REQUIRED = "prompt must be 'none'.";
+                    const string NONCE_REQUIRED = "nonce is required.";
+                    const string CLIENT_ID_REQUIRED = "client_id is required.";
+                    const string UNKNOWN_CLIENT_ID = "client_id is unknown";
+                    const string UNKNOWN_REDIRECT_URI = "redirect_uri is unknown";
+                    const string LTI_MESSAGE_HINT_INVALID = "lti_message_hint is invalid";
+                    const string LOGIN_HINT_REQUIRED = "login_hint is required";
+                    const string USER_CLIENT_MISMATCH = "client is not authorized for user";
+                    const string DEPLOYMENT_CLIENT_MISMATCH = "deployment is not for client";
 
-                    if (string.IsNullOrWhiteSpace(request.Jwt))
+                    var request = form ?? queryString;
+
+                    /* https://datatracker.ietf.org/doc/html/rfc6749#section-5.2 */
+                    /* https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request */
+
+                    if (request.Scope != OPENID)
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = JWT_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new
+                        {
+                            Error = INVALID_SCOPE,
+                            Error_Description = SCOPE_REQUIRED,
+                            Error_Uri = AUTH_SPEC_URI
+                        });
                     }
 
-                    var jwt = new JsonWebToken(request.Jwt);
-
-                    if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
+                    if (request.Response_Type != ID_TOKEN)
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = RESPONSE_TYPE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    var deployment = await dataService.GetDeploymentAsync(deploymentIdClaim.Value);
-                    if (deployment == null)
+                    if (request.Response_Mode != FORM_POST)
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = RESPONSE_MODE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    var tool = await dataService.GetToolAsync(deployment.ToolId);
-                    if (tool?.Jwks == null)
+                    if (request.Prompt != NONE)
                     {
-                        return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = PROMPT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
+                    if (string.IsNullOrWhiteSpace(request.Nonce))
                     {
-                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
-                        ValidAudience = config.CurrentValue.Issuer,
-                        ValidIssuer = tool.ClientId.ToString()
-                    });
-
-                    if (!validatedToken.IsValid)
-                    {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = validatedToken.Exception.Message, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = NONCE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != "LtiDeepLinkingResponse")
+                    if (string.IsNullOrWhiteSpace(request.Login_Hint))
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = MESSAGE_TYPE_INVALID, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LOGIN_HINT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != "1.3.0")
+                    if (string.IsNullOrWhiteSpace(request.Client_Id))
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = VERSION_INVALID, Error_Uri = DEEP_LINKING_SPEC });
+                        return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    var response = new DeepLinkResponse
+                    var tool = await dataService.GetToolByClientIdAsync(request.Client_Id);
+
+                    if (tool == null)
                     {
-                        Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
-                        Message = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/msg")?.Value,
-                        Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
-                        ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
-                        ErrorLog = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog")?.Value,
-                        ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
-                            .Select(x =>
-                            {
-                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetRawText();
-                                var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
+                        return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
+                    }
 
-                                contentItem.Id = Guid.NewGuid().ToString();
-                                contentItem.DeploymentId = deployment.Id;
-                                contentItem.ContextId = contextId;
+                    if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
+                    {
+                        return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
+                    }
 
-                                return contentItem;
-                            })
-                            .ToList()
+                    var userId = request.Login_Hint;
+                    var user = await dataService.GetUserAsync(userId);
+
+                    if (user == null)
+                    {
+                        return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
+                    }
+
+                    if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint) ||
+                        request.Lti_Message_Hint.Split('|', 5) is not [var messageTypeString, var deploymentId, var contextId, var resourceLinkId, var messageHintString])
+                    {
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
+                    }
+
+                    var deployment = await dataService.GetDeploymentAsync(deploymentId);
+
+                    if (deployment?.ToolId != tool.ClientId)
+                    {
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
+                    }
+
+                    var context = string.IsNullOrWhiteSpace(contextId) ? null : await dataService.GetContextAsync(contextId);
+
+                    var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(resourceLinkId);
+
+                    var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
+
+                    ltiMessage.Audience = tool.ClientId;
+                    ltiMessage.IssuedDate = DateTime.UtcNow;
+                    ltiMessage.Issuer = config.CurrentValue.Issuer;
+                    ltiMessage.Nonce = request.Nonce!;
+                    ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds);
+
+                    ltiMessage.Subject = user.Id;
+
+                    ltiMessage.Address = user.Address == null || !tool.UserPermissions.Address ? null : new AddressClaim
+                    {
+                        Country = tool.UserPermissions.AddressCountry ? user.Address.Country : null,
+                        Formatted = tool.UserPermissions.AddressFormatted ? user.Address.Formatted : null,
+                        Locality = tool.UserPermissions.AddressLocality ? user.Address.Locality : null,
+                        PostalCode = tool.UserPermissions.AddressPostalCode ? user.Address.PostalCode : null,
+                        Region = tool.UserPermissions.AddressRegion ? user.Address.Region : null,
+                        StreetAddress = tool.UserPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
                     };
 
-                    if (!string.IsNullOrWhiteSpace(response.Log))
+                    ltiMessage.Birthdate = tool.UserPermissions.Birthdate ? user.Birthdate : null;
+                    ltiMessage.Email = tool.UserPermissions.Email ? user.Email : null;
+                    ltiMessage.EmailVerified = tool.UserPermissions.EmailVerified ? user.EmailVerified : null;
+                    ltiMessage.FamilyName = tool.UserPermissions.FamilyName ? user.FamilyName : null;
+                    ltiMessage.Gender = tool.UserPermissions.Gender ? user.Gender : null;
+                    ltiMessage.GivenName = tool.UserPermissions.GivenName ? user.GivenName : null;
+                    ltiMessage.Locale = tool.UserPermissions.Locale ? user.Locale : null;
+                    ltiMessage.MiddleName = tool.UserPermissions.MiddleName ? user.MiddleName : null;
+                    ltiMessage.Name = tool.UserPermissions.Name ? user.Name : null;
+                    ltiMessage.Nickname = tool.UserPermissions.Nickname ? user.Nickname : null;
+                    ltiMessage.PhoneNumber = tool.UserPermissions.PhoneNumber ? user.PhoneNumber : null;
+                    ltiMessage.PhoneNumberVerified = tool.UserPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
+                    ltiMessage.Picture = tool.UserPermissions.Picture ? user.Picture : null;
+                    ltiMessage.PreferredUsername = tool.UserPermissions.PreferredUsername ? user.PreferredUsername : null;
+                    ltiMessage.Profile = tool.UserPermissions.Profile ? user.Profile : null;
+                    ltiMessage.UpdatedAt = tool.UserPermissions.UpdatedAt ? user.UpdatedAt : null;
+                    ltiMessage.Website = tool.UserPermissions.Website ? user.Website : null;
+                    ltiMessage.TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null;
+
+                    ltiMessage.MessageType = messageTypeString;
+
+                    var scope = new Lti13MessageScope
                     {
-                        logger.LogInformation("Deep Link Log: {DeepLinkingLog}", response.Log);
+                        Tool = tool,
+                        User = user,
+                        Deployment = deployment,
+                        Context = context,
+                        ResourceLink = resourceLink,
+                        MessageHint = messageHintString
+                    };
+
+                    //ltiMessage.DeploymentId = deployment.Id;
+                    //ltiMessage.Roles = roles;
+                    //ltiMessage.SetContext(context);
+                    //ltiMessage.SetLaunchPresentation(launchPresentation);
+                    //ltiMessage.SetPlatform(await platformService.GetPlatformAsync(tool.ClientId));
+                    //ltiMessage.SetRoleScopeMentor();
+                    //ltiMessage.SetCustom();
+
+                    var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
+                    foreach (var service in services)
+                    {
+                        await service.Populate(ltiMessage, scope);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(response.ErrorLog))
-                    {
-                        logger.LogError("Deep Link Error: {DeepLinkingError}", response.ErrorLog);
-                    }
+                    var privateKey = await dataService.GetPrivateKeyAsync();
 
-                    if (config.CurrentValue.DeepLink.AutoCreate == true)
-                    {
-                        await dataService.SaveContentItemsAsync(response.ContentItems);
-                    }
+                    var token = new JsonWebTokenHandler().CreateToken(
+                    JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
+                    new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
-                    if (config.CurrentValue.DeepLink.AcceptLineItem == true)
-                    {
-                        var saveTasks = response.ContentItems
-                            .OfType<LtiResourceLinkContentItem>()
-                            .Where(i => i.LineItem != null)
-                            .Select(i => dataService.SaveLineItemAsync(new LineItem
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                Label = i.LineItem!.Label ?? i.Title ?? i.Type,
-                                ScoreMaximum = i.LineItem.ScoreMaximum,
-                                GradesReleased = i.LineItem.GradesReleased,
-                                Tag = i.LineItem.Tag,
-                                ResourceId = i.LineItem.ResourceId,
-                                ResourceLinkId = i.Id,
-                                StartDateTime = i.Submission?.StartDateTime,
-                                EndDateTime = i.Submission?.EndDateTime
-                            }));
-
-                        await Task.WhenAll(saveTasks);
-                    }
-
-                    return await deepLinkContentHandler.HandleAsync(response);
+                    return Results.Content(@$"<!DOCTYPE html>
+                    <html>
+                    <body>
+                    <form method=""post"" action=""{request.Redirect_Uri}"">
+                    <input type=""hidden"" name=""id_token"" value=""{token}""/>
+                    {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
+                    </form>
+                    <script type=""text/javascript"">
+                    document.getElementsByTagName('form')[0].submit();
+                    </script>
+                    </body>
+                    </html>", MediaTypeNames.Text.Html);
                 })
-                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                 .DisableAntiforgery();
 
-            app.MapPost(config.TokenUrl,
+            lti13PlatformEndpointRouteBuilder.MapPost(config.TokenUrl,
                 async ([FromForm] TokenRequest request, IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config) =>
                 {
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
@@ -281,8 +550,6 @@ namespace NP.Lti13Platform
                     const string INVALID_REQUEST = "invalid_request";
                     const string JTI_REUSE = "jti has already been used and is not expired";
                     const string BODY_MISSING = "request body is missing";
-
-                    HashSet<string> SCOPES = [Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly, Lti13ServiceScopes.ResultReadOnly, Lti13ServiceScopes.Score];
 
                     if (request == null)
                     {
@@ -304,8 +571,8 @@ namespace NP.Lti13Platform
                         return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                     }
 
-                    var scopes = HttpUtility.UrlDecode(request.Scope).Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                        .Intersect(SCOPES);
+                    // TODO: filter out scopes that aren't supported by the tool
+                    var scopes = HttpUtility.UrlDecode(request.Scope).Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
                     if (!scopes.Any())
                     {
@@ -377,552 +644,16 @@ namespace NP.Lti13Platform
                 })
                 .DisableAntiforgery();
 
-            app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
-                {
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItemsResponse = await dataService.GetLineItemsAsync(contextId, pageIndex, limit ?? int.MaxValue, resource_id, resource_link_id, tag);
-
-                    if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
-                    {
-                        var links = new Collection<string>();
-                        if (pageIndex > 0)
-                        {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = pageIndex - 1 })}>; rel=\"prev\"");
-                        }
-
-                        if (lineItemsResponse.TotalItems > limit * (pageIndex + 1))
-                        {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
-                        }
-
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = 0 })}>; rel=\"first\"");
-
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
-
-                        httpContext.Response.Headers.Link = new StringValues([.. links]);
-                    }
-
-                    return Results.Json(lineItemsResponse.Items.Select(i => new
-                    {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.Id }),
-                        i.StartDateTime,
-                        i.EndDateTime,
-                        i.ScoreMaximum,
-                        i.Label,
-                        i.Tag,
-                        i.ResourceId,
-                        i.ResourceLinkId
-                    }), contentType: Lti13ContentTypes.LineItemContainer);
-                })
-                .WithName(RouteNames.GET_LINE_ITEMS)
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
-                });
-
-            app.MapPost(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, LineItemRequest request) =>
-                {
-                    const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
-                    const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
-                    const string CONTENT_TYPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item";
-                    const string INVALID_LABEL = "Invalid Label";
-                    const string LABEL_REQUIRED = "Label is reuired";
-                    const string LABEL_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label";
-                    const string INVALID_SCORE_MAXIMUM = "Invalid ScoreMaximum";
-                    const string SCORE_MAXIMUM_REQUIRED = "ScoreMaximum must be greater than 0";
-                    const string SCORE_MAXIUMUM_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum";
-
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
-                    {
-                        return Results.BadRequest(new { Error = INVALID_CONTENT_TYPE, Error_Description = CONTENT_TYPE_REQUIRED, Error_Uri = CONTENT_TYPE_SPEC_URI });
-                    }
-
-                    if (string.IsNullOrWhiteSpace(request.Label))
-                    {
-                        return Results.BadRequest(new { Error = INVALID_LABEL, Error_Description = LABEL_REQUIRED, Error_Uri = LABEL_SPEC_URI });
-                    }
-
-                    if (request.ScoreMaximum <= 0)
-                    {
-                        return Results.BadRequest(new { Error = INVALID_SCORE_MAXIMUM, Error_Description = SCORE_MAXIMUM_REQUIRED, Error_Uri = SCORE_MAXIUMUM_SPEC_URI });
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(request.ResourceLinkId))
-                    {
-                        var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(request.ResourceLinkId);
-                        if (resourceLink?.ContextId != contextId)
-                        {
-                            return Results.NotFound();
-                        }
-                    }
-
-                    var lineItemId = Guid.NewGuid().ToString();
-                    await dataService.SaveLineItemAsync(new LineItem
-                    {
-                        Id = lineItemId,
-                        Label = request.Label,
-                        ResourceId = request.ResourceId.ToNullIfEmpty(),
-                        ResourceLinkId = request.ResourceLinkId,
-                        ScoreMaximum = request.ScoreMaximum,
-                        Tag = request.Tag.ToNullIfEmpty(),
-                        GradesReleased = request.GradesReleased,
-                        StartDateTime = request.StartDateTime,
-                        EndDateTime = request.EndDateTime,
-                    });
-
-                    var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, lineItemId });
-                    return Results.Created(url, new
-                    {
-                        Id = url,
-                        request.Label,
-                        request.ResourceId,
-                        request.ResourceLinkId,
-                        request.ScoreMaximum,
-                        request.Tag,
-                        request.GradesReleased,
-                        request.StartDateTime,
-                        request.EndDateTime,
-                    });
-                })
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem);
-                })
-                .DisableAntiforgery();
-
-            app.MapGet(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId) =>
-                {
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItem = await dataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    return Results.Json(new
-                    {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, lineItemId }),
-                        lineItem.Label,
-                        lineItem.ResourceId,
-                        lineItem.ResourceLinkId,
-                        lineItem.ScoreMaximum,
-                        lineItem.Tag,
-                        lineItem.StartDateTime,
-                        lineItem.EndDateTime,
-                    }, contentType: Lti13ContentTypes.LineItem);
-                })
-                .WithName(RouteNames.GET_LINE_ITEM)
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
-                });
-
-            app.MapPut(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, LineItemRequest request) =>
-                {
-                    const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
-                    const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
-                    const string CONTENT_TYPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item";
-                    const string INVALID_LABEL = "Invalid Label";
-                    const string LABEL_REQUIRED = "Label is reuired";
-                    const string LABEL_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label";
-                    const string INVALID_SCORE_MAXIMUM = "Invalid ScoreMaximum";
-                    const string SCORE_MAXIMUM_REQUIRED = "ScoreMaximum must be greater than 0";
-                    const string SCORE_MAXIUMUM_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum";
-                    const string INVALID_RESOURCE_LINK_ID = "Invalid ResourceLinkId";
-                    const string RESOURCE_LINK_ID_MODIFIED = "ResourceLinkId may not change after creation";
-                    const string LINE_ITEM_UPDATE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item";
-
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItem = await dataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
-                    {
-                        return Results.BadRequest(new { Error = INVALID_CONTENT_TYPE, Error_Description = CONTENT_TYPE_REQUIRED, Error_Uri = CONTENT_TYPE_SPEC_URI });
-                    }
-
-                    if (string.IsNullOrWhiteSpace(request.Label))
-                    {
-                        return Results.BadRequest(new { Error = INVALID_LABEL, Error_Description = LABEL_REQUIRED, Error_Uri = LABEL_SPEC_URI });
-                    }
-
-                    if (request.ScoreMaximum <= 0)
-                    {
-                        return Results.BadRequest(new { Error = INVALID_SCORE_MAXIMUM, Error_Description = SCORE_MAXIMUM_REQUIRED, Error_Uri = SCORE_MAXIUMUM_SPEC_URI });
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(request.ResourceLinkId) && request.ResourceLinkId != lineItem.ResourceLinkId)
-                    {
-                        return Results.BadRequest(new { Error = INVALID_RESOURCE_LINK_ID, Error_Description = RESOURCE_LINK_ID_MODIFIED, Error_Uri = LINE_ITEM_UPDATE_SPEC_URI });
-                    }
-
-                    lineItem.Label = request.Label;
-                    lineItem.ResourceId = request.ResourceId.ToNullIfEmpty();
-                    lineItem.ResourceLinkId = request.ResourceLinkId;
-                    lineItem.ScoreMaximum = request.ScoreMaximum;
-                    lineItem.Tag = request.Tag.ToNullIfEmpty();
-                    lineItem.GradesReleased = request.GradesReleased;
-                    lineItem.StartDateTime = request.StartDateTime;
-                    lineItem.EndDateTime = request.EndDateTime;
-
-                    await dataService.SaveLineItemAsync(lineItem);
-
-                    return Results.Json(new
-                    {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, lineItemId }),
-                        lineItem.Label,
-                        lineItem.ResourceId,
-                        lineItem.ResourceLinkId,
-                        lineItem.ScoreMaximum,
-                        lineItem.Tag,
-                        lineItem.GradesReleased,
-                        lineItem.StartDateTime,
-                        lineItem.EndDateTime,
-                    }, contentType: Lti13ContentTypes.LineItem);
-                })
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem);
-                })
-                .DisableAntiforgery();
-
-            app.MapDelete(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (IDataService dataService, string contextId, string lineItemId) =>
-                {
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItem = await dataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    await dataService.DeleteLineItemAsync(lineItemId);
-
-                    return Results.NoContent();
-                })
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem);
-                })
-                .DisableAntiforgery();
-
-            app.MapGet($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/results",
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
-                {
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItem = await dataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItemsResponse = await dataService.GetGradesAsync(contextId, lineItemId, pageIndex, limit ?? int.MaxValue, user_id);
-
-                    if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
-                    {
-                        var links = new Collection<string>();
-                        if (pageIndex > 0)
-                        {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = pageIndex - 1 })}>; rel=\"prev\"");
-                        }
-
-                        if (lineItemsResponse.TotalItems > limit * (pageIndex + 1))
-                        {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
-                        }
-
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = 0 })}>; rel=\"first\"");
-
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
-
-                        httpContext.Response.Headers.Link = new StringValues([.. links]);
-                    }
-
-                    return Results.Json(lineItemsResponse.Items.Select(i => new
-                    {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, i.LineItemId, user_id = i.UserId }),
-                        ScoreOf = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.LineItemId }),
-                        i.UserId,
-                        i.ResultScore,
-                        i.ResultMaximum,
-                        i.ScoringUserId,
-                        i.Comment
-                    }), contentType: Lti13ContentTypes.ResultContainer);
-                })
-                .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.ResultReadOnly);
-                });
-
-            app.MapPost($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/scores",
-                async (IDataService dataService, string contextId, string lineItemId, ScoreRequest request) =>
-                {
-                    const string RESULT_TOO_EARLY = "startDateTime";
-                    const string RESULT_TOO_EARLY_DESCRIPTION = "lineItem startDateTime is in the future";
-                    const string RESULT_TOO_EARLY_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#startdatetime";
-                    const string RESULT_TOO_LATE = "endDateTime";
-                    const string RESULT_TOO_LATE_DESCRIPTION = "lineItem endDateTime is in the past";
-                    const string RESULT_TOO_LATE_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#enddatetime";
-                    const string OUT_OF_DATE = "timestamp";
-                    const string OUT_OF_DATE_DESCRIPTION = "timestamp must be after the current timestamp";
-                    const string OUT_OF_DATE_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#timestamp";
-
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var lineItem = await dataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    if (DateTime.UtcNow < lineItem.StartDateTime)
-                    {
-                        return Results.Json(new
-                        {
-                            Error = RESULT_TOO_EARLY,
-                            Error_Description = RESULT_TOO_EARLY_DESCRIPTION,
-                            Error_Uri = RESULT_TOO_EARLY_URI
-                        }, statusCode: (int)HttpStatusCode.Forbidden);
-                    }
-
-                    if (DateTime.UtcNow > lineItem.EndDateTime)
-                    {
-                        return Results.Json(new
-                        {
-                            Error = RESULT_TOO_LATE,
-                            Error_Description = RESULT_TOO_LATE_DESCRIPTION,
-                            Error_Uri = RESULT_TOO_LATE_URI
-                        }, statusCode: (int)HttpStatusCode.Forbidden);
-                    }
-
-                    var isNew = false;
-                    var result = (await dataService.GetGradesAsync(contextId, lineItemId, 0, 1, request.UserId)).Items.FirstOrDefault();
-                    if (result == null)
-                    {
-                        isNew = true;
-                        result = new Grade
-                        {
-                            LineItemId = lineItemId,
-                            UserId = request.UserId
-                        };
-                    }
-                    else if (result.Timestamp >= request.TimeStamp)
-                    {
-                        return Results.Conflict(new
-                        {
-                            Error = OUT_OF_DATE,
-                            Error_Description = OUT_OF_DATE_DESCRIPTION,
-                            Error_Uri = OUT_OF_DATE_URI
-                        });
-                    }
-
-                    result.ResultScore = request.ScoreGiven;
-                    result.ResultMaximum = request.ScoreMaximum;
-                    result.Comment = request.Comment;
-                    result.ScoringUserId = request.ScoringUserId;
-                    result.Timestamp = request.TimeStamp;
-
-                    await dataService.SaveGradeAsync(result);
-
-                    return isNew ? Results.Created() : Results.NoContent();
-                })
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.Score);
-                })
-                .DisableAntiforgery();
-
-            app.MapGet(config.NamesAndRoleProvisioningServiceUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Service service, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
-                {
-                    const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
-                    const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
-                    const string RESOURCE_LINK_UNAVAILABLE_URI = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction";
-
-                    var context = await dataService.GetContextAsync(contextId);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var deployment = (await dataService.GetDeploymentAsync(context.DeploymentId))!;
-                    var tool = (await dataService.GetToolAsync(deployment.ToolId))!;
-
-                    var membersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
-                    var usersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId));
-
-                    var links = new Collection<string>();
-
-                    if (membersResponse.TotalItems > limit * (pageIndex + 1))
-                    {
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
-                    }
-
-                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
-
-                    httpContext.Response.Headers.Link = new StringValues([.. links]);
-
-                    var currentUsers = membersResponse.Items.Join(usersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = true });
-
-                    if (since.HasValue)
-                    {
-                        var oldMembersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid, new DateTime(since.GetValueOrDefault()));
-                        var oldUsersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), new DateTime(since.GetValueOrDefault()));
-
-                        var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
-
-                        currentUsers = oldUsers
-                            .Concat(currentUsers)
-                            .GroupBy(x => x.User.Id)
-                            .Where(x => x.Count() == 1 ||
-                                x.First().Membership.Status != x.Last().Membership.Status ||
-                                x.First().Membership.Roles.OrderBy(y => y).SequenceEqual(x.Last().Membership.Roles.OrderBy(y => y)))
-                            .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
-                    }
-
-                    var messages = new Dictionary<string, dynamic>();
-                    if (!string.IsNullOrWhiteSpace(rlid))
-                    {
-                        var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(rlid);
-
-                        if (resourceLink == null || resourceLink?.ContextId != context.Id)
-                        {
-                            return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
-                        }
-
-                        List<string> replacementValues = new List<string>();
-
-                        var customDictionary = tool.Custom
-                            .Merge(deployment.Custom)
-                            .Merge(resourceLink.Custom);
-
-                        if (customDictionary != null)
-                        { 
-                            customDictionary = customDictionary
-                                .Where(x => replacementValues.Contains(x.Value))
-                                .ToDictionary(x => x.Key, x => x.Value);
-
-                            foreach (var currentUser in currentUsers)
-                            {
-
-                            }
-                        }
-                    }
-
-                    return Results.Json(new
-                    {
-                        id = httpContext.Request.GetDisplayUrl(),
-                        context = new
-                        {
-                            id = context.Id,
-                            label = context.Label,
-                            title = context.Title
-                        },
-                        members = currentUsers.Select(x => new
-                        {
-                            user_id = x.User.Id,
-                            roles = x.Membership.Roles,
-                            name = x.User.Name,
-                            given_name = x.User.GivenName,
-                            family_name = x.User.FamilyName,
-                            email = x.User.Email,
-                            picture = x.User.Picture,
-                            status = x.Membership.Status switch
-                            {
-                                MembershipStatus.Active when x.IsCurrent => "Active",
-                                MembershipStatus.Inactive when x.IsCurrent => "Inactive",
-                                _ => "Deleted"
-                            },
-                            message = messages.TryGetValue(x.User.Id, out var message) ? message : null
-                        })
-                    }, contentType: Lti13ContentTypes.MembershipContainer);
-                })
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
-                });
-
-            return app;
+            return lti13PlatformEndpointRouteBuilder;
         }
     }
 
-    internal record DeepLinkResponseRequest(string? Jwt);
 
     public record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, string? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
 
-    internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTime? StartDateTime, DateTime? EndDateTime);
-
-    internal record LineItemPutRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId);
-
-    internal record LineItemsPostRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId, bool? GradesReleased);
-
-    internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submision, DateTime TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
-
-    internal record ScoreSubmissionRequest(DateTime? StartedAt, DateTime? SubmittedAt);
-
     internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 
-    internal static class Lti13ContentTypes
-    {
-        internal const string LineItemContainer = "application/vnd.ims.lis.v2.lineitemcontainer+json";
-        internal const string LineItem = "application/vnd.ims.lis.v2.lineitem+json";
-        internal const string ResultContainer = "application/vnd.ims.lis.v2.resultcontainer+json";
-        internal const string Score = "application/vnd.ims.lis.v1.score+json";
-        internal const string MembershipContainer = "application/vnd.ims.lti-nrps.v2.membershipcontainer+json";
-    }
-
-    internal class LtiServicesAuthHandler(IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) :
+    public class LtiServicesAuthHandler(IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) :
         AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
         public const string SchemeName = "NP.Lti13Platform.Services";
@@ -955,16 +686,6 @@ namespace NP.Lti13Platform
 
             return validatedToken.IsValid ? AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal([validatedToken.ClaimsIdentity]), SchemeName)) : AuthenticateResult.NoResult();
         }
-    }
-
-    public static class Lti13ServiceScopes
-    {
-        public const string LineItem = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem";
-        public const string LineItemReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly";
-        public const string ResultReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
-        public const string Score = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
-
-        public const string MembershipReadOnly = "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly";
     }
 
     public enum ActivityProgress

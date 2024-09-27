@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Models
+namespace NP.Lti13Platform.Core.Models
 {
     public class ContentItemDictionary() : IDictionary<(string? ToolId, string ContentItemType), Type>
     {
