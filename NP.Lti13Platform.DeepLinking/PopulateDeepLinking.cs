@@ -63,21 +63,21 @@ namespace NP.Lti13Platform.DeepLinking
             obj.LtiVersion = "1.3.0";
             obj.DeploymentId = scope.Deployment.Id;
 
-            IDeepLinkingMessage.DeepLinkSettingsMessage? deepLinkSettings = default;
+            DeepLinkSettingsOverride? deepLinkSettings = default;
 
             if (!string.IsNullOrWhiteSpace(scope.MessageHint))
             {
                 var parts = Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)).Split('|');
-                deepLinkSettings = JsonSerializer.Deserialize<IDeepLinkingMessage.DeepLinkSettingsMessage>(parts[0])!;
+                deepLinkSettings = JsonSerializer.Deserialize<DeepLinkSettingsOverride>(parts[0])!;
             }
 
             obj.DeepLinkSettings = new IDeepLinkingMessage.DeepLinkSettingsMessage
             {
-                AcceptPresentationDocumentTargets = new[] { deepLinkSettings?.AcceptPresentationDocumentTargets, config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets }.FirstOrDefault(x => x != null && x.Any()) ?? [],
-                AcceptTypes = new[] { deepLinkSettings?.AcceptTypes, config.CurrentValue.DeepLink.AcceptTypes }.FirstOrDefault(x => x != null && x.Any()) ?? [],
+                AcceptPresentationDocumentTargets = deepLinkSettings?.AcceptPresentationDocumentTargets ?? config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets,
+                AcceptTypes = deepLinkSettings?.AcceptTypes ?? config.CurrentValue.DeepLink.AcceptTypes,
                 DeepLinkReturnUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.DEEP_LINKING_RESPONSE, new { contextId = scope.Context?.Id }) ?? string.Empty,
                 AcceptLineItem = deepLinkSettings?.AcceptLineItem ?? config.CurrentValue.DeepLink.AcceptLineItem,
-                AcceptMediaTypes = new[] { deepLinkSettings?.AcceptMediaTypes, config.CurrentValue.DeepLink.AcceptMediaTypes }.FirstOrDefault(x => x != null && x.Any()),
+                AcceptMediaTypes = deepLinkSettings?.AcceptMediaTypes ?? config.CurrentValue.DeepLink.AcceptMediaTypes,
                 AcceptMultiple = deepLinkSettings?.AcceptMultiple ?? config.CurrentValue.DeepLink.AcceptMultiple,
                 AutoCreate = deepLinkSettings?.AutoCreate ?? config.CurrentValue.DeepLink.AutoCreate,
                 Data = deepLinkSettings?.Data,

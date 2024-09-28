@@ -68,8 +68,8 @@ namespace NP.Lti13Platform.Core.Models
     [JsonDerivedType(typeof(DefaultContentItem))]
     public abstract partial class ContentItem
     {
-        public required string Id { get; set; }
-        public required string DeploymentId { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string DeploymentId { get; set; } = string.Empty;
         public string? ContextId { get; set; }
 
         [JsonPropertyName("type")]
@@ -208,19 +208,19 @@ namespace NP.Lti13Platform.Core.Models
     {
         [JsonPropertyName("url")]
         public required string Url { get; set; }
-        
+
         [JsonPropertyName("title")]
         public string? Title { get; set; }
-        
+
         [JsonPropertyName("text")]
         public string? Text { get; set; }
-        
+
         [JsonPropertyName("icon")]
         public ContentItemIcon? Icon { get; set; }
-        
+
         [JsonPropertyName("thumbnail")]
         public ContentItemThumbnail? Thumbnail { get; set; }
-        
+
         [JsonPropertyName("expiresAt")]
         public DateTime? ExpiresAt { get; set; }
     }
@@ -241,22 +241,22 @@ namespace NP.Lti13Platform.Core.Models
     {
         [JsonPropertyName("url")]
         public required string Url { get; set; }
-        
+
         [JsonPropertyName("title")]
         public string? Title { get; set; }
-        
+
         [JsonPropertyName("text")]
         public string? Text { get; set; }
-        
+
         [JsonPropertyName("icon")]
         public ContentItemIcon? Icon { get; set; }
-        
+
         [JsonPropertyName("thumbnail")]
         public ContentItemThumbnail? Thumbnail { get; set; }
-        
+
         [JsonPropertyName("width")]
         public int? Width { get; set; }
-        
+
         [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
@@ -349,13 +349,13 @@ namespace NP.Lti13Platform.Core.Models
     {
         [JsonPropertyName("targetName")]
         public string? TargetName { get; set; }
-        
+
         [JsonPropertyName("windowFeatures")]
         public string? WindowFeatures { get; set; }
-        
+
         [JsonPropertyName("width")]
         public int? Width { get; set; }
-        
+
         [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
@@ -364,10 +364,10 @@ namespace NP.Lti13Platform.Core.Models
     {
         [JsonPropertyName("url")]
         public required string Url { get; set; }
-        
+
         [JsonPropertyName("width")]
         public int? Width { get; set; }
-        
+
         [JsonPropertyName("height")]
         public int? Height { get; set; }
     }
@@ -376,10 +376,10 @@ namespace NP.Lti13Platform.Core.Models
     {
         [JsonPropertyName("url")]
         public required string Url { get; set; }
-        
+
         [JsonPropertyName("width")]
         public int? Width { get; set; }
-        
+
         [JsonPropertyName("height")]
         public int? Height { get; set; }
     }

@@ -166,21 +166,17 @@ namespace NP.Lti13Platform.Core
 
             baseCollection.AddKeyedTransient<LtiMessage>(messageType, (sp, obj) =>
             {
-                if (!LtiMessageTypes.TryGetValue(messageType, out var type))
+                if (LtiMessageTypes.Count == 0)
                 {
-                    if (LtiMessageTypeBuilders.TryGetValue(messageType, out var typeBuilder))
+                    foreach (var typeBuilder in LtiMessageTypeBuilders)
                     {
-                        type = typeBuilder.CreateType();
+                        var type = typeBuilder.Value.CreateType();
                         LtiMessageTypeResolver.AddDerivedType(type);
-                        LtiMessageTypes.TryAdd(messageType, type);
-                    }
-                    else
-                    {
-                        throw new Exception();
+                        LtiMessageTypes.TryAdd(typeBuilder.Key, type);
                     }
                 }
 
-                return (LtiMessage)Activator.CreateInstance(type)!;
+                return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
             });
 
             return this;
@@ -282,7 +278,6 @@ namespace NP.Lti13Platform.Core
 
             lti13PlatformServiceCollection.AddTransient<Service>();
             lti13PlatformServiceCollection.AddTransient<IPlatformService, PlatformService>();
-            lti13PlatformServiceCollection.AddKeyedTransient(typeof(Startup), (sp, key) => sp.GetRequiredService<ILoggerFactory>().CreateLogger("NP.Lti13Platform"));
 
             lti13PlatformServiceCollection.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
                 .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
@@ -497,14 +492,6 @@ namespace NP.Lti13Platform.Core
                         MessageHint = messageHintString
                     };
 
-                    //ltiMessage.DeploymentId = deployment.Id;
-                    //ltiMessage.Roles = roles;
-                    //ltiMessage.SetContext(context);
-                    //ltiMessage.SetLaunchPresentation(launchPresentation);
-                    //ltiMessage.SetPlatform(await platformService.GetPlatformAsync(tool.ClientId));
-                    //ltiMessage.SetRoleScopeMentor();
-                    //ltiMessage.SetCustom();
-
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
                     foreach (var service in services)
                     {
@@ -514,8 +501,8 @@ namespace NP.Lti13Platform.Core
                     var privateKey = await dataService.GetPrivateKeyAsync();
 
                     var token = new JsonWebTokenHandler().CreateToken(
-                    JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
-                    new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
+                        JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
+                        new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
                     return Results.Content(@$"<!DOCTYPE html>
                     <html>

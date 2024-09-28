@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -103,7 +102,7 @@ namespace NP.Lti13Platform.DeepLinking
                        ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
                            .Select((x, ix) =>
                            {
-                               var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetRawText();
+                               var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString();
                                var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
                                contentItem.Id = ix == 0 ? new Guid().ToString() : Guid.NewGuid().ToString();

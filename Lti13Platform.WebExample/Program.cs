@@ -15,6 +15,7 @@ builder.Services
     .AddLti13PlatformCore(config =>
     {
         config.Issuer = "https://mytest.com";
+        config.AddDefaultContentItemMapping();
     })
     .AddLti13PlatformDeepLinking()
     .AddLti13PlatformAssignmentGradeServices()
@@ -66,7 +67,7 @@ public class DataService : IDataService
             DeepLinkUrl = "https://saltire.lti.app/tool",
             Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
             UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
-            CustomPermissions = new CustomPermissions(),
+            CustomPermissions = new CustomPermissions() { UserUsername = true },
             ServicePermissions = new ServicePermissions { LineItemScopes = [] }
         });
     }
@@ -82,7 +83,7 @@ public class DataService : IDataService
             DeepLinkUrl = "https://saltire.lti.app/tool",
             Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
             UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
-            CustomPermissions = new CustomPermissions(),
+            CustomPermissions = new CustomPermissions() { UserUsername = true },
             ServicePermissions = new ServicePermissions
             {
                 LineItemScopes = [
@@ -239,9 +240,9 @@ public class DataService : IDataService
         throw new NotImplementedException();
     }
 
-    public Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId)
+    public async Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId)
     {
-        throw new NotImplementedException();
+        return await Task.FromResult(new Attempt { ResourceLinkId = resourceLinkId, UserId = userId });
     }
 }
 

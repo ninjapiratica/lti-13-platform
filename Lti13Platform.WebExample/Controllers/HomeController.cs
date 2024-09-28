@@ -22,7 +22,7 @@ namespace NP.Lti13PlatformExample.Controllers
 
             return Results.Ok(new
             {
-                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, null), //new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
+                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, new DeepLinkSettingsOverride(null, null, null, null, null, null, null, "TiTlE", "TEXT", "data")), //new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
                 contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, resourceLink, userId) : null // new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }) : null,
             });
         }
