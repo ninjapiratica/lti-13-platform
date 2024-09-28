@@ -54,7 +54,7 @@ namespace NP.Lti13Platform.Core.Populators
             {
                 // TODO: missing values
                 // TODO: ActualUser
-                obj.Custom[kvp.Key] = kvp.Key switch
+                obj.Custom[kvp.Key] = kvp.Value switch
                 {
                     Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId => scope.User?.Id,
                     Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage => scope.User?.ImageUrl,
