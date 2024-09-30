@@ -3,14 +3,24 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Models;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using System.Web;
 
 namespace NP.Lti13Platform.Core
 {
     public class Service(IOptionsMonitor<Lti13PlatformConfig> config)
     {
-        public Uri GetResourceLinkInitiationUrl(Tool tool, LtiResourceLinkContentItem resourceLink, string? userId = null)
-            => GetUrl(Lti13MessageType.LtiResourceLinkRequest, tool, resourceLink.DeploymentId, string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.OidcInitiationUrl : resourceLink.Url, resourceLink.ContextId, resourceLink.Id, userId, null);
+        public Uri GetResourceLinkInitiationUrl(Tool tool, LtiResourceLinkContentItem resourceLink, string? userId = null, LaunchPresentationOverride? launchPresentation = null)
+            => GetUrl(
+                Lti13MessageType.LtiResourceLinkRequest,
+                tool,
+                resourceLink.DeploymentId,
+                string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url,
+                resourceLink.ContextId,
+                resourceLink.Id,
+                userId,
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(launchPresentation))));
 
         public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? resourceLinkId = null, string? userId = null, string? messageHint = null)
         {

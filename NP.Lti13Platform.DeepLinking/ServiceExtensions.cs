@@ -7,8 +7,22 @@ namespace NP.Lti13Platform.DeepLinking
 {
     public static class ServiceExtensions
     {
-        // TODO: figure out launch_presentation
-        public static Uri GetDeepLinkInitiationUrl(this Service service, Tool tool, string deploymentId, string? contextId, string? userId = null, DeepLinkSettingsOverride? deepLinkSettings = null)
-            => service.GetUrl(Lti13MessageType.LtiDeepLinkingRequest, tool, deploymentId, tool.DeepLinkUrl, contextId, null, userId, Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings))));
+        public static Uri GetDeepLinkInitiationUrl(
+            this Service service,
+            Tool tool,
+            string deploymentId,
+            string? contextId = null,
+            string? userId = null,
+            DeepLinkSettingsOverride? deepLinkSettings = null,
+            LaunchPresentationOverride? launchPresentation = null)
+            => service.GetUrl(
+                Lti13MessageType.LtiDeepLinkingRequest,
+                tool,
+                deploymentId,
+                tool.DeepLinkUrl,
+                contextId,
+                resourceLinkId: null,
+                userId,
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings) + "|" + JsonSerializer.Serialize(launchPresentation))));
     }
 }

@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.DeepLinking
 {
-    public interface IDeepLinkingMessage
+    public interface IDeepLinkingMessage : ILaunchPresentationMessage
     {
         [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/version")]
         string LtiVersion { get; set; }
@@ -56,7 +56,7 @@ namespace NP.Lti13Platform.DeepLinking
         }
     }
 
-    public class PopulateDeepLinking(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IOptionsMonitor<Lti13PlatformConfig> config) : Populator<IDeepLinkingMessage>
+    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IOptionsMonitor<Lti13PlatformConfig> config) : Populator<IDeepLinkingMessage>
     {
         public override async Task Populate(IDeepLinkingMessage obj, Lti13MessageScope scope)
         {
@@ -64,11 +64,13 @@ namespace NP.Lti13Platform.DeepLinking
             obj.DeploymentId = scope.Deployment.Id;
 
             DeepLinkSettingsOverride? deepLinkSettings = default;
+            LaunchPresentationOverride? launchPresentation = default;
 
             if (!string.IsNullOrWhiteSpace(scope.MessageHint))
             {
                 var parts = Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)).Split('|');
                 deepLinkSettings = JsonSerializer.Deserialize<DeepLinkSettingsOverride>(parts[0])!;
+                launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(parts[1])!;
             }
 
             obj.DeepLinkSettings = new IDeepLinkingMessage.DeepLinkSettingsMessage
@@ -83,6 +85,15 @@ namespace NP.Lti13Platform.DeepLinking
                 Data = deepLinkSettings?.Data,
                 Text = deepLinkSettings?.Text,
                 Title = deepLinkSettings?.Title,
+            };
+
+            obj.LaunchPresentation = launchPresentation == null ? null : new ILaunchPresentationMessage.LaunchPresentationDefinition
+            {
+                DocumentTarget = launchPresentation.DocumentTarget,
+                Height = launchPresentation.Height,
+                Locale = launchPresentation.Locale,
+                ReturnUrl = launchPresentation.ReturnUrl,
+                Width = launchPresentation.Width,
             };
 
             await Task.CompletedTask;

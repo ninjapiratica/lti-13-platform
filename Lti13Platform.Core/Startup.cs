@@ -74,42 +74,45 @@ namespace NP.Lti13Platform.Core
             where U : Populator<T>
         {
             var tType = typeof(T);
-            var uType = typeof(U);
+            List<Type> interfaceTypes = [tType, .. tType.GetInterfaces()];
 
-            if (!tType.IsInterface)
+            foreach (var interfaceType in interfaceTypes)
             {
-                throw new Exception("T must be an interface");
-            }
+                if (!interfaceType.IsInterface)
+                {
+                    throw new Exception("T must be an interface");
+                }
 
-            if (tType.GetMethods().Any(m => !m.IsSpecialName))
-            {
-                throw new Exception("Interfaces may only have properties.");
+                if (interfaceType.GetMethods().Any(m => !m.IsSpecialName))
+                {
+                    throw new Exception("Interfaces may only have properties.");
+                }
             }
 
             if (string.IsNullOrWhiteSpace(messageType))
             {
-                GlobalInterfaces.Add(tType);
+                var uType = typeof(U);
                 GlobalPopulators.Add(uType);
+
+                interfaceTypes.ForEach(t => GlobalInterfaces.Add(t));
 
                 foreach (var mt in MessageTypes.Values)
                 {
-                    mt.Interfaces.Add(tType);
+                    interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
 
                     baseCollection.AddKeyedTransient<Populator, U>(mt.Name);
                 };
             }
             else
             {
-                if (MessageTypes.TryGetValue(messageType, out var mt))
+                if (!MessageTypes.TryGetValue(messageType, out var mt))
                 {
-                    mt.Interfaces.Add(tType);
+                    AddMessageHandler(messageType);
+                    mt = MessageTypes[messageType];
+                }
 
-                    baseCollection.AddKeyedTransient<Populator, U>(messageType);
-                }
-                else
-                {
-                    AddMessageHandler(messageType).ExtendLti13Message<T, U>(messageType);
-                }
+                interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
+                baseCollection.AddKeyedTransient<Populator, U>(messageType);
             }
 
             return this;
@@ -314,7 +317,6 @@ namespace NP.Lti13Platform.Core
             services.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
                 .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>()
                 .ExtendLti13Message<IPlatformMessage, PlatformPopulator>()
-                .ExtendLti13Message<ILaunchPresentationMessage, LaunchPresentationPopulator>()
                 .ExtendLti13Message<IContextMessage, ContextPopulator>()
                 .ExtendLti13Message<ICustomMessage, CustomPopulator>()
                 .ExtendLti13Message<IRolesMessage, RolesPopulator>();
@@ -536,18 +538,42 @@ namespace NP.Lti13Platform.Core
                         JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
                         new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
+                    var isNewWindow = false;
+                    if (ltiMessage is ILaunchPresentationMessage launchPresentationMessage)
+                    {
+                        isNewWindow = launchPresentationMessage.LaunchPresentation?.DocumentTarget == Lti13PresentationTargetDocuments.Window;
+                    }
+                    else
+                    {
+                        isNewWindow = resourceLink?.Iframe == null;
+                    }
+
+                    string? newWindowScript = null;
+                    string? newWindowTarget = null;
+                    if (isNewWindow)
+                    {
+                        newWindowTarget = resourceLink?.Window?.TargetName ?? Guid.NewGuid().ToString();
+                        newWindowScript = @$"
+                            if (window.self !== window.top) {{
+                                document.getElementsByTagName('form')[0].target = {newWindowTarget};
+                                window.open('', '{newWindowTarget}', '{resourceLink?.Window?.WindowFeatures}');
+                            }}";
+                    }
+
                     return Results.Content(@$"<!DOCTYPE html>
-                    <html>
-                    <body>
-                    <form method=""post"" action=""{request.Redirect_Uri}"">
-                    <input type=""hidden"" name=""id_token"" value=""{token}""/>
-                    {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
-                    </form>
-                    <script type=""text/javascript"">
-                    document.getElementsByTagName('form')[0].submit();
-                    </script>
-                    </body>
-                    </html>", MediaTypeNames.Text.Html);
+                        <html>
+                        <body>
+                        <form method=""post"" action=""{request.Redirect_Uri}"">
+                        <input type=""hidden"" name=""id_token"" value=""{token}""/>
+                        {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
+                        </form>
+                        <script type=""text/javascript"">
+                        {newWindowScript}
+                        //document.getElementsByTagName('form')[0].submit();
+                        </script>
+                        </body>
+                        </html>",
+                        MediaTypeNames.Text.Html);
                 })
                 .DisableAntiforgery();
 

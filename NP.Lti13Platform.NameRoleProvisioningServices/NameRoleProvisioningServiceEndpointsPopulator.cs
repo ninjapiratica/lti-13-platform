@@ -4,7 +4,7 @@ using NP.Lti13Platform.Core;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices
 {
-    public class PopulateServiceEndpoints(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator) : Populator<IServiceEndpoints>
+    public class NameRoleProvisioningServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator) : Populator<IServiceEndpoints>
     {
         public override async Task Populate(IServiceEndpoints obj, Lti13MessageScope scope)
         {

@@ -14,9 +14,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
     {
         public static Lti13PlatformServiceCollection AddLti13PlatformAssignmentGradeServices(this Lti13PlatformServiceCollection services)
         {
-            //services.Configure(configure);
-
-            services.ExtendLti13Message<IServiceEndpoints, PopulateServiceEndpoints>();
+            services.ExtendLti13Message<IServiceEndpoints, AssignmentGradeServiceEndpointsPopulator>();
 
             return services;
         }

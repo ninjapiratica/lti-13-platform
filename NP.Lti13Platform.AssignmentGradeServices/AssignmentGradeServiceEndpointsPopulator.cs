@@ -5,7 +5,7 @@ using static NP.Lti13Platform.AssignmentGradeServices.IServiceEndpoints;
 
 namespace NP.Lti13Platform.AssignmentGradeServices
 {
-    public class PopulateServiceEndpoints(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IDataService dataService) : Populator<IServiceEndpoints>
+    public class AssignmentGradeServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IDataService dataService) : Populator<IServiceEndpoints>
     {
         public override async Task Populate(IServiceEndpoints obj, Lti13MessageScope scope)
         {

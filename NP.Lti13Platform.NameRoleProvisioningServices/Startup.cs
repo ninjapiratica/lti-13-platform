@@ -14,7 +14,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
     {
         public static Lti13PlatformServiceCollection AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformServiceCollection services)
         {
-            services.ExtendLti13Message<IServiceEndpoints, PopulateServiceEndpoints>();
+            services.ExtendLti13Message<IServiceEndpoints, NameRoleProvisioningServiceEndpointsPopulator>();
 
             return services;
         }

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Populators
+namespace NP.Lti13Platform.Core
 {
     public interface ILaunchPresentationMessage
     {
@@ -29,12 +29,19 @@ namespace NP.Lti13Platform.Core.Populators
         }
     }
 
-    public class LaunchPresentationPopulator : Populator<ILaunchPresentationMessage>
+    public class LaunchPresentationOverride
     {
-        public override async Task Populate(ILaunchPresentationMessage obj, Lti13MessageScope scope)
-        {
-            // TODO: figureo out how to do this
-            await Task.CompletedTask;
-        }
+        /// <summary>
+        /// <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values.
+        /// </summary>
+        public string? DocumentTarget { get; set; }
+
+        public double? Height { get; set; }
+
+        public double? Width { get; set; }
+
+        public string? ReturnUrl { get; set; }
+
+        public string? Locale { get; set; }
     }
 }

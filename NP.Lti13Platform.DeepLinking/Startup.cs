@@ -18,9 +18,8 @@ namespace NP.Lti13Platform.DeepLinking
         public static Lti13PlatformServiceCollection AddLti13PlatformDeepLinking(this Lti13PlatformServiceCollection services)
         {
             services.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
-                .ExtendLti13Message<IDeepLinkingMessage, PopulateDeepLinking>()
+                .ExtendLti13Message<IDeepLinkingMessage, DeepLinkingPopulator>()
                 .ExtendLti13Message<IPlatformMessage, PlatformPopulator>()
-                .ExtendLti13Message<ILaunchPresentationMessage, LaunchPresentationPopulator>()
                 .ExtendLti13Message<IContextMessage, ContextPopulator>()
                 .ExtendLti13Message<ICustomMessage, CustomPopulator>()
                 .ExtendLti13Message<IRolesMessage, RolesPopulator>();
