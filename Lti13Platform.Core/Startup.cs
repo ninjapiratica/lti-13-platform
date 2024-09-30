@@ -265,7 +265,7 @@ namespace NP.Lti13Platform.Core
 
         public LtiResourceLinkContentItem? ResourceLink { get; set; }
 
-        public required string MessageHint { get; set; }
+        public string? MessageHint { get; set; }
     }
 
     public abstract class Populator
@@ -312,6 +312,7 @@ namespace NP.Lti13Platform.Core
             services.Configure(configure);
 
             services.AddTransient<Service>();
+            services.AddTransient<CustomReplacements>();
             services.AddTransient<IPlatformService, PlatformService>();
 
             services.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)

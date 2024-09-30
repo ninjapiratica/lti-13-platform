@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.Models;
 using System.Collections.ObjectModel;
 
@@ -25,7 +24,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServiceUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Service service, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Service service, CustomReplacements customReplacements, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
@@ -82,21 +81,23 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
                         }
 
-                        List<string> replacementValues = new List<string>();
-
-                        var customDictionary = tool.Custom
-                            .Merge(deployment.Custom)
-                            .Merge(resourceLink.Custom);
-
-                        if (customDictionary != null)
+                        foreach (var currentUser in currentUsers)
                         {
-                            customDictionary = customDictionary
-                                .Where(x => replacementValues.Contains(x.Value))
-                                .ToDictionary(x => x.Key, x => x.Value);
-
-                            foreach (var currentUser in currentUsers)
+                            var dictionary = await customReplacements.ReplaceAsync(new Lti13MessageScope
                             {
-                                // TODO: fill this
+                                Tool = tool,
+                                Deployment = deployment,
+                                Context = context,
+                                ResourceLink = resourceLink,
+                                User = currentUser.User
+                            });
+
+                            if (dictionary != null)
+                            {
+                                // TODO: populate message: https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section
+                                // Custom 'message type' that is similar to resourcelink?
+                                // how would we get additional extensions if needed?
+                                messages.Add(currentUser.User.Id, dictionary);
                             }
                         }
                     }
