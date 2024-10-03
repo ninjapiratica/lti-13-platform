@@ -28,8 +28,8 @@ namespace NP.Lti13Platform.Core
             }
         }
 
-        private string _tokenAudience = string.Empty;
-        public string TokenAudience
+        private string? _tokenAudience;
+        public string? TokenAudience
         {
             get => _tokenAudience;
             set

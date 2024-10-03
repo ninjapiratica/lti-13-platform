@@ -9,7 +9,7 @@ namespace NP.Lti13PlatformExample.Controllers
     {
         public async Task<IResult> Index()
         {
-            var tool = await dataService.GetToolAsync("asdf");
+            var tool = await dataService.GetToolAsync("asdfasdf");
             var deployment = await dataService.GetDeploymentAsync("asdf");
             var context = await dataService.GetContextAsync(new Guid().ToString());
             var userId = "asdf";

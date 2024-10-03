@@ -36,6 +36,9 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                         return Results.NotFound();
                     }
 
+                    // Claim: https://purl.imsglobal.org/spec/lti/claim/deployment_id
+                    // Claim: ToolId
+
                     var deployment = (await dataService.GetDeploymentAsync(context.DeploymentId))!;
                     var tool = (await dataService.GetToolAsync(deployment.ToolId))!;
 

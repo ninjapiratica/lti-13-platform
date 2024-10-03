@@ -17,6 +17,7 @@ builder.Services
         config.Issuer = "https://mytest.com";
         config.AddDefaultContentItemMapping();
     })
+    .AddDevTunnelHttpContextAccessor()
     .AddLti13PlatformDeepLinking()
     .AddLti13PlatformAssignmentGradeServices()
     .AddLti13PlatformNameRoleProvisioningServices();
@@ -104,7 +105,7 @@ public class DataService : IDataService
 
     public Task<Deployment?> GetDeploymentAsync(string deploymentId)
     {
-        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ToolId = "asdf" });
+        return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ToolId = "asdfasdf" });
     }
 
     public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Context? context)

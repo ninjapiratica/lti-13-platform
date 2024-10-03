@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -283,6 +284,47 @@ namespace NP.Lti13Platform.Core
         }
     }
 
+    // Copied from HttpContextAccessor (with VS_TUNNEL_URL modification)
+    public class DevTunnelHttpContextAccessor : IHttpContextAccessor
+    {
+        private static readonly AsyncLocal<HttpContextHolder> _httpContextCurrent = new AsyncLocal<HttpContextHolder>();
+
+        public HttpContext? HttpContext
+        {
+            get
+            {
+                return _httpContextCurrent.Value?.Context;
+            }
+            set
+            {
+                var holder = _httpContextCurrent.Value;
+                if (holder != null)
+                {
+                    // Clear current HttpContext trapped in the AsyncLocals, as its done.
+                    holder.Context = null;
+                }
+
+                if (value != null)
+                {
+                    var devTunnel = Environment.GetEnvironmentVariable("VS_TUNNEL_URL");
+                    if (!string.IsNullOrWhiteSpace(devTunnel))
+                    {
+                        value.Request.Host = new HostString(new Uri(devTunnel).Host);
+                    }
+
+                    // Use an object indirection to hold the HttpContext in the AsyncLocal,
+                    // so it can be cleared in all ExecutionContexts when its cleared.
+                    _httpContextCurrent.Value = new HttpContextHolder { Context = value };
+                }
+            }
+        }
+
+        private sealed class HttpContextHolder
+        {
+            public HttpContext? Context;
+        }
+    }
+
     public static class Startup
     {
         private static readonly JsonSerializerOptions JSON_OPTIONS = new()
@@ -328,6 +370,14 @@ namespace NP.Lti13Platform.Core
             services.AddHttpContextAccessor();
 
             return services;
+        }
+
+        public static T AddDevTunnelHttpContextAccessor<T>(this T serviceCollection) where T : IServiceCollection
+        {
+            serviceCollection.RemoveAll<IHttpContextAccessor>();
+            serviceCollection.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
+
+            return serviceCollection;
         }
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
@@ -539,28 +589,6 @@ namespace NP.Lti13Platform.Core
                         JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
                         new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
-                    var isNewWindow = false;
-                    if (ltiMessage is ILaunchPresentationMessage launchPresentationMessage)
-                    {
-                        isNewWindow = launchPresentationMessage.LaunchPresentation?.DocumentTarget == Lti13PresentationTargetDocuments.Window;
-                    }
-                    else
-                    {
-                        isNewWindow = resourceLink?.Iframe == null;
-                    }
-
-                    string? newWindowScript = null;
-                    string? newWindowTarget = null;
-                    if (isNewWindow)
-                    {
-                        newWindowTarget = resourceLink?.Window?.TargetName ?? Guid.NewGuid().ToString();
-                        newWindowScript = @$"
-                            if (window.self !== window.top) {{
-                                document.getElementsByTagName('form')[0].target = {newWindowTarget};
-                                window.open('', '{newWindowTarget}', '{resourceLink?.Window?.WindowFeatures}');
-                            }}";
-                    }
-
                     return Results.Content(@$"<!DOCTYPE html>
                         <html>
                         <body>
@@ -569,8 +597,7 @@ namespace NP.Lti13Platform.Core
                         {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
                         </form>
                         <script type=""text/javascript"">
-                        {newWindowScript}
-                        //document.getElementsByTagName('form')[0].submit();
+                        document.getElementsByTagName('form')[0].submit();
                         </script>
                         </body>
                         </html>",
@@ -579,7 +606,7 @@ namespace NP.Lti13Platform.Core
                 .DisableAntiforgery();
 
             routeBuilder.MapPost(config.TokenUrl,
-                async ([FromForm] TokenRequest request, IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config) =>
+                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, IDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config) =>
                 {
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                     const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";
@@ -646,7 +673,7 @@ namespace NP.Lti13Platform.Core
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                     {
                         IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
-                        ValidAudience = config.CurrentValue.TokenAudience,
+                        ValidAudience = config.CurrentValue.TokenAudience ?? (httpContextAccessor?.HttpContext == null ? null : linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.TOKEN)),
                         ValidIssuer = tool.ClientId.ToString()
                     });
 
@@ -688,12 +715,17 @@ namespace NP.Lti13Platform.Core
                         scope = string.Join(' ', scopes)
                     });
                 })
+                .WithName(RouteNames.TOKEN)
                 .DisableAntiforgery();
 
             return routeBuilder;
         }
     }
 
+    internal static class RouteNames
+    {
+        public const string TOKEN = "TOKEN";
+    }
 
     public record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, string? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
 
