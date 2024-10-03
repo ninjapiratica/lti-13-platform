@@ -69,8 +69,8 @@ namespace NP.Lti13Platform.DeepLinking
             if (!string.IsNullOrWhiteSpace(scope.MessageHint))
             {
                 var parts = Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)).Split('|');
-                deepLinkSettings = JsonSerializer.Deserialize<DeepLinkSettingsOverride>(parts[0])!;
-                launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(parts[1])!;
+                deepLinkSettings = JsonSerializer.Deserialize<DeepLinkSettingsOverride>(parts[0]);
+                launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(parts[1]);
             }
 
             obj.DeepLinkSettings = new IDeepLinkingMessage.DeepLinkSettingsMessage

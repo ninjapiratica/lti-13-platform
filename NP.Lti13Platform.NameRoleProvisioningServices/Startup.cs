@@ -122,7 +122,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             picture = x.User.Picture,
                             status = x.Membership.Status switch
                             {
-                                MembershipStatus.Active when x.IsCurrent => "Active",
+                                MembershipStatus.Active when x.IsCurrent => "Active", // TODO: make constants
                                 MembershipStatus.Inactive when x.IsCurrent => "Inactive",
                                 _ => "Deleted"
                             },

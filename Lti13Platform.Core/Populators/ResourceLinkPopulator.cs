@@ -52,64 +52,16 @@ namespace NP.Lti13Platform.Core.Populators
                 Title = scope.ResourceLink.Title
             };
 
-            LaunchPresentationOverride? launchPresentation = default;
             if (!string.IsNullOrWhiteSpace(scope.MessageHint))
             {
-                launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)));
-            }
-
-            if (launchPresentation == null)
-            {
-                if (scope.ResourceLink.Window != null)
-                {
-                    obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
-                    {
-                        DocumentTarget = Lti13PresentationTargetDocuments.Window,
-                        Height = scope.ResourceLink.Window.Height,
-                        Width = scope.ResourceLink.Window.Width,
-                    };
-                }
-                else if (scope.ResourceLink.Iframe != null)
-                {
-                    obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
-                    {
-                        DocumentTarget = Lti13PresentationTargetDocuments.Iframe,
-                        Height = scope.ResourceLink.Iframe.Height,
-                        Width = scope.ResourceLink.Iframe.Width,
-                    };
-                }
-            }
-            else if (launchPresentation.DocumentTarget == Lti13PresentationTargetDocuments.Window)
-            {
+                var  launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)));
                 obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
                 {
-                    DocumentTarget = launchPresentation.DocumentTarget,
-                    Height = launchPresentation.Height ?? scope.ResourceLink.Window?.Height,
-                    Locale = launchPresentation.Locale,
-                    ReturnUrl = launchPresentation.ReturnUrl,
-                    Width = launchPresentation.Width ?? scope.ResourceLink.Window?.Width,
-                };
-            }
-            else if (launchPresentation.DocumentTarget == Lti13PresentationTargetDocuments.Iframe)
-            {
-                obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
-                {
-                    DocumentTarget = launchPresentation.DocumentTarget,
-                    Height = launchPresentation.Height ?? scope.ResourceLink.Iframe?.Height,
-                    Locale = launchPresentation.Locale,
-                    ReturnUrl = launchPresentation.ReturnUrl,
-                    Width = launchPresentation.Width ?? scope.ResourceLink.Iframe?.Width,
-                };
-            }
-            else
-            {
-                obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
-                {
-                    DocumentTarget = launchPresentation.DocumentTarget,
-                    Height = launchPresentation.Height,
-                    Locale = launchPresentation.Locale,
-                    ReturnUrl = launchPresentation.ReturnUrl,
-                    Width = launchPresentation.Width,
+                    DocumentTarget = launchPresentation?.DocumentTarget,
+                    Height = launchPresentation?.Height,
+                    Locale = launchPresentation?.Locale,
+                    ReturnUrl = launchPresentation?.ReturnUrl,
+                    Width = launchPresentation?.Width,
                 };
             }
 
