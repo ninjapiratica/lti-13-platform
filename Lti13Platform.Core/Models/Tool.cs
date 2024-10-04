@@ -18,9 +18,9 @@
 
         public IDictionary<string, string>? Custom { get; set; }
 
-        public required UserPermissions UserPermissions { get; set; }
+        public IEnumerable<string> ServiceScopes { get; set; } = [];
 
-        public required ServicePermissions ServicePermissions { get; set; }
+        public required UserPermissions UserPermissions { get; set; }
 
         public required CustomPermissions CustomPermissions { get; set; }
     }
@@ -52,13 +52,6 @@
         public bool UpdatedAt { get; set; }
         public bool Website { get; set; }
         public bool TimeZone { get; set; }
-    }
-
-    public class ServicePermissions
-    {
-        public IEnumerable<string> LineItemScopes { get; set; } = [];
-
-        public bool AllowNameRoleProvisioningService { get; set; }
     }
 
     public class CustomPermissions

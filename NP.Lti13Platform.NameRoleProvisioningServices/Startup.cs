@@ -3,19 +3,21 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
+using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using System.Collections.ObjectModel;
+using System.Security.Claims;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices
 {
     public static class Startup
     {
-        public static Lti13PlatformServiceCollection AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformServiceCollection services)
+        public static Lti13PlatformBuilder AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformBuilder builder)
         {
-            services.ExtendLti13Message<IServiceEndpoints, NameRoleProvisioningServiceEndpointsPopulator>();
+            builder.ExtendLti13Message<IServiceEndpoints, NameRoleProvisioningServiceEndpointsPopulator>();
 
-            return services;
+            return builder;
         }
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this Lti13PlatformEndpointRouteBuilder routeBuilder, Action<Lti13PlatformNameRoleProvisioningServicesEndpointsConfig>? configure = null)
@@ -24,23 +26,29 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServiceUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, Service service, CustomReplacements customReplacements, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, Service service, CustomReplacements customReplacements, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
                     const string RESOURCE_LINK_UNAVAILABLE_URI = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction";
+                    const string ACTIVE = "Active";
+                    const string INACTIVE = "Inactive";
+                    const string DELETED = "Deleted";
 
+                    var httpContext = httpContextAccessor.HttpContext!;
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
                     {
                         return Results.NotFound();
                     }
 
-                    // Claim: https://purl.imsglobal.org/spec/lti/claim/deployment_id
-                    // Claim: ToolId
-
-                    var deployment = (await dataService.GetDeploymentAsync(context.DeploymentId))!;
-                    var tool = (await dataService.GetToolAsync(deployment.ToolId))!;
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var tool = clientId != null ? await dataService.GetToolByClientIdAsync(clientId) : null;
+                    if (tool == null)
+                    {
+                        // TODO: provide results
+                        return Results.BadRequest();
+                    }
 
                     var membersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
                     var usersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId));
@@ -60,8 +68,9 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     if (since.HasValue)
                     {
-                        var oldMembersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid, new DateTime(since.GetValueOrDefault()));
-                        var oldUsersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), new DateTime(since.GetValueOrDefault()));
+                        var asOfDate = new DateTime(since.GetValueOrDefault());
+                        var oldMembersResponse = await dataService.GetMembershipsAsync(contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate);
+                        var oldUsersResponse = await dataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), asOfDate);
 
                         var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
 
@@ -80,6 +89,13 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                         var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(rlid);
 
                         if (resourceLink == null || resourceLink?.ContextId != context.Id)
+                        {
+                            return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
+                        }
+
+                        var deployment = await dataService.GetDeploymentAsync(resourceLink.DeploymentId);
+
+                        if (deployment == null || deployment.ToolId != tool.Id)
                         {
                             return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
                         }
@@ -114,22 +130,25 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             label = context.Label,
                             title = context.Title
                         },
-                        members = currentUsers.Select(x => new
+                        members = currentUsers.Select(x =>
                         {
-                            user_id = x.User.Id,
-                            roles = x.Membership.Roles,
-                            name = x.User.Name,
-                            given_name = x.User.GivenName,
-                            family_name = x.User.FamilyName,
-                            email = x.User.Email,
-                            picture = x.User.Picture,
-                            status = x.Membership.Status switch
+                            return new
                             {
-                                MembershipStatus.Active when x.IsCurrent => "Active", // TODO: make constants
-                                MembershipStatus.Inactive when x.IsCurrent => "Inactive",
-                                _ => "Deleted"
-                            },
-                            message = messages.TryGetValue(x.User.Id, out var message) ? message : null
+                                user_id = x.User.Id,
+                                roles = x.Membership.Roles,
+                                name = x.User.Name,
+                                given_name = x.User.GivenName,
+                                family_name = x.User.FamilyName,
+                                email = x.User.Email,
+                                picture = x.User.Picture,
+                                status = x.Membership.Status switch
+                                {
+                                    MembershipStatus.Active when x.IsCurrent => ACTIVE,
+                                    MembershipStatus.Inactive when x.IsCurrent => INACTIVE,
+                                    _ => DELETED
+                                },
+                                message = messages.TryGetValue(x.User.Id, out var message) ? message : null
+                            };
                         })
                     }, contentType: Lti13ContentTypes.MembershipContainer);
                 })

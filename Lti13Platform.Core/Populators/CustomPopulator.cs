@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using NP.Lti13Platform.Core.Extensions;
+using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.Core.Populators
 {
@@ -12,7 +13,7 @@ namespace NP.Lti13Platform.Core.Populators
     {
         public override async Task Populate(ICustomMessage obj, Lti13MessageScope scope)
         {
-            obj.Custom = await customReplacements.ReplaceAsync(scope);
+            obj.Custom = obj.Custom.Merge(await customReplacements.ReplaceAsync(scope));
         }
     }
 }

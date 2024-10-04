@@ -59,7 +59,7 @@ namespace NP.Lti13Platform.Core
 
     internal record MessageType(string Name, HashSet<Type> Interfaces);
 
-    public class Lti13PlatformServiceCollection(IServiceCollection baseCollection) : IServiceCollection
+    public partial class Lti13PlatformBuilder(IServiceCollection baseCollection)
     {
         private static readonly ModuleBuilder dynamicModule = AssemblyBuilder
             .DefineDynamicAssembly(new AssemblyName(Assembly.GetExecutingAssembly().GetName().Name + ".DynamicAssembly"), AssemblyBuilderAccess.Run)
@@ -68,9 +68,12 @@ namespace NP.Lti13Platform.Core
         private static readonly HashSet<Type> GlobalInterfaces = [];
         private static readonly HashSet<Type> GlobalPopulators = [];
         private static readonly Dictionary<string, MessageType> MessageTypes = [];
-        protected static readonly Dictionary<string, Type> LtiMessageTypes = [];
+        private static readonly Dictionary<string, Type> LtiMessageTypes = [];
 
-        public Lti13PlatformServiceCollection ExtendLti13Message<T, U>(string? messageType = null)
+        [GeneratedRegex("[^a-zA-Z0-9]")]
+        private static partial Regex LettersAndNumbersRegex();
+
+        public Lti13PlatformBuilder ExtendLti13Message<T, U>(string? messageType = null)
             where T : class
             where U : Populator<T>
         {
@@ -134,7 +137,7 @@ namespace NP.Lti13Platform.Core
                 {
                     foreach (var messageType in MessageTypes.Select(mt => mt.Value))
                     {
-                        var typeBuilder = dynamicModule.DefineType("Dynamic" + Regex.Replace(messageType.Name.Trim(), "[^a-zA-Z0-9]", "_"), TypeAttributes.Public, typeof(LtiMessage));
+                        var typeBuilder = dynamicModule.DefineType("Dynamic" + LettersAndNumbersRegex().Replace(messageType.Name.Trim(), "_"), TypeAttributes.Public, typeof(LtiMessage));
 
                         foreach (var iFace in messageType.Interfaces)
                         {
@@ -206,36 +209,12 @@ namespace NP.Lti13Platform.Core
             return new Lti13PlatformServiceCollectionMessageHandler(baseCollection, messageType);
         }
 
-        public ServiceDescriptor this[int index] { get => baseCollection[index]; set => baseCollection[index] = value; }
-
-        public int Count => baseCollection.Count;
-
-        public bool IsReadOnly => baseCollection.IsReadOnly;
-
-        public void Add(ServiceDescriptor item) => baseCollection.Add(item);
-
-        public void Clear() => baseCollection.Clear();
-
-        public bool Contains(ServiceDescriptor item) => baseCollection.Contains(item);
-
-        public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => baseCollection.CopyTo(array, arrayIndex);
-
-        public IEnumerator<ServiceDescriptor> GetEnumerator() => baseCollection.GetEnumerator();
-
-        public int IndexOf(ServiceDescriptor item) => baseCollection.IndexOf(item);
-
-        public void Insert(int index, ServiceDescriptor item) => baseCollection.Insert(index, item);
-
-        public bool Remove(ServiceDescriptor item) => baseCollection.Remove(item);
-
-        public void RemoveAt(int index) => baseCollection.RemoveAt(index);
-
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)baseCollection).GetEnumerator();
+        public IServiceCollection Services => baseCollection;
     }
 
-    public class Lti13PlatformServiceCollectionMessageHandler(IServiceCollection baseCollection, string messageType) : Lti13PlatformServiceCollection(baseCollection)
+    public class Lti13PlatformServiceCollectionMessageHandler(IServiceCollection baseCollection, string messageType) : Lti13PlatformBuilder(baseCollection)
     {
-        public Lti13PlatformServiceCollectionMessageHandler ExtendLti13Message<T, U>()
+        public Lti13PlatformServiceCollectionMessageHandler Extend<T, U>()
             where T : class
             where U : Populator<T>
         {
@@ -287,7 +266,7 @@ namespace NP.Lti13Platform.Core
     // Copied from HttpContextAccessor (with VS_TUNNEL_URL modification)
     public class DevTunnelHttpContextAccessor : IHttpContextAccessor
     {
-        private static readonly AsyncLocal<HttpContextHolder> _httpContextCurrent = new AsyncLocal<HttpContextHolder>();
+        private static readonly AsyncLocal<HttpContextHolder> _httpContextCurrent = new();
 
         public HttpContext? HttpContext
         {
@@ -347,29 +326,29 @@ namespace NP.Lti13Platform.Core
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
         private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
-        public static Lti13PlatformServiceCollection AddLti13PlatformCore(this IServiceCollection serviceCollection, Action<Lti13PlatformConfig> configure)
+        public static Lti13PlatformBuilder AddLti13PlatformCore(this IServiceCollection serviceCollection, Action<Lti13PlatformConfig> configure)
         {
-            var services = new Lti13PlatformServiceCollection(serviceCollection);
+            var builder = new Lti13PlatformBuilder(serviceCollection);
 
-            services.Configure(configure);
+            builder.Services.Configure(configure);
 
-            services.AddTransient<Service>();
-            services.AddTransient<CustomReplacements>();
-            services.AddTransient<IPlatformService, PlatformService>();
+            builder.Services.AddTransient<Service>();
+            builder.Services.AddTransient<CustomReplacements>();
+            builder.Services.AddTransient<IPlatformService, PlatformService>();
 
-            services.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
-                .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>()
-                .ExtendLti13Message<IPlatformMessage, PlatformPopulator>()
-                .ExtendLti13Message<IContextMessage, ContextPopulator>()
-                .ExtendLti13Message<ICustomMessage, CustomPopulator>()
-                .ExtendLti13Message<IRolesMessage, RolesPopulator>();
+            builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
+                .Extend<IResourceLinkMessage, ResourceLinkPopulator>()
+                .Extend<IPlatformMessage, PlatformPopulator>()
+                .Extend<IContextMessage, ContextPopulator>()
+                .Extend<ICustomMessage, CustomPopulator>()
+                .Extend<IRolesMessage, RolesPopulator>();
 
-            services.AddAuthentication()
+            builder.Services.AddAuthentication()
                 .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
 
-            services.AddHttpContextAccessor();
+            builder.Services.AddHttpContextAccessor();
 
-            return services;
+            return builder;
         }
 
         public static T AddDevTunnelHttpContextAccessor<T>(this T serviceCollection) where T : IServiceCollection
@@ -418,7 +397,7 @@ namespace NP.Lti13Platform.Core
                 });
 
             routeBuilder.Map(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, LinkGenerator linkGenerator, HttpContext httpContext, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService, IPlatformService platformService) =>
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService) =>
                 {
                     const string OPENID = "openid";
                     const string ID_TOKEN = "id_token";
@@ -624,6 +603,7 @@ namespace NP.Lti13Platform.Core
                     const string JTI_REUSE = "jti has already been used and is not expired";
                     const string BODY_MISSING = "request body is missing";
 
+                    var httpContext = httpContextAccessor.HttpContext!;
                     if (request == null)
                     {
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = BODY_MISSING, Error_Uri = AUTH_SPEC_URI });
@@ -640,14 +620,6 @@ namespace NP.Lti13Platform.Core
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Scope))
-                    {
-                        return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
-                    }
-
-                    // TODO: filter out scopes that aren't supported by the tool
-                    var scopes = HttpUtility.UrlDecode(request.Scope).Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-
-                    if (!scopes.Any())
                     {
                         return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                     }
@@ -670,10 +642,25 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                     }
 
+                    Deployment? deployment = null;
+                    if (jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
+                    {
+                        deployment = await dataService.GetDeploymentAsync(deploymentIdClaim.Value);
+                    }
+
+                    var scopes = HttpUtility.UrlDecode(request.Scope).Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                        .Intersect(tool.ServiceScopes)
+                        .ToList();
+
+                    if (scopes.Count == 0)
+                    {
+                        return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
+                    }
+
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                     {
                         IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
-                        ValidAudience = config.CurrentValue.TokenAudience ?? (httpContextAccessor?.HttpContext == null ? null : linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.TOKEN)),
+                        ValidAudience = config.CurrentValue.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
                         ValidIssuer = tool.ClientId.ToString()
                     });
 

@@ -60,6 +60,12 @@ namespace NP.Lti13Platform.DeepLinking
     {
         public override async Task Populate(IDeepLinkingMessage obj, Lti13MessageScope scope)
         {
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext == null)
+            {
+                return;
+            }
+
             obj.LtiVersion = "1.3.0";
             obj.DeploymentId = scope.Deployment.Id;
 
@@ -77,7 +83,7 @@ namespace NP.Lti13Platform.DeepLinking
             {
                 AcceptPresentationDocumentTargets = deepLinkSettings?.AcceptPresentationDocumentTargets ?? config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets,
                 AcceptTypes = deepLinkSettings?.AcceptTypes ?? config.CurrentValue.DeepLink.AcceptTypes,
-                DeepLinkReturnUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.DEEP_LINKING_RESPONSE, new { contextId = scope.Context?.Id }) ?? string.Empty,
+                DeepLinkReturnUrl = linkGenerator.GetUriByName(httpContext, RouteNames.DEEP_LINKING_RESPONSE, new { contextId = scope.Context?.Id }) ?? string.Empty,
                 AcceptLineItem = deepLinkSettings?.AcceptLineItem ?? config.CurrentValue.DeepLink.AcceptLineItem,
                 AcceptMediaTypes = deepLinkSettings?.AcceptMediaTypes ?? config.CurrentValue.DeepLink.AcceptMediaTypes,
                 AcceptMultiple = deepLinkSettings?.AcceptMultiple ?? config.CurrentValue.DeepLink.AcceptMultiple,
@@ -87,14 +93,17 @@ namespace NP.Lti13Platform.DeepLinking
                 Title = deepLinkSettings?.Title,
             };
 
-            obj.LaunchPresentation = launchPresentation == null ? null : new ILaunchPresentationMessage.LaunchPresentationDefinition
+            if (launchPresentation != null)
             {
-                DocumentTarget = launchPresentation.DocumentTarget,
-                Height = launchPresentation.Height,
-                Locale = launchPresentation.Locale,
-                ReturnUrl = launchPresentation.ReturnUrl,
-                Width = launchPresentation.Width,
-            };
+                obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
+                {
+                    DocumentTarget = launchPresentation.DocumentTarget,
+                    Height = launchPresentation.Height,
+                    Locale = launchPresentation.Locale,
+                    ReturnUrl = launchPresentation.ReturnUrl,
+                    Width = launchPresentation.Width,
+                };
+            }
 
             await Task.CompletedTask;
         }

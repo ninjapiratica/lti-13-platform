@@ -8,11 +8,13 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
     {
         public override async Task Populate(IServiceEndpoints obj, Lti13MessageScope scope)
         {
-            if (scope.Tool.ServicePermissions.AllowNameRoleProvisioningService && !string.IsNullOrWhiteSpace(scope.Context?.Id) && httpContextAccessor.HttpContext != null)
+            var httpContext = httpContextAccessor.HttpContext;
+
+            if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && !string.IsNullOrWhiteSpace(scope.Context?.Id) && httpContext != null)
             {
                 obj.NamesRoleService = new IServiceEndpoints.ServiceEndpoints
                 {
-                    ContextMembershipsUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_MEMBERSHIPS, new { contextId = scope.Context.Id })!,
+                    ContextMembershipsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId = scope.Context.Id })!,
                     ServiceVersions = ["2.0"]
                 };
             }

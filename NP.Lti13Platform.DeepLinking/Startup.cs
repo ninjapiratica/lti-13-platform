@@ -15,16 +15,16 @@ namespace NP.Lti13Platform.DeepLinking
 {
     public static class Startup
     {
-        public static Lti13PlatformServiceCollection AddLti13PlatformDeepLinking(this Lti13PlatformServiceCollection services)
+        public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
         {
-            services.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
-                .ExtendLti13Message<IDeepLinkingMessage, DeepLinkingPopulator>()
-                .ExtendLti13Message<IPlatformMessage, PlatformPopulator>()
-                .ExtendLti13Message<IContextMessage, ContextPopulator>()
-                .ExtendLti13Message<ICustomMessage, CustomPopulator>()
-                .ExtendLti13Message<IRolesMessage, RolesPopulator>();
+            builder.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
+                .Extend<IDeepLinkingMessage, DeepLinkingPopulator>()
+                .Extend<IPlatformMessage, PlatformPopulator>()
+                .Extend<IContextMessage, ContextPopulator>()
+                .Extend<ICustomMessage, CustomPopulator>()
+                .Extend<IRolesMessage, RolesPopulator>();
 
-            return services;
+            return builder;
         }
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformDeepLinking(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13PlatformDeepLinkingEndpointsConfig>? configure = null)
@@ -44,6 +44,10 @@ namespace NP.Lti13Platform.DeepLinking
                    const string DEPLOYMENT_ID_INVALID = "deployment_id is invalid";
                    const string MESSAGE_TYPE_INVALID = "message_type is invalid";
                    const string VERSION_INVALID = "version is invalid";
+                   const string UNKNOWN = "unknown";
+                   const string TYPE = "type";
+                   const string VERSION = "1.3.0";
+                   const string LTI_DEEP_LINKING_RESPONSE = "LtiDeepLinkingResponse";
 
                    if (string.IsNullOrWhiteSpace(request.Jwt))
                    {
@@ -81,12 +85,12 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = validatedToken.Exception.Message, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != "LtiDeepLinkingResponse")
+                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != LTI_DEEP_LINKING_RESPONSE)
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = MESSAGE_TYPE_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != "1.3.0")
+                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != VERSION)
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = VERSION_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
@@ -101,7 +105,8 @@ namespace NP.Lti13Platform.DeepLinking
                        ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
                            .Select((x, ix) =>
                            {
-                               var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString();
+                               var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
+
                                var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
                                contentItem.Id = ix == 0 ? new Guid().ToString() : Guid.NewGuid().ToString();

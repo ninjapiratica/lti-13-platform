@@ -8,8 +8,6 @@
         /// </summary>
         public required string Id { get; set; }
 
-        public required string DeploymentId { get; set; }
-
         public string? Label { get; set; }
 
         public string? Title { get; set; }

@@ -38,16 +38,19 @@ namespace NP.Lti13Platform.Core.Populators
         {
             var platform = await platformService.GetPlatformAsync(scope.Tool.ClientId);
 
-            obj.Platform = platform == null ? null : new IPlatformMessage.ToolPlatform
+            if (platform != null)
             {
-                Guid = platform.Guid,
-                ContactEmail = platform.ContactEmail,
-                Description = platform.Description,
-                Name = platform.Name,
-                ProductFamilyCode = platform.ProductFamilyCode,
-                Url = platform.Url,
-                Version = platform.Version,
-            };
+                obj.Platform = new IPlatformMessage.ToolPlatform
+                {
+                    Guid = platform.Guid,
+                    ContactEmail = platform.ContactEmail,
+                    Description = platform.Description,
+                    Name = platform.Name,
+                    ProductFamilyCode = platform.ProductFamilyCode,
+                    Url = platform.Url,
+                    Version = platform.Version,
+                };
+            }
         }
     }
 }

@@ -27,13 +27,16 @@ namespace NP.Lti13Platform.Core.Populators
     {
         public override async Task Populate(IContextMessage obj, Lti13MessageScope scope)
         {
-            obj.Context = scope.Context == null ? null : new IContextMessage.MessageContext
+            if (scope.Context != null)
             {
-                Id = scope.Context.Id,
-                Label= scope.Context.Label,
-                Title = scope.Context.Title,
-                Types = scope.Context.Types.ToArray()
-            };
+                obj.Context = new IContextMessage.MessageContext
+                {
+                    Id = scope.Context.Id,
+                    Label = scope.Context.Label,
+                    Title = scope.Context.Title,
+                    Types = scope.Context.Types.ToArray()
+                };
+            }
 
             await Task.CompletedTask;
         }

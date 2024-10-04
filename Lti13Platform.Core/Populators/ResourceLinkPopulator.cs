@@ -37,8 +37,8 @@ namespace NP.Lti13Platform.Core.Populators
         {
             if (scope.ResourceLink == null)
             {
-                // TODO: make more specific
-                throw new Exception();
+                const string PARAM_NAME = $"{nameof(scope)}.{nameof(scope.ResourceLink)}";
+                throw new ArgumentNullException(PARAM_NAME);
             }
 
             obj.LtiVersion = "1.3.0";
@@ -54,15 +54,19 @@ namespace NP.Lti13Platform.Core.Populators
 
             if (!string.IsNullOrWhiteSpace(scope.MessageHint))
             {
-                var  launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)));
-                obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
+                var launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(Encoding.UTF8.GetString(Convert.FromBase64String(scope.MessageHint)));
+
+                if (launchPresentation != null)
                 {
-                    DocumentTarget = launchPresentation?.DocumentTarget,
-                    Height = launchPresentation?.Height,
-                    Locale = launchPresentation?.Locale,
-                    ReturnUrl = launchPresentation?.ReturnUrl,
-                    Width = launchPresentation?.Width,
-                };
+                    obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
+                    {
+                        DocumentTarget = launchPresentation.DocumentTarget,
+                        Height = launchPresentation.Height,
+                        Locale = launchPresentation.Locale,
+                        ReturnUrl = launchPresentation.ReturnUrl,
+                        Width = launchPresentation.Width,
+                    };
+                }
             }
 
             await Task.CompletedTask;

@@ -77,8 +77,6 @@ namespace NP.Lti13Platform.Core
 
         Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null);
         Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId);
-
-        // TODO: Figure out custom
     }
 
     public interface IPlatformService

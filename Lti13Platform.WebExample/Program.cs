@@ -17,11 +17,11 @@ builder.Services
         config.Issuer = "https://mytest.com";
         config.AddDefaultContentItemMapping();
     })
-    .AddDevTunnelHttpContextAccessor()
     .AddLti13PlatformDeepLinking()
     .AddLti13PlatformAssignmentGradeServices()
     .AddLti13PlatformNameRoleProvisioningServices();
 
+builder.Services.AddDevTunnelHttpContextAccessor();
 builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddTransient<IDeepLinkContentHandler, DeepLinkContentHandler>();
 
@@ -69,7 +69,7 @@ public class DataService : IDataService
             Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
             UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
             CustomPermissions = new CustomPermissions() { UserUsername = true },
-            ServicePermissions = new ServicePermissions { LineItemScopes = [] }
+            ServiceScopes = []
         });
     }
 
@@ -85,22 +85,19 @@ public class DataService : IDataService
             Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
             UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
             CustomPermissions = new CustomPermissions() { UserUsername = true },
-            ServicePermissions = new ServicePermissions
-            {
-                LineItemScopes = [
-                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItem,
-                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItemReadOnly,
-                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.ResultReadOnly,
-                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.Score
-                ],
-                AllowNameRoleProvisioningService = true
-            }
+            ServiceScopes = [
+                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItem,
+                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItemReadOnly,
+                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.ResultReadOnly,
+                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.Score,
+                NP.Lti13Platform.NameRoleProvisioningServices.Lti13ServiceScopes.MembershipReadOnly
+            ]
         });
     }
 
     public Task<Context?> GetContextAsync(string contextId)
     {
-        return Task.FromResult<Context?>(new Context { Id = contextId, DeploymentId = "asdf", Label = "asdf_label", Title = "asdf_title", Types = [Lti13ContextTypes.CourseOffering] });
+        return Task.FromResult<Context?>(new Context { Id = contextId, Label = "asdf_label", Title = "asdf_title", Types = [Lti13ContextTypes.CourseOffering] });
     }
 
     public Task<Deployment?> GetDeploymentAsync(string deploymentId)

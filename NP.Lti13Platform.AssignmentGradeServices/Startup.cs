@@ -12,11 +12,11 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 {
     public static class Startup
     {
-        public static Lti13PlatformServiceCollection AddLti13PlatformAssignmentGradeServices(this Lti13PlatformServiceCollection services)
+        public static Lti13PlatformBuilder AddLti13PlatformAssignmentGradeServices(this Lti13PlatformBuilder builder)
         {
-            services.ExtendLti13Message<IServiceEndpoints, AssignmentGradeServiceEndpointsPopulator>();
+            builder.ExtendLti13Message<IServiceEndpoints, AssignmentGradeServiceEndpointsPopulator>();
 
-            return services;
+            return builder;
         }
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13PlatformAGSEndpointsConfig>? configure = null)
@@ -25,8 +25,9 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             configure?.Invoke(config);
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
+                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
                 {
+                    var httpContext = httpContextAccessor.HttpContext!;
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
                     {
@@ -75,7 +76,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPost(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, LineItemRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -87,6 +88,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     const string SCORE_MAXIMUM_REQUIRED = "ScoreMaximum must be greater than 0";
                     const string SCORE_MAXIUMUM_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum";
 
+                    var httpContext = httpContextAccessor.HttpContext!;
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
                     {
@@ -153,8 +155,9 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId) =>
+                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId) =>
                 {
+                    var httpContext = httpContextAccessor.HttpContext!;
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
                     {
@@ -187,7 +190,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPut(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, LineItemRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -202,6 +205,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     const string RESOURCE_LINK_ID_MODIFIED = "ResourceLinkId may not change after creation";
                     const string LINE_ITEM_UPDATE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item";
 
+                    var httpContext = httpContextAccessor.HttpContext!;
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
                     {
@@ -292,8 +296,9 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapGet($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/results",
-                async (HttpContext httpContext, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
+                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
                 {
+                    var httpContext = httpContextAccessor.HttpContext!;
                     var context = await dataService.GetContextAsync(contextId);
                     if (context == null)
                     {

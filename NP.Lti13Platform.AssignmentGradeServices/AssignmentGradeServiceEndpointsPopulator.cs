@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
-using static NP.Lti13Platform.AssignmentGradeServices.IServiceEndpoints;
 
 namespace NP.Lti13Platform.AssignmentGradeServices
 {
@@ -9,7 +8,13 @@ namespace NP.Lti13Platform.AssignmentGradeServices
     {
         public override async Task Populate(IServiceEndpoints obj, Lti13MessageScope scope)
         {
-            if (scope.Tool.ServicePermissions.LineItemScopes.Any() && scope.Context != null && httpContextAccessor.HttpContext != null)
+            var httpContext = httpContextAccessor.HttpContext;
+
+            var lineItemScopes = scope.Tool.ServiceScopes
+                .Intersect([Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly, Lti13ServiceScopes.ResultReadOnly, Lti13ServiceScopes.Score])
+                .ToList();
+
+            if (lineItemScopes.Count > 0 && scope.Context != null && httpContext != null)
             {
                 string? lineItemId = null;
 
@@ -22,11 +27,11 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
                 }
 
-                obj.ServiceEndpoints = new LineItemServiceEndpoints
+                obj.ServiceEndpoints = new IServiceEndpoints.LineItemServiceEndpoints
                 {
-                    Scopes = scope.Tool.ServicePermissions.LineItemScopes.ToList(),
-                    LineItemsUrl = linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_LINE_ITEMS, new { contextId = scope.Context.Id }),
-                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(httpContextAccessor.HttpContext, RouteNames.GET_LINE_ITEM, new { contextId = scope.Context.Id, lineItemId = lineItemId }),
+                    Scopes = lineItemScopes,
+                    LineItemsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId = scope.Context.Id }),
+                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId = scope.Context.Id, lineItemId }),
                 };
             }
         }
