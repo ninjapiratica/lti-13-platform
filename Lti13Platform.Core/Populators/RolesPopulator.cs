@@ -15,11 +15,11 @@ namespace NP.Lti13Platform.Core.Populators
     {
         public override async Task PopulateAsync(IRolesMessage obj, Lti13MessageScope scope)
         {
-            obj.Roles = await dataService.GetRolesAsync(scope.User.Id, scope.Context);
+            obj.Roles = (await dataService.GetRolesAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
 
             if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
             {
-                obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.User.Id, scope.Context);
+                obj.RoleScopeMentor = (await dataService.GetMentoredUserIdsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
             }
         }
     }

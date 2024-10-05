@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Populators;
 
 namespace NP.Lti13Platform.AssignmentGradeServices
 {
@@ -20,7 +21,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
                 if (scope.ResourceLink != null)
                 {
-                    var lineItems = await dataService.GetLineItemsAsync(scope.Context.Id, 0, 2, null, scope.ResourceLink?.Id, null);
+                    var lineItems = await dataService.GetLineItemsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, 0, 2, null, scope.ResourceLink?.Id, null);
                     if (lineItems.TotalItems == 1)
                     {
                         lineItemId = lineItems.Items.FirstOrDefault()?.Id;

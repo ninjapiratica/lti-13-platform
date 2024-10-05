@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Populators;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices
 {

@@ -69,8 +69,6 @@ namespace NP.Lti13Platform.Core.Models
     public abstract partial class ContentItem
     {
         public string Id { get; set; } = string.Empty;
-        public string DeploymentId { get; set; } = string.Empty;
-        public string? ContextId { get; set; }
 
         [JsonPropertyName("type")]
         public required string Type { get; set; }

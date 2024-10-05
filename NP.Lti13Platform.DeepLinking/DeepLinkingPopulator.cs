@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Populators;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -56,7 +57,7 @@ namespace NP.Lti13Platform.DeepLinking
         }
     }
 
-    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IOptionsMonitor<Lti13PlatformConfig> config) : Populator<IDeepLinkingMessage>
+    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IOptionsMonitor<Lti13DeepLinkingConfig> config) : Populator<IDeepLinkingMessage>
     {
         public override async Task PopulateAsync(IDeepLinkingMessage obj, Lti13MessageScope scope)
         {
@@ -81,13 +82,13 @@ namespace NP.Lti13Platform.DeepLinking
 
             obj.DeepLinkSettings = new IDeepLinkingMessage.DeepLinkSettingsMessage
             {
-                AcceptPresentationDocumentTargets = deepLinkSettings?.AcceptPresentationDocumentTargets ?? config.CurrentValue.DeepLink.AcceptPresentationDocumentTargets,
-                AcceptTypes = deepLinkSettings?.AcceptTypes ?? config.CurrentValue.DeepLink.AcceptTypes,
+                AcceptPresentationDocumentTargets = deepLinkSettings?.AcceptPresentationDocumentTargets ?? config.CurrentValue.AcceptPresentationDocumentTargets,
+                AcceptTypes = deepLinkSettings?.AcceptTypes ?? config.CurrentValue.AcceptTypes,
                 DeepLinkReturnUrl = linkGenerator.GetUriByName(httpContext, RouteNames.DEEP_LINKING_RESPONSE, new { contextId = scope.Context?.Id }) ?? string.Empty,
-                AcceptLineItem = deepLinkSettings?.AcceptLineItem ?? config.CurrentValue.DeepLink.AcceptLineItem,
-                AcceptMediaTypes = deepLinkSettings?.AcceptMediaTypes ?? config.CurrentValue.DeepLink.AcceptMediaTypes,
-                AcceptMultiple = deepLinkSettings?.AcceptMultiple ?? config.CurrentValue.DeepLink.AcceptMultiple,
-                AutoCreate = deepLinkSettings?.AutoCreate ?? config.CurrentValue.DeepLink.AutoCreate,
+                AcceptLineItem = deepLinkSettings?.AcceptLineItem ?? config.CurrentValue.AcceptLineItem,
+                AcceptMediaTypes = deepLinkSettings?.AcceptMediaTypes ?? config.CurrentValue.AcceptMediaTypes,
+                AcceptMultiple = deepLinkSettings?.AcceptMultiple ?? config.CurrentValue.AcceptMultiple,
+                AutoCreate = deepLinkSettings?.AutoCreate ?? config.CurrentValue.AutoCreate,
                 Data = deepLinkSettings?.Data,
                 Text = deepLinkSettings?.Text,
                 Title = deepLinkSettings?.Title,

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -15,8 +16,12 @@ namespace NP.Lti13Platform.DeepLinking
 {
     public static class Startup
     {
-        public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
+        public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder, Action<Lti13DeepLinkingConfig>? configure = null)
         {
+            configure ??= (config) => { };
+
+            builder.Services.Configure(configure);
+
             builder.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
                 .Extend<IDeepLinkingMessage, DeepLinkingPopulator>()
                 .Extend<IPlatformMessage, PlatformPopulator>()
@@ -33,7 +38,7 @@ namespace NP.Lti13Platform.DeepLinking
             configure?.Invoke(config);
 
             app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, IOptionsMonitor<Lti13PlatformConfig> config, IDataService dataService, IDeepLinkContentHandler deepLinkContentHandler) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, IOptionsMonitor<Lti13DeepLinkingConfig> deepLinkingConfig, IOptionsMonitor<Lti13PlatformConfig> platformConfig, IDataService dataService, IDeepLinkContentHandler deepLinkContentHandler) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -55,19 +60,20 @@ namespace NP.Lti13Platform.DeepLinking
                    }
 
                    var jwt = new JsonWebToken(request.Jwt);
+                   var clientId = jwt.Issuer;
 
                    if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var deployment = await dataService.GetDeploymentAsync(deploymentIdClaim.Value);
+                   var deployment = await dataService.GetDeploymentAsync(clientId, deploymentIdClaim.Value);
                    if (deployment == null)
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var tool = await dataService.GetToolAsync(deployment.ToolId);
+                   var tool = await dataService.GetToolAsync(clientId);
                    if (tool?.Jwks == null)
                    {
                        return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
@@ -76,7 +82,7 @@ namespace NP.Lti13Platform.DeepLinking
                    var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                    {
                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
-                       ValidAudience = config.CurrentValue.Issuer,
+                       ValidAudience = platformConfig.CurrentValue.Issuer,
                        ValidIssuer = tool.ClientId.ToString()
                    });
 
@@ -107,11 +113,9 @@ namespace NP.Lti13Platform.DeepLinking
                            {
                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
 
-                               var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, config.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
+                               var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
                                contentItem.Id = ix == 0 ? new Guid().ToString() : Guid.NewGuid().ToString();
-                               contentItem.DeploymentId = deployment.Id;
-                               contentItem.ContextId = contextId;
 
                                return contentItem;
                            })
@@ -128,17 +132,17 @@ namespace NP.Lti13Platform.DeepLinking
                        logger.LogError("Deep Link Error: {DeepLinkingError}", response.ErrorLog);
                    }
 
-                   if (config.CurrentValue.DeepLink.AutoCreate == true)
+                   if (deepLinkingConfig.CurrentValue.AutoCreate == true)
                    {
-                       await dataService.SaveContentItemsAsync(response.ContentItems);
+                       await dataService.SaveResourceLinksAsync(clientId, deployment.Id, contextId, response.ContentItems.OfType<LtiResourceLinkContentItem>());
                    }
 
-                   if (config.CurrentValue.DeepLink.AcceptLineItem == true)
+                   if (deepLinkingConfig.CurrentValue.AcceptLineItem == true)
                    {
                        var saveTasks = response.ContentItems
                            .OfType<LtiResourceLinkContentItem>()
                            .Where(i => i.LineItem != null)
-                           .Select(i => dataService.SaveLineItemAsync(new LineItem
+                           .Select(i => dataService.SaveLineItemAsync(clientId, deployment.Id, contextId, new LineItem
                            {
                                Id = Guid.NewGuid().ToString(),
                                Label = i.LineItem!.Label ?? i.Title ?? i.Type,
@@ -164,4 +168,9 @@ namespace NP.Lti13Platform.DeepLinking
     }
 
     internal record DeepLinkResponseRequest(string? Jwt);
+
+    public static class Lti13MessageType
+    {
+        public const string LtiDeepLinkingRequest = "LtiDeepLinkingRequest";
+    }
 }

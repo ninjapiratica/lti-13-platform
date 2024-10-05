@@ -15,9 +15,11 @@ builder.Services
     .AddLti13PlatformCore(config =>
     {
         config.Issuer = "https://mytest.com";
+    })
+    .AddLti13PlatformDeepLinking(config =>
+    {
         config.AddDefaultContentItemMapping();
     })
-    .AddLti13PlatformDeepLinking()
     .AddLti13PlatformAssignmentGradeServices()
     .AddLti13PlatformNameRoleProvisioningServices();
 
@@ -57,23 +59,7 @@ public class DataService : IDataService
 {
     private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-    public Task<Tool?> GetToolAsync(string toolId)
-    {
-        return Task.FromResult<Tool?>(new Tool
-        {
-            Id = toolId,
-            ClientId = toolId,
-            OidcInitiationUrl = "https://saltire.lti.app/tool",
-            LaunchUrl = "https://saltire.lti.app/tool",
-            DeepLinkUrl = "https://saltire.lti.app/tool",
-            Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
-            UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
-            CustomPermissions = new CustomPermissions() { UserUsername = true },
-            ServiceScopes = []
-        });
-    }
-
-    public Task<Tool?> GetToolByClientIdAsync(string clientId)
+    public Task<Tool?> GetToolAsync(string clientId)
     {
         return Task.FromResult<Tool?>(new Tool
         {
@@ -95,51 +81,117 @@ public class DataService : IDataService
         });
     }
 
-    public Task<Context?> GetContextAsync(string contextId)
-    {
-        return Task.FromResult<Context?>(new Context { Id = contextId, Label = "asdf_label", Title = "asdf_title", Types = [Lti13ContextTypes.CourseOffering] });
-    }
-
-    public Task<Deployment?> GetDeploymentAsync(string deploymentId)
+    public Task<Deployment?> GetDeploymentAsync(string clientId, string deploymentId)
     {
         return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ToolId = "asdfasdf" });
     }
 
-    public Task<IEnumerable<string>> GetMentoredUserIdsAsync(string userId, Context? context)
+    public Task<Context?> GetContextAsync(string clientId, string deploymentId, string contextId)
     {
-        return Task.FromResult<IEnumerable<string>>([]);
+        return Task.FromResult<Context?>(new Context { Id = contextId, Label = "asdf_label", Title = "asdf_title", Types = [Lti13ContextTypes.CourseOffering] });
     }
 
-    public Task<LtiResourceLinkContentItem?> GetResourceLinkAsync(string resourceLinkId)
+    public Task<PartialList<Membership>> GetMembershipsAsync(string clientId, string deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null)
     {
-        var contentItem = _contentItems.Count > 0 ? _contentItems[0] as LtiResourceLinkContentItem : null;
-        return Task.FromResult<LtiResourceLinkContentItem?>(contentItem);
+        return Task.FromResult(new PartialList<Membership>
+        {
+            Items = [
+                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Active, UserId = "0" },
+                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Inactive, UserId = "1" },
+                new Membership { ContextId = contextId, Roles = [Lti13ContextRoles.Member], Status = MembershipStatus.Active, UserId = "2" },
+            ],
+            TotalItems = 3
+        });
     }
 
-    public Task<IEnumerable<string>> GetRolesAsync(string userId, Context? context)
+    public Task<PartialList<User>> GetUsersAsync(string clientId, string deploymentId, string contextId, IEnumerable<string> userIds, DateTime? asOfDate = null)
     {
-        return Task.FromResult<IEnumerable<string>>([]);
+        return Task.FromResult(new PartialList<User>
+        {
+            Items = [
+                new User { Id = "0" },
+                new User { Id = "1" },
+                new User { Id = "2" },
+            ],
+            TotalItems = 3
+        });
     }
 
-    public Task<User?> GetUserAsync(string userId)
+    public Task<PartialList<string>> GetRolesAsync(string clientId, string deploymentId, string contextId, string userId)
     {
-        return Task.FromResult<User?>(new User { Id = userId, Name = "name", FamilyName = "familyname", GivenName = "givenname", Address = new Address { Id = "addressid", Country = "country" }, Email = "email@email.com" });
+        return Task.FromResult(new PartialList<string> { Items = [], TotalItems = 0 });
+    }
+
+    public Task<PartialList<string>> GetMentoredUserIdsAsync(string clientId, string deploymentId, string contextId, string userId)
+    {
+        return Task.FromResult(new PartialList<string> { Items = [], TotalItems = 0 });
     }
 
     private List<ContentItem> _contentItems = [];
-    public Task SaveContentItemsAsync(IEnumerable<ContentItem> contentItems)
+    public Task SaveResourceLinksAsync(string clientId, string deploymentId, string contextId, IEnumerable<LtiResourceLinkContentItem> contentItems)
     {
         _contentItems.AddRange(contentItems);
         return Task.CompletedTask;
     }
 
+    public Task<LtiResourceLinkContentItem?> GetResourceLinkAsync(string clientId, string deploymentId, string contextId, string resourceLinkId)
+    {
+        var contentItem = _contentItems.Count > 0 ? _contentItems[0] as LtiResourceLinkContentItem : null;
+        return Task.FromResult<LtiResourceLinkContentItem?>(contentItem);
+    }
+
+    public Task<PartialList<LineItem>> GetLineItemsAsync(string clientId, string deploymentId, string contextId, int pageIndex, int limit, string? resourceId = null, string? resourceLinkId = null, string? tag = null, string? lineItemId = null)
+    {
+        var totalItems = 23;
+        return Task.FromResult(new PartialList<LineItem>
+        {
+            Items = Enumerable.Range(pageIndex * limit, Math.Max(0, Math.Min(limit, totalItems - pageIndex * limit))).Select(i => new LineItem
+            {
+                Id = new Guid().ToString(),
+                StartDateTime = DateTime.Now,
+                EndDateTime = DateTime.UtcNow,
+                Label = "label " + i,
+                ResourceId = "resource id " + i,
+                ResourceLinkId = new Guid().ToString(),
+                ScoreMaximum = 1.1m * i,
+                Tag = "tag " + i
+            }),
+            TotalItems = totalItems
+        });
+    }
+
+    public Task SaveLineItemAsync(string clientId, string deploymentId, string contextId, LineItem lineItem)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task DeleteLineItemAsync(string clientId, string deploymentId, string contextId, string lineItemId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<Attempt?> GetAttemptAsync(string clientId, string deploymentId, string contextId, string resourceLinkId, string userId)
+    {
+        return await Task.FromResult(new Attempt { ResourceLinkId = resourceLinkId, UserId = userId });
+    }
+
+    public Task<PartialList<Grade>> GetGradesAsync(string clientId, string deploymentId, string contextId, string lineItemId, int pageIndex, int limit, string? userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SaveGradeAsync(string clientId, string deploymentId, string contextId, Grade result)
+    {
+        throw new NotImplementedException();
+    }
+
     private List<ServiceToken> _serviceTokens = [];
-    public Task<ServiceToken?> GetServiceTokenRequestAsync(string id)
+    public Task<ServiceToken?> GetServiceTokenRequestAsync(string clientId, string deploymentId, string id)
     {
         return Task.FromResult(_serviceTokens.FirstOrDefault(x => x.Id == id));
     }
 
-    public Task SaveServiceTokenRequestAsync(ServiceToken serviceToken)
+    public Task SaveServiceTokenRequestAsync(string clientId, string deploymentId, ServiceToken serviceToken)
     {
         _serviceTokens.Add(serviceToken);
         return Task.CompletedTask;
@@ -171,87 +223,6 @@ public class DataService : IDataService
         };
 
         return Task.FromResult<SecurityKey>(securityKey);
-    }
-
-    public Task<PartialList<LineItem>> GetLineItemsAsync(string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag)
-    {
-        var totalItems = 23;
-        return Task.FromResult(new PartialList<LineItem>
-        {
-            Items = Enumerable.Range(pageIndex * limit, Math.Max(0, Math.Min(limit, totalItems - pageIndex * limit))).Select(i => new LineItem
-            {
-                Id = new Guid().ToString(),
-                StartDateTime = DateTime.Now,
-                EndDateTime = DateTime.UtcNow,
-                Label = "label " + i,
-                ResourceId = "resource id " + i,
-                ResourceLinkId = new Guid().ToString(),
-                ScoreMaximum = 1.1m * i,
-                Tag = "tag " + i
-            }),
-            TotalItems = totalItems
-        });
-    }
-
-    public Task SaveLineItemAsync(LineItem lineItem)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<LineItem?> GetLineItemAsync(string lineItemId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteLineItemAsync(string lineItemId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<PartialList<Grade>> GetGradesAsync(string contextId, string lineItemId, int pageIndex, int limit, string? userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveGradeAsync(Grade result)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<T?> GetContentItemAsync<T>(string contentItemId) where T : ContentItem
-    {
-        return Task.FromResult(_contentItems.FirstOrDefault(c => c.Id == contentItemId) as T);
-    }
-
-    public Task<PartialList<User>> GetUsersAsync(IEnumerable<string> userIds, DateTime? asOfDate = null)
-    {
-        return Task.FromResult(new PartialList<User>
-        {
-            Items = [
-                new User { Id = "0" },
-                new User { Id = "1" },
-                new User { Id = "2" },
-            ],
-            TotalItems = 3
-        });
-    }
-
-    public Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null)
-    {
-        return Task.FromResult(new PartialList<Membership>
-        {
-            Items = [
-                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Active, UserId = "0" },
-                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Inactive, UserId = "1" },
-                new Membership { ContextId = contextId, Roles = [Lti13ContextRoles.Member], Status = MembershipStatus.Active, UserId = "2" },
-            ],
-            TotalItems = 3
-        });
-    }
-
-    public async Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId)
-    {
-        return await Task.FromResult(new Attempt { ResourceLinkId = resourceLinkId, UserId = userId });
     }
 }
 
