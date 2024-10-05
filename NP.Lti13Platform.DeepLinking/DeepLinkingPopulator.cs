@@ -58,7 +58,7 @@ namespace NP.Lti13Platform.DeepLinking
 
     public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IOptionsMonitor<Lti13PlatformConfig> config) : Populator<IDeepLinkingMessage>
     {
-        public override async Task Populate(IDeepLinkingMessage obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IDeepLinkingMessage obj, Lti13MessageScope scope)
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext == null)

@@ -223,19 +223,30 @@ public class DataService : IDataService
         return Task.FromResult(_contentItems.FirstOrDefault(c => c.Id == contentItemId) as T);
     }
 
-    public Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role)
-    {
-        throw new NotImplementedException();
-    }
-
     public Task<PartialList<User>> GetUsersAsync(IEnumerable<string> userIds, DateTime? asOfDate = null)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(new PartialList<User>
+        {
+            Items = [
+                new User { Id = "0" },
+                new User { Id = "1" },
+                new User { Id = "2" },
+            ],
+            TotalItems = 3
+        });
     }
 
     public Task<PartialList<Membership>> GetMembershipsAsync(string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate = null)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(new PartialList<Membership>
+        {
+            Items = [
+                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Active, UserId = "0" },
+                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Inactive, UserId = "1" },
+                new Membership { ContextId = contextId, Roles = [Lti13ContextRoles.Member], Status = MembershipStatus.Active, UserId = "2" },
+            ],
+            TotalItems = 3
+        });
     }
 
     public async Task<Attempt?> GetAttemptAsync(string contextId, string resourceLinkId, string userId)

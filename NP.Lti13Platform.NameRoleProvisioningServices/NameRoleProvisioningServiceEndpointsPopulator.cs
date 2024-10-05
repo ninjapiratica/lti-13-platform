@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 {
     public class NameRoleProvisioningServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator) : Populator<IServiceEndpoints>
     {
-        public override async Task Populate(IServiceEndpoints obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
         {
             var httpContext = httpContextAccessor.HttpContext;
 

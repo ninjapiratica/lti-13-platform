@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 {
     public class AssignmentGradeServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IDataService dataService) : Populator<IServiceEndpoints>
     {
-        public override async Task Populate(IServiceEndpoints obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
         {
             var httpContext = httpContextAccessor.HttpContext;
 

@@ -2,31 +2,158 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.NameRoleProvisioningServices.Populators;
 using System.Collections.ObjectModel;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices
 {
+    internal class NameRoleProvisioningMessageTypeResolver : DefaultJsonTypeInfoResolver
+    {
+        private static readonly HashSet<Type> derivedTypes = [];
+
+        public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            var jsonTypeInfo = base.GetTypeInfo(type, options);
+
+            var baseType = typeof(NameRoleProvisioningMessage);
+            if (jsonTypeInfo.Type == baseType)
+            {
+                jsonTypeInfo.PolymorphismOptions = new JsonPolymorphismOptions
+                {
+                    IgnoreUnrecognizedTypeDiscriminators = true,
+                };
+
+                foreach (var derivedType in derivedTypes)
+                {
+                    jsonTypeInfo.PolymorphismOptions.DerivedTypes.Add(new JsonDerivedType(derivedType));
+                }
+            }
+
+            return jsonTypeInfo;
+        }
+
+        public static void AddDerivedType(Type type)
+        {
+            derivedTypes.Add(type);
+        }
+    }
+
+    internal record MessageType(string Name, HashSet<Type> Interfaces);
+
+    public class Lti13NameRoleProvisioningServicesMessageBuilder(string messageType, Lti13PlatformBuilder platformBuilder) : Lti13NameRoleProvisioningServicesBuilder(platformBuilder)
+    {
+        public Lti13NameRoleProvisioningServicesMessageBuilder Extend<T, U>()
+            where T : class
+            where U : Populator<T>
+        {
+            base.ExtendMessage<T, U>(messageType);
+
+            return this;
+        }
+    }
+
+    public class Lti13NameRoleProvisioningServicesBuilder(Lti13PlatformBuilder platformBuilder)
+    {
+        private static readonly Dictionary<string, MessageType> MessageTypes = [];
+        internal static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
+
+        public Lti13NameRoleProvisioningServicesBuilder ExtendMessage<T, U>(string messageType)
+            where T : class
+            where U : Populator<T>
+        {
+            var tType = typeof(T);
+            List<Type> interfaceTypes = [tType, .. tType.GetInterfaces()];
+
+            foreach (var interfaceType in interfaceTypes)
+            {
+                if (!interfaceType.IsInterface)
+                {
+                    throw new Exception("T must be an interface");
+                }
+
+                if (interfaceType.GetMethods().Any(m => !m.IsSpecialName))
+                {
+                    throw new Exception("Interfaces may only have properties.");
+                }
+            }
+
+            if (!MessageTypes.TryGetValue(messageType, out var mt))
+            {
+                AddMessage(messageType);
+                mt = MessageTypes[messageType];
+            }
+
+            interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
+            platformBuilder.Services.AddKeyedTransient<Populator, U>(messageType);
+
+            return this;
+        }
+
+        public Lti13NameRoleProvisioningServicesMessageBuilder AddMessage(string messageType)
+        {
+            if (!MessageTypes.TryGetValue(messageType, out var mt))
+            {
+                mt = new MessageType(messageType, []);
+                MessageTypes.Add(messageType, mt);
+            }
+
+            platformBuilder.Services.AddKeyedTransient(mt, (sp, obj) =>
+            {
+                return Activator.CreateInstance(LtiMessageTypes[mt])!;
+            });
+
+            return new Lti13NameRoleProvisioningServicesMessageBuilder(messageType, platformBuilder);
+        }
+
+        static internal void CreateTypes()
+        {
+            if (LtiMessageTypes.Count == 0)
+            {
+                foreach (var messageType in MessageTypes.Select(mt => mt.Value))
+                {
+                    var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(NameRoleProvisioningMessage));
+                    NameRoleProvisioningMessageTypeResolver.AddDerivedType(type);
+                    LtiMessageTypes.TryAdd(messageType, type);
+                }
+            }
+        }
+    }
+
     public static class Startup
     {
-        public static Lti13PlatformBuilder AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformBuilder builder)
-        {
-            builder.ExtendLti13Message<IServiceEndpoints, NameRoleProvisioningServiceEndpointsPopulator>();
+        private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
-            return builder;
+        public static Lti13PlatformBuilder AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformBuilder platformBuilder, Action<Lti13NameRoleProvisioningServicesBuilder>? config = null)
+        {
+            var builder = new Lti13NameRoleProvisioningServicesBuilder(platformBuilder)
+                .AddMessage(Lti13MessageType.LtiResourceLinkRequest)
+                .Extend<ICustomMessage, CustomPopulator>();
+
+            config?.Invoke(builder);
+
+            platformBuilder.ExtendLti13Message<IServiceEndpoints, NameRoleProvisioningServiceEndpointsPopulator>();
+
+            return platformBuilder;
         }
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this Lti13PlatformEndpointRouteBuilder routeBuilder, Action<Lti13PlatformNameRoleProvisioningServicesEndpointsConfig>? configure = null)
         {
+            Lti13NameRoleProvisioningServicesBuilder.CreateTypes();
+
             var config = new Lti13PlatformNameRoleProvisioningServicesEndpointsConfig();
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServiceUrl,
-                async (IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, Service service, CustomReplacements customReplacements, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
@@ -83,7 +210,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
                     }
 
-                    var messages = new Dictionary<string, dynamic>();
+                    var messages = new Dictionary<string, ICollection<NameRoleProvisioningMessage>>();
                     if (!string.IsNullOrWhiteSpace(rlid))
                     {
                         var resourceLink = await dataService.GetContentItemAsync<LtiResourceLinkContentItem>(rlid);
@@ -100,23 +227,37 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
                         }
 
+                        var messageTypes = Lti13NameRoleProvisioningServicesBuilder.LtiMessageTypes.ToDictionary(mt => mt.Key, mt => serviceProvider.GetKeyedServices<Populator>(mt.Key));
+
                         foreach (var currentUser in currentUsers)
                         {
-                            var dictionary = await customReplacements.ReplaceAsync(new Lti13MessageScope
+                            ICollection<NameRoleProvisioningMessage> userMessages = [];
+                            messages.Add(currentUser.User.Id, userMessages);
+
+                            var scope = new Lti13MessageScope
                             {
                                 Tool = tool,
                                 Deployment = deployment,
                                 Context = context,
                                 ResourceLink = resourceLink,
                                 User = currentUser.User
-                            });
+                            };
 
-                            if (dictionary != null)
+                            foreach (var messageType in messageTypes)
                             {
-                                // TODO: populate message: https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section
-                                // Custom 'message type' that is similar to resourcelink?
-                                // how would we get additional extensions if needed?
-                                messages.Add(currentUser.User.Id, dictionary);
+                                var message = serviceProvider.GetKeyedService<NameRoleProvisioningMessage>(messageType.Key);
+
+                                if (message != null)
+                                {
+                                    message.MessageType = messageType.Key.Name;
+
+                                    foreach (var populator in messageType.Value)
+                                    {
+                                        await populator.PopulateAsync(message, scope);
+                                    }
+
+                                    userMessages.Add(message);
+                                }
                             }
                         }
                     }
@@ -130,17 +271,17 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             label = context.Label,
                             title = context.Title
                         },
-                        members = currentUsers.Select(x =>
+                        members = currentUsers.Where(u => u.Membership.Roles.Any()).Select(x =>
                         {
                             return new
                             {
                                 user_id = x.User.Id,
                                 roles = x.Membership.Roles,
-                                name = x.User.Name,
-                                given_name = x.User.GivenName,
-                                family_name = x.User.FamilyName,
-                                email = x.User.Email,
-                                picture = x.User.Picture,
+                                name = tool.UserPermissions.Name ? x.User.Name : null,
+                                given_name = tool.UserPermissions.GivenName ? x.User.GivenName : null,
+                                family_name = tool.UserPermissions.FamilyName ? x.User.FamilyName : null,
+                                email = tool.UserPermissions.Email ? x.User.Email : null,
+                                picture = tool.UserPermissions.Picture ? x.User.Picture : null,
                                 status = x.Membership.Status switch
                                 {
                                     MembershipStatus.Active when x.IsCurrent => ACTIVE,
@@ -150,7 +291,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                                 message = messages.TryGetValue(x.User.Id, out var message) ? message : null
                             };
                         })
-                    }, contentType: Lti13ContentTypes.MembershipContainer);
+                    }, JSON_SERIALIZER_OPTIONS, contentType: Lti13ContentTypes.MembershipContainer);
                 })
                 .WithName(RouteNames.GET_MEMBERSHIPS)
                 .RequireAuthorization(policy =>

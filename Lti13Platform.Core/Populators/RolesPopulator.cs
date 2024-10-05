@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.Core.Populators
 
     public class RolesPopulator(IDataService dataService) : Populator<IRolesMessage>
     {
-        public override async Task Populate(IRolesMessage obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IRolesMessage obj, Lti13MessageScope scope)
         {
             obj.Roles = await dataService.GetRolesAsync(scope.User.Id, scope.Context);
 

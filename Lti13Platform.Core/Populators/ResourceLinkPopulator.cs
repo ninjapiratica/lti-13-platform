@@ -33,7 +33,7 @@ namespace NP.Lti13Platform.Core.Populators
 
     public class ResourceLinkPopulator() : Populator<IResourceLinkMessage>
     {
-        public override async Task Populate(IResourceLinkMessage obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IResourceLinkMessage obj, Lti13MessageScope scope)
         {
             if (scope.ResourceLink == null)
             {

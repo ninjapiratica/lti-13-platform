@@ -59,19 +59,12 @@ namespace NP.Lti13Platform.Core
 
     internal record MessageType(string Name, HashSet<Type> Interfaces);
 
-    public partial class Lti13PlatformBuilder(IServiceCollection baseCollection)
+    public partial class Lti13PlatformBuilder(IServiceCollection services)
     {
-        private static readonly ModuleBuilder dynamicModule = AssemblyBuilder
-            .DefineDynamicAssembly(new AssemblyName(Assembly.GetExecutingAssembly().GetName().Name + ".DynamicAssembly"), AssemblyBuilderAccess.Run)
-            .DefineDynamicModule("DynamicModule");
-
         private static readonly HashSet<Type> GlobalInterfaces = [];
         private static readonly HashSet<Type> GlobalPopulators = [];
         private static readonly Dictionary<string, MessageType> MessageTypes = [];
         private static readonly Dictionary<string, Type> LtiMessageTypes = [];
-
-        [GeneratedRegex("[^a-zA-Z0-9]")]
-        private static partial Regex LettersAndNumbersRegex();
 
         public Lti13PlatformBuilder ExtendLti13Message<T, U>(string? messageType = null)
             where T : class
@@ -104,7 +97,7 @@ namespace NP.Lti13Platform.Core
                 {
                     interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
 
-                    baseCollection.AddKeyedTransient<Populator, U>(mt.Name);
+                    services.AddKeyedTransient<Populator, U>(mt.Name);
                 };
             }
             else
@@ -116,7 +109,7 @@ namespace NP.Lti13Platform.Core
                 }
 
                 interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
-                baseCollection.AddKeyedTransient<Populator, U>(messageType);
+                services.AddKeyedTransient<Populator, U>(messageType);
             }
 
             return this;
@@ -128,88 +121,31 @@ namespace NP.Lti13Platform.Core
 
             foreach (var globalPopulator in GlobalPopulators)
             {
-                baseCollection.AddKeyedTransient(typeof(Populator), messageType, globalPopulator);
+                services.AddKeyedTransient(typeof(Populator), messageType, globalPopulator);
             }
 
-            baseCollection.AddKeyedTransient<LtiMessage>(messageType, (sp, obj) =>
+            services.AddKeyedTransient(messageType, (sp, obj) =>
             {
-                if (LtiMessageTypes.Count == 0)
-                {
-                    foreach (var messageType in MessageTypes.Select(mt => mt.Value))
-                    {
-                        var typeBuilder = dynamicModule.DefineType("Dynamic" + LettersAndNumbersRegex().Replace(messageType.Name.Trim(), "_"), TypeAttributes.Public, typeof(LtiMessage));
-
-                        foreach (var iFace in messageType.Interfaces)
-                        {
-                            typeBuilder.AddInterfaceImplementation(iFace);
-
-                            foreach (var propertyInfo in iFace.GetProperties())
-                            {
-                                var fieldBuilder = typeBuilder.DefineField("_" + propertyInfo.Name.ToLower(), propertyInfo.PropertyType, FieldAttributes.Private);
-                                var propertyBuilder = typeBuilder.DefineProperty(propertyInfo.Name, PropertyAttributes.None, propertyInfo.PropertyType, Type.EmptyTypes);
-
-                                foreach (var customAttribute in propertyInfo.CustomAttributes)
-                                {
-                                    var propertyArguments = customAttribute.NamedArguments.Where(a => !a.IsField).Select(a => new { PropertyInfo = (PropertyInfo)a.MemberInfo, a.TypedValue.Value }).ToArray();
-                                    var fieldArguments = customAttribute.NamedArguments.Where(a => a.IsField).Select(a => new { FieldInfo = (FieldInfo)a.MemberInfo, a.TypedValue.Value }).ToArray();
-
-                                    var constructorArgs = customAttribute.ConstructorArguments.Select(a => a.Value is ReadOnlyCollection<CustomAttributeTypedArgument> collection ? collection.Select(c => c.Value).ToArray() : a.Value).ToArray();
-                                    var propertyArgs = propertyArguments.Select(a => a.PropertyInfo).ToArray();
-                                    var propertyValues = propertyArguments.Select(a => a.Value).ToArray();
-                                    var fieldArgs = fieldArguments.Select(a => a.FieldInfo).ToArray();
-                                    var fieldValues = fieldArguments.Select(a => a.Value).ToArray();
-
-                                    var customBuilder = new CustomAttributeBuilder(
-                                        customAttribute.Constructor,
-                                        constructorArgs,
-                                        propertyArgs,
-                                        propertyValues,
-                                        fieldArgs,
-                                        fieldValues);
-
-                                    propertyBuilder.SetCustomAttribute(customBuilder);
-                                }
-
-                                var getter = typeBuilder.DefineMethod("get_" + propertyInfo.Name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Virtual, propertyInfo.PropertyType, Type.EmptyTypes);
-                                var getGenerator = getter.GetILGenerator();
-                                getGenerator.Emit(OpCodes.Ldarg_0);
-                                getGenerator.Emit(OpCodes.Ldfld, fieldBuilder);
-                                getGenerator.Emit(OpCodes.Ret);
-                                propertyBuilder.SetGetMethod(getter);
-                                var getMethod = propertyInfo.GetGetMethod();
-                                if (getMethod != null)
-                                {
-                                    typeBuilder.DefineMethodOverride(getter, getMethod);
-                                }
-
-                                var setter = typeBuilder.DefineMethod("set_" + propertyInfo.Name, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Virtual, null, [propertyInfo.PropertyType]);
-                                var setGenerator = setter.GetILGenerator();
-                                setGenerator.Emit(OpCodes.Ldarg_0);
-                                setGenerator.Emit(OpCodes.Ldarg_1);
-                                setGenerator.Emit(OpCodes.Stfld, fieldBuilder);
-                                setGenerator.Emit(OpCodes.Ret);
-                                propertyBuilder.SetSetMethod(setter);
-                                var setMethod = propertyInfo.GetSetMethod();
-                                if (setMethod != null)
-                                {
-                                    typeBuilder.DefineMethodOverride(setter, setMethod);
-                                }
-                            }
-                        }
-
-                        var type = typeBuilder.CreateType();
-                        LtiMessageTypeResolver.AddDerivedType(type);
-                        LtiMessageTypes.TryAdd(messageType.Name, type);
-                    }
-                }
-
                 return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
             });
 
-            return new Lti13PlatformServiceCollectionMessageHandler(baseCollection, messageType);
+            return new Lti13PlatformServiceCollectionMessageHandler(services, messageType);
         }
 
-        public IServiceCollection Services => baseCollection;
+        internal static void CreateTypes()
+        {
+            if (LtiMessageTypes.Count == 0)
+            {
+                foreach (var messageType in MessageTypes.Select(mt => mt.Value))
+                {
+                    var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(LtiMessage));
+                    LtiMessageTypeResolver.AddDerivedType(type);
+                    LtiMessageTypes.TryAdd(messageType.Name, type);
+                }
+            }
+        }
+
+        public IServiceCollection Services => services;
     }
 
     public class Lti13PlatformServiceCollectionMessageHandler(IServiceCollection baseCollection, string messageType) : Lti13PlatformBuilder(baseCollection)
@@ -250,16 +186,16 @@ namespace NP.Lti13Platform.Core
 
     public abstract class Populator
     {
-        public abstract Task Populate(object obj, Lti13MessageScope scope);
+        public abstract Task PopulateAsync(object obj, Lti13MessageScope scope);
     }
 
     public abstract class Populator<T> : Populator
     {
-        public abstract Task Populate(T obj, Lti13MessageScope scope);
+        public abstract Task PopulateAsync(T obj, Lti13MessageScope scope);
 
-        public override async Task Populate(object obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(object obj, Lti13MessageScope scope)
         {
-            await Populate((T)obj, scope);
+            await PopulateAsync((T)obj, scope);
         }
     }
 
@@ -333,7 +269,6 @@ namespace NP.Lti13Platform.Core
             builder.Services.Configure(configure);
 
             builder.Services.AddTransient<Service>();
-            builder.Services.AddTransient<CustomReplacements>();
             builder.Services.AddTransient<IPlatformService, PlatformService>();
 
             builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
@@ -361,6 +296,8 @@ namespace NP.Lti13Platform.Core
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
         {
+            Lti13PlatformBuilder.CreateTypes();
+
             var routeBuilder = new Lti13PlatformEndpointRouteBuilder(endpointRouteBuilder);
 
             var config = new Lti13PlatformCoreEndpointsConfig();
@@ -559,7 +496,7 @@ namespace NP.Lti13Platform.Core
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
                     foreach (var service in services)
                     {
-                        await service.Populate(ltiMessage, scope);
+                        await service.PopulateAsync(ltiMessage, scope);
                     }
 
                     var privateKey = await dataService.GetPrivateKeyAsync();
