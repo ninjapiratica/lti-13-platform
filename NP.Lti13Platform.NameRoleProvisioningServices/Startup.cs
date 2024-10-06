@@ -40,7 +40,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServiceUrl,
-                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, IDataService dataService, LinkGenerator linkGenerator, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningServicesDataService nrpsDataService, LinkGenerator linkGenerator, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
@@ -55,21 +55,21 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     // TODO: NULL DEPLOYMENTID
                     var deploymentId = string.Empty;
 
-                    var context = await dataService.GetContextAsync(clientId, deploymentId, contextId);
+                    var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
                     {
                         return Results.NotFound();
                     }
 
-                    var tool = clientId != null ? await dataService.GetToolAsync(clientId) : null;
+                    var tool = clientId != null ? await coreDataService.GetToolAsync(clientId) : null;
                     if (tool == null)
                     {
                         // TODO: provide results
                         return Results.NotFound();
                     }
 
-                    var membersResponse = await dataService.GetMembershipsAsync(clientId, deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
-                    var usersResponse = await dataService.GetUsersAsync(clientId, deploymentId, contextId, membersResponse.Items.Select(m => m.UserId));
+                    var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
+                    var usersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId));
 
                     var links = new Collection<string>();
 
@@ -82,15 +82,15 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     httpContext.Response.Headers.Link = new StringValues([.. links]);
 
-                    var currentUsers = membersResponse.Items.Join(usersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = true });
+                    var currentUsers = membersResponse.Items.Join(usersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = true });
 
                     if (since.HasValue)
                     {
                         var asOfDate = new DateTime(since.GetValueOrDefault());
-                        var oldMembersResponse = await dataService.GetMembershipsAsync(clientId, deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate);
-                        var oldUsersResponse = await dataService.GetUsersAsync(clientId, deploymentId, contextId, membersResponse.Items.Select(m => m.UserId), asOfDate);
+                        var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate);
+                        var oldUsersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), asOfDate);
 
-                        var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse.Items, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
+                        var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
 
                         currentUsers = oldUsers
                             .Concat(currentUsers)
@@ -104,7 +104,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     var messages = new Dictionary<string, ICollection<NameRoleProvisioningMessage>>();
                     if (!string.IsNullOrWhiteSpace(rlid))
                     {
-                        var resourceLink = await dataService.GetResourceLinkAsync(clientId, deploymentId, contextId, rlid);
+                        var resourceLink = await coreDataService.GetResourceLinkAsync(rlid);
 
                         if (resourceLink == null)
                         {
@@ -112,7 +112,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                         }
 
                         // TODO: RESOURCELINK DEPLOYMENTID
-                        var deployment = await dataService.GetDeploymentAsync(clientId, deploymentId);
+                        var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
 
                         if (deployment == null || deployment.ToolId != tool.Id)
                         {

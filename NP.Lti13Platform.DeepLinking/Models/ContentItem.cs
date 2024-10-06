@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Models
+namespace NP.Lti13Platform.DeepLinking.Models
 {
     public class ContentItemDictionary() : IDictionary<(string? ToolId, string ContentItemType), Type>
     {
@@ -68,8 +68,6 @@ namespace NP.Lti13Platform.Core.Models
     [JsonDerivedType(typeof(DefaultContentItem))]
     public abstract partial class ContentItem
     {
-        public string Id { get; set; } = string.Empty;
-
         [JsonPropertyName("type")]
         public required string Type { get; set; }
     }
@@ -153,8 +151,6 @@ namespace NP.Lti13Platform.Core.Models
 
         [JsonPropertyName("submission")]
         public LtiResourceLinkSubmission? Submission { get; set; }
-
-        public IEnumerable<string> ClonedIdHistory { get; set; } = [];
 
         public class LtiResourceLinkIframe
         {

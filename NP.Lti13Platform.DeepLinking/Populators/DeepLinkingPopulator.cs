@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.DeepLinking
+namespace NP.Lti13Platform.DeepLinking.Populators
 {
     public interface IDeepLinkingMessage : ILaunchPresentationMessage
     {

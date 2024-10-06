@@ -8,7 +8,7 @@ namespace NP.Lti13Platform.Core
 {
     public class Service(IOptionsMonitor<Lti13PlatformConfig> config)
     {
-        public Uri GetResourceLinkInitiationUrl(Tool tool, string deploymentId, string contextId, LtiResourceLinkContentItem resourceLink, string? userId = null, LaunchPresentationOverride? launchPresentation = null)
+        public Uri GetResourceLinkInitiationUrl(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string? userId = null, LaunchPresentationOverride? launchPresentation = null)
             => GetUrl(
                 Lti13MessageType.LtiResourceLinkRequest,
                 tool,

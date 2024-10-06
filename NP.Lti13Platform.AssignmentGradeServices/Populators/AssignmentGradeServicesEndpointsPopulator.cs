@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
 
-namespace NP.Lti13Platform.AssignmentGradeServices
+namespace NP.Lti13Platform.AssignmentGradeServices.Populators
 {
-    public class AssignmentGradeServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IDataService dataService) : Populator<IServiceEndpoints>
+    public class AssignmentGradeServicesEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, ICoreDataService dataService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
         {
@@ -21,7 +21,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
                 if (scope.ResourceLink != null)
                 {
-                    var lineItems = await dataService.GetLineItemsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, 0, 2, null, scope.ResourceLink?.Id, null);
+                    var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
                     if (lineItems.TotalItems == 1)
                     {
                         lineItemId = lineItems.Items.FirstOrDefault()?.Id;

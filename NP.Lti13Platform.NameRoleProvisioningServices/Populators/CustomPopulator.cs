@@ -12,7 +12,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
         public IDictionary<string, string>? Custom { get; set; }
     }
 
-    public class CustomPopulator(IDataService dataService) : Populator<ICustomMessage>
+    public class CustomPopulator(ICoreDataService dataService) : Populator<ICustomMessage>
     {
         private static readonly IEnumerable<string> LineItemAttemptGradeVariables = [
             Lti13ResourceLinkVariables.AvailableUserStartDateTime,
@@ -31,12 +31,12 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             }
 
             IEnumerable<string> mentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor))
+            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
             {
-                var roles = (await dataService.GetRolesAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
-                if (roles.Contains(Lti13ContextRoles.Mentor))
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
+                if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = (await dataService.GetMentoredUserIdsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
+                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.User.Id);
                 }
             }
 
@@ -45,19 +45,15 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             Grade? grade = null;
             if (scope.Context != null && scope.ResourceLink != null && customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)))
             {
-                var lineItems = await dataService.GetLineItemsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
+                var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, pageIndex: 0, limit: 1, resourceLinkId: scope.ResourceLink.Id);
                 if (lineItems.TotalItems == 1)
                 {
                     lineItem = lineItems.Items.First();
 
-                    var grades = await dataService.GetGradesAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, lineItem.Id, 0, 1, scope.User.Id);
-                    if (grades.TotalItems == 1)
-                    {
-                        grade = grades.Items.First();
-                    }
+                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.User.Id);
                 }
 
-                attempt = await dataService.GetAttemptAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.ResourceLink.Id, scope.User.Id);
+                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.User.Id);
             }
 
             var dictionaryValues = customDictionary.ToList();

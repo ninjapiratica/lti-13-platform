@@ -4,6 +4,10 @@
     {
         public required string Id { get; set; }
 
+        public required string DeploymentId { get; set; }
+
+        public required string ContextId { get; set; }
+
         public required decimal ScoreMaximum { get; set; }
 
         public required string Label { get; set; }

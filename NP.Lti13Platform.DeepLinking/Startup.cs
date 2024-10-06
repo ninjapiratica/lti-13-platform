@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.DeepLinking.Models;
+using NP.Lti13Platform.DeepLinking.Populators;
 using System.Text.Json;
 
 namespace NP.Lti13Platform.DeepLinking
@@ -38,7 +40,7 @@ namespace NP.Lti13Platform.DeepLinking
             configure?.Invoke(config);
 
             app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, IOptionsMonitor<Lti13DeepLinkingConfig> deepLinkingConfig, IOptionsMonitor<Lti13PlatformConfig> platformConfig, IDataService dataService, IDeepLinkContentHandler deepLinkContentHandler) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, IOptionsMonitor<Lti13DeepLinkingConfig> deepLinkingConfig, IOptionsMonitor<Lti13PlatformConfig> platformConfig, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkContentHandler deepLinkContentHandler) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -67,13 +69,13 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var deployment = await dataService.GetDeploymentAsync(clientId, deploymentIdClaim.Value);
+                   var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value);
                    if (deployment == null)
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var tool = await dataService.GetToolAsync(clientId);
+                   var tool = await coreDataService.GetToolAsync(clientId);
                    if (tool?.Jwks == null)
                    {
                        return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
@@ -115,7 +117,7 @@ namespace NP.Lti13Platform.DeepLinking
 
                                var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
 
-                               contentItem.Id = ix == 0 ? new Guid().ToString() : Guid.NewGuid().ToString();
+                               //contentItem.Id = ix == 0 ? new Guid().ToString() : Guid.NewGuid().ToString();
 
                                return contentItem;
                            })
@@ -134,26 +136,28 @@ namespace NP.Lti13Platform.DeepLinking
 
                    if (deepLinkingConfig.CurrentValue.AutoCreate == true)
                    {
-                       await dataService.SaveResourceLinksAsync(clientId, deployment.Id, contextId, response.ContentItems.OfType<LtiResourceLinkContentItem>());
-                   }
+                       var saveTasks = response.ContentItems.Select(async ci =>
+                       {
+                           var id = await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci);
 
-                   if (deepLinkingConfig.CurrentValue.AcceptLineItem == true)
-                   {
-                       var saveTasks = response.ContentItems
-                           .OfType<LtiResourceLinkContentItem>()
-                           .Where(i => i.LineItem != null)
-                           .Select(i => dataService.SaveLineItemAsync(clientId, deployment.Id, contextId, new LineItem
+                           if (ci is LtiResourceLinkContentItem rlci && deepLinkingConfig.CurrentValue.AcceptLineItem == true && rlci.LineItem != null && contextId != null)
                            {
-                               Id = Guid.NewGuid().ToString(),
-                               Label = i.LineItem!.Label ?? i.Title ?? i.Type,
-                               ScoreMaximum = i.LineItem.ScoreMaximum,
-                               GradesReleased = i.LineItem.GradesReleased,
-                               Tag = i.LineItem.Tag,
-                               ResourceId = i.LineItem.ResourceId,
-                               ResourceLinkId = i.Id,
-                               StartDateTime = i.Submission?.StartDateTime,
-                               EndDateTime = i.Submission?.EndDateTime
-                           }));
+                               await deepLinkingDataService.SaveLineItemAsync(new LineItem
+                               {
+                                   Id = Guid.NewGuid().ToString(),
+                                   DeploymentId = deployment.Id,
+                                   ContextId = contextId,
+                                   Label = rlci.LineItem!.Label ?? rlci.Title ?? rlci.Type,
+                                   ScoreMaximum = rlci.LineItem.ScoreMaximum,
+                                   GradesReleased = rlci.LineItem.GradesReleased,
+                                   Tag = rlci.LineItem.Tag,
+                                   ResourceId = rlci.LineItem.ResourceId,
+                                   ResourceLinkId = id,
+                                   StartDateTime = rlci.Submission?.StartDateTime,
+                                   EndDateTime = rlci.Submission?.EndDateTime
+                               });
+                           }
+                       });
 
                        await Task.WhenAll(saveTasks);
                    }

@@ -11,15 +11,22 @@ namespace NP.Lti13Platform.Core.Populators
         public IEnumerable<string>? RoleScopeMentor { get; set; }
     }
 
-    public class RolesPopulator(IDataService dataService) : Populator<IRolesMessage>
+    public class RolesPopulator(ICoreDataService dataService) : Populator<IRolesMessage>
     {
         public override async Task PopulateAsync(IRolesMessage obj, Lti13MessageScope scope)
         {
-            obj.Roles = (await dataService.GetRolesAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
-
-            if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
+            if (scope.Context != null)
             {
-                obj.RoleScopeMentor = (await dataService.GetMentoredUserIdsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
+                if (membership != null)
+                {
+                    obj.Roles = membership.Roles;
+
+                    if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
+                    {
+                        obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.User.Id);
+                    }
+                }
             }
         }
     }

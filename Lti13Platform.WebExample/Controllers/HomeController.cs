@@ -1,24 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.DeepLinking;
 
 namespace NP.Lti13PlatformExample.Controllers
 {
-    public class HomeController(ILogger<HomeController> logger, Service service, IDataService dataService) : Controller
+    public class HomeController(ILogger<HomeController> logger, Service service, ICoreDataService dataService) : Controller
     {
         public async Task<IResult> Index()
         {
             var tool = await dataService.GetToolAsync("asdfasdf");
-            var deployment = await dataService.GetDeploymentAsync("asdfasdf", "asdf");
-            var context = await dataService.GetContextAsync("asdfasdf", "asdf", new Guid().ToString());
+            var deployment = await dataService.GetDeploymentAsync("asdf");
+            var context = await dataService.GetContextAsync(new Guid().ToString());
             var userId = "asdf";
             var documentTarget = Lti13PresentationTargetDocuments.Window;
             var height = 200;
             var width = 250;
             var locale = "en-US";
 
-            var resourceLink = await dataService.GetResourceLinkAsync("asdfasdf", "asdf", new Guid().ToString(), new Guid().ToString());
+            var resourceLink = await dataService.GetResourceLinkAsync(new Guid().ToString());
 
             return Results.Ok(new
             {

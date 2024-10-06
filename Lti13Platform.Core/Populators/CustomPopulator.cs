@@ -10,7 +10,7 @@ namespace NP.Lti13Platform.Core.Populators
         public IDictionary<string, string>? Custom { get; set; }
     }
 
-    public class CustomPopulator(IPlatformService platformService, IDataService dataService) : Populator<ICustomMessage>
+    public class CustomPopulator(IPlatformService platformService, ICoreDataService dataService) : Populator<ICustomMessage>
     {
         private static readonly IEnumerable<string> LineItemAttemptGradeVariables = [
             Lti13ResourceLinkVariables.AvailableUserStartDateTime,
@@ -36,12 +36,12 @@ namespace NP.Lti13Platform.Core.Populators
             }
 
             IEnumerable<string> mentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor))
+            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
             {
-                var roles = (await dataService.GetRolesAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
-                if (roles.Contains(Lti13ContextRoles.Mentor))
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
+                if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = (await dataService.GetMentoredUserIdsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.User.Id)).Items;
+                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.User.Id);
                 }
             }
 
@@ -50,19 +50,15 @@ namespace NP.Lti13Platform.Core.Populators
             Grade? grade = null;
             if (scope.Context != null && scope.ResourceLink != null && customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)))
             {
-                var lineItems = await dataService.GetLineItemsAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
+                var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
                 if (lineItems.TotalItems == 1)
                 {
-                    lineItem = lineItems.Items.First();
+                    lineItem = lineItems.Items.Single();
 
-                    var grades = await dataService.GetGradesAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, lineItem.Id, 0, 1, scope.User.Id);
-                    if (grades.TotalItems == 1)
-                    {
-                        grade = grades.Items.First();
-                    }
+                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.User.Id);
                 }
 
-                attempt = await dataService.GetAttemptAsync(scope.Tool.ClientId, scope.Deployment.Id, scope.Context.Id, scope.ResourceLink.Id, scope.User.Id);
+                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.User.Id);
             }
 
             foreach (var kvp in customDictionary.Where(kvp => kvp.Value.StartsWith('$')))
@@ -90,17 +86,17 @@ namespace NP.Lti13Platform.Core.Populators
                     Lti13ResourceLinkVariables.Id when scope.Tool.CustomPermissions.ResourceLinkId => scope.ResourceLink?.Id,
                     Lti13ResourceLinkVariables.Title when scope.Tool.CustomPermissions.ResourceLinkTitle => scope.ResourceLink?.Title,
                     Lti13ResourceLinkVariables.Description when scope.Tool.CustomPermissions.ResourceLinkDescription => scope.ResourceLink?.Text,
-                    Lti13ResourceLinkVariables.AvailableStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableStartDateTime => scope.ResourceLink?.Available?.StartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableStartDateTime => scope.ResourceLink?.AvailableStartDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.AvailableUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.AvailableEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableEndDateTime => scope.ResourceLink?.Available?.EndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableEndDateTime => scope.ResourceLink?.AvailableEndDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.AvailableUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionStartDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionStartDateTime => scope.ResourceLink?.Submission?.StartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionStartDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionStartDateTime => scope.ResourceLink?.SubmissionStartDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.SubmissionUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionUserStartDateTime => attempt?.SubmisstionStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionEndDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionEndDateTime => scope.ResourceLink?.Submission?.EndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionEndDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionEndDateTime => scope.ResourceLink?.SubmissionEndDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.SubmissionUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionUserEndDateTime => attempt?.SubmissionEndDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.LineItemReleaseDateTime when scope.Tool.CustomPermissions.ResourceLinkLineItemReleaseDateTime => lineItem?.GradesReleasedDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when scope.Tool.CustomPermissions.ResourceLinkLineItemUserReleaseDateTime => grade?.ReleaseDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.IdHistory when scope.Tool.CustomPermissions.ResourceLinkIdHistory => scope.ResourceLink != null ? string.Join(',', scope.ResourceLink.ClonedIdHistory) : string.Empty,
+                    Lti13ResourceLinkVariables.IdHistory when scope.Tool.CustomPermissions.ResourceLinkIdHistory => scope.ResourceLink?.ClonedIdHistory != null ? string.Join(',', scope.ResourceLink.ClonedIdHistory) : string.Empty,
 
                     Lti13ToolPlatformVariables.ProductFamilyCode when scope.Tool.CustomPermissions.ToolPlatformProductFamilyCode => platform?.ProductFamilyCode,
                     Lti13ToolPlatformVariables.Version when scope.Tool.CustomPermissions.ToolPlatformProductVersion => platform?.Version,
