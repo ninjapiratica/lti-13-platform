@@ -38,7 +38,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             }
 
             interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
-            platformBuilder.Services.AddKeyedTransient<Populator, U>(messageType);
+            platformBuilder.Services.AddKeyedTransient<Populator, U>(mt);
 
             return this;
         }

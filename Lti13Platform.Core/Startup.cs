@@ -383,7 +383,7 @@ namespace NP.Lti13Platform.Core
                     else
                     {
                         var serviceToken = await dataService.GetServiceTokenRequestAsync(tool.Id, validatedToken.SecurityToken.Id);
-                        if (serviceToken?.Expiration < DateTime.UtcNow)
+                        if (serviceToken?.Expiration > DateTime.UtcNow)
                         {
                             return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = JTI_REUSE, Error_Uri = AUTH_SPEC_URI });
                         }

@@ -71,46 +71,90 @@ namespace NP.Lti13Platform.WebExample
     {
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
-        Task<Tool?> ICoreDataService.GetToolAsync(string clientId)
+        public static readonly List<Attempt> Attempts = [];
+        public static readonly List<Context> Contexts = [];
+        public static readonly List<Deployment> Deployments = [];
+        public static readonly List<Grade> Grades = [];
+        public static readonly List<LineItem> LineItems = [];
+        public static readonly List<Membership> Memberships = [];
+        public static readonly List<ResourceLink> ResourceLinks = [];
+        public static readonly List<ServiceToken> ServiceTokens = [];
+        public static readonly List<Tool> Tools = [];
+        public static readonly List<User> Users = [];
+
+        static DataService()
         {
-            return Task.FromResult<Tool?>(new Tool
+            Tools.Add(new Tool
             {
-                Id = clientId,
-                ClientId = clientId,
+                Id = "toolId",
+                ClientId = "clientId",
                 OidcInitiationUrl = "https://saltire.lti.app/tool",
                 LaunchUrl = "https://saltire.lti.app/tool",
                 DeepLinkUrl = "https://saltire.lti.app/tool",
                 Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
                 UserPermissions = new UserPermissions { FamilyName = true, Name = true, GivenName = true },
                 CustomPermissions = new CustomPermissions() { UserUsername = true },
-                ServiceScopes = [
-                    NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItem,
-                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.LineItemReadOnly,
-                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.ResultReadOnly,
-                NP.Lti13Platform.AssignmentGradeServices.Lti13ServiceScopes.Score,
-                NP.Lti13Platform.NameRoleProvisioningServices.Lti13ServiceScopes.MembershipReadOnly
+                ServiceScopes =
+                [
+                    AssignmentGradeServices.Lti13ServiceScopes.LineItem,
+                    AssignmentGradeServices.Lti13ServiceScopes.LineItemReadOnly,
+                    AssignmentGradeServices.Lti13ServiceScopes.ResultReadOnly,
+                    AssignmentGradeServices.Lti13ServiceScopes.Score,
+                    NameRoleProvisioningServices.Lti13ServiceScopes.MembershipReadOnly
                 ]
             });
+
+            Deployments.Add(new Deployment
+            {
+                Id = "deploymentId",
+                ToolId = "toolId"
+            });
+
+            Contexts.Add(new Context
+            {
+                Id = "contextId",
+                Label = "asdf_label",
+                Title = "asdf_title",
+                Types = [Lti13ContextTypes.CourseOffering]
+            });
+
+            Users.Add(new User
+            {
+                Id = "userId"
+            });
+
+            Memberships.Add(new Membership
+            {
+                ContextId = "contextId",
+                Roles = [],
+                Status = MembershipStatus.Active,
+                UserId = "userId"
+            });
+        }
+
+        Task<Tool?> ICoreDataService.GetToolAsync(string clientId)
+        {
+            return Task.FromResult(Tools.SingleOrDefault(t => t.ClientId == clientId));
         }
 
         Task<Deployment?> ICoreDataService.GetDeploymentAsync(string deploymentId)
         {
-            return Task.FromResult<Deployment?>(new Deployment { Id = deploymentId, ToolId = "asdfasdf" });
+            return Task.FromResult(Deployments.SingleOrDefault(d => d.Id == deploymentId));
         }
 
         Task<Context?> ICoreDataService.GetContextAsync(string contextId)
         {
-            return Task.FromResult<Context?>(new Context { Id = contextId, Label = "asdf_label", Title = "asdf_title", Types = [Lti13ContextTypes.CourseOffering] });
+            return Task.FromResult(Contexts.SingleOrDefault(c => c.Id == contextId));
         }
 
         Task<User?> ICoreDataService.GetUserAsync(string userId)
         {
-            return Task.FromResult<User?>(new User { Id = userId });
+            return Task.FromResult(Users.SingleOrDefault(u => u.Id == userId));
         }
 
         Task<Membership?> ICoreDataService.GetMembershipAsync(string contextId, string userId)
         {
-            return Task.FromResult<Membership?>(null);
+            return Task.FromResult(Memberships.SingleOrDefault(m => m.ContextId == contextId && m.UserId == userId));
         }
 
         Task<IEnumerable<string>> ICoreDataService.GetMentoredUserIdsAsync(string contextId, string userId)
@@ -120,71 +164,90 @@ namespace NP.Lti13Platform.WebExample
 
         Task<ResourceLink?> ICoreDataService.GetResourceLinkAsync(string resourceLinkId)
         {
-            return Task.FromResult<ResourceLink?>(new ResourceLink
-            {
-                Id = new Guid().ToString(),
-                DeploymentId = "",
-                ContextId = ""
-            });
+            return Task.FromResult(ResourceLinks.SingleOrDefault(r => r.Id == resourceLinkId));
         }
 
         Task<PartialList<LineItem>> ICoreDataService.GetLineItemsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag)
         {
-            var totalItems = 23;
+            var lineItems = LineItems.Where(li => li.DeploymentId == deploymentId && li.ContextId == contextId && (resourceId == null || li.ResourceId == resourceId) && (resourceLinkId == null || li.ResourceLinkId == resourceLinkId) && (tag == null || li.Tag == tag)).ToList();
+
             return Task.FromResult(new PartialList<LineItem>
             {
-                Items = Enumerable.Range(pageIndex * limit, Math.Max(0, Math.Min(limit, totalItems - pageIndex * limit))).Select(i => new LineItem
-                {
-                    Id = new Guid().ToString(),
-                    DeploymentId = deploymentId,
-                    ContextId = contextId,
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.UtcNow,
-                    Label = "label " + i,
-                    ResourceId = "resource id " + i,
-                    ResourceLinkId = new Guid().ToString(),
-                    ScoreMaximum = 1.1m * i,
-                    Tag = "tag " + i
-                }),
-                TotalItems = totalItems
+                Items = lineItems.Skip(pageIndex * limit).Take(limit).ToList(),
+                TotalItems = lineItems.Count
             });
         }
 
         // deeplinking && assignmentgradeservices
         public Task<string> SaveLineItemAsync(LineItem lineItem)
         {
-            throw new NotImplementedException();
+            var existingLineItem = LineItems.SingleOrDefault(x => x.Id == lineItem.Id);
+            if (existingLineItem != null)
+            {
+                LineItems[LineItems.IndexOf(existingLineItem)] = lineItem;
+                return Task.FromResult(lineItem.Id);
+            }
+            else
+            {
+                lineItem.Id = Guid.NewGuid().ToString();
+                LineItems.Add(lineItem);
+                return Task.FromResult(lineItem.Id);
+            }
         }
 
         async Task<Attempt?> ICoreDataService.GetAttemptAsync(string resourceLinkId, string userId)
         {
-            return await Task.FromResult(new Attempt { ResourceLinkId = resourceLinkId, UserId = userId });
+            return await Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
 
         Task<PartialList<Grade>> IAssignmentGradeServicesDataService.GetGradesAsync(string lineItemId, int pageIndex, int limit, string? userId)
         {
-            throw new NotImplementedException();
+            var grades = Grades.Where(x => x.LineItemId == lineItemId && (userId == null || x.UserId == userId)).ToList();
+
+            return Task.FromResult(new PartialList<Grade>
+            {
+                Items = grades.Skip(pageIndex * limit).Take(limit).ToList(),
+                TotalItems = grades.Count
+            });
         }
 
         Task<Grade?> ICoreDataService.GetGradeAsync(string lineItemId, string userId)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
 
-        Task IAssignmentGradeServicesDataService.SaveGradeAsync(Grade result)
+        Task IAssignmentGradeServicesDataService.SaveGradeAsync(Grade grade)
         {
-            throw new NotImplementedException();
+            var existingGrade = Grades.SingleOrDefault(x => x.LineItemId == grade.LineItemId && x.UserId == grade.UserId);
+            if (existingGrade != null)
+            {
+                Grades[Grades.IndexOf(existingGrade)] = grade;
+            }
+            else
+            {
+                Grades.Add(grade);
+            }
+
+            return Task.CompletedTask;
         }
 
-        private readonly List<ServiceToken> _serviceTokens = [];
         Task<ServiceToken?> ICoreDataService.GetServiceTokenRequestAsync(string toolId, string serviceTokenId)
         {
-            return Task.FromResult(_serviceTokens.FirstOrDefault(x => x.Id == serviceTokenId));
+            return Task.FromResult(ServiceTokens.FirstOrDefault(x => x.ToolId == toolId && x.Id == serviceTokenId));
         }
 
         Task ICoreDataService.SaveServiceTokenRequestAsync(ServiceToken serviceToken)
         {
-            _serviceTokens.Add(serviceToken);
+            var existing = ServiceTokens.SingleOrDefault(x => x.ToolId == serviceToken.ToolId && x.Id == serviceToken.Id);
+            if (existing != null)
+            {
+                ServiceTokens[ServiceTokens.IndexOf(existing)] = serviceToken;
+            }
+            else
+            {
+                ServiceTokens.Add(serviceToken);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -218,47 +281,67 @@ namespace NP.Lti13Platform.WebExample
 
 
 
-        Task<PartialList<Membership>> INameRoleProvisioningServicesDataService.GetMembershipsAsync(string deloymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate)
+        Task<PartialList<Membership>> INameRoleProvisioningServicesDataService.GetMembershipsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate)
         {
-            return Task.FromResult(new PartialList<Membership>
+            if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
-                Items = [
-                    new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Active, UserId = "0" },
-                new Membership { ContextId = contextId, Roles = [], Status = MembershipStatus.Inactive, UserId = "1" },
-                new Membership { ContextId = contextId, Roles = [Lti13ContextRoles.Member], Status = MembershipStatus.Active, UserId = "2" },
-            ],
-                TotalItems = 3
-            });
+                var memberships = Memberships.Where(m => m.ContextId == contextId && (role == null || m.Roles.Contains(role))).ToList();
+
+                return Task.FromResult(new PartialList<Membership>
+                {
+                    Items = memberships.Skip(pageIndex * limit).Take(limit).ToList(),
+                    TotalItems = memberships.Count
+                });
+            }
+
+            return Task.FromResult(PartialList<Membership>.Empty);
         }
 
         Task<IEnumerable<User>> INameRoleProvisioningServicesDataService.GetUsersAsync(IEnumerable<string> userIds, DateTime? asOfDate)
         {
-            return Task.FromResult<IEnumerable<User>>([
-                new User { Id = "0" },
-            new User { Id = "1" },
-            new User { Id = "2" },
-        ]);
+            return Task.FromResult(Users.Where(x => userIds.Contains(x.Id)));
         }
 
 
 
-        private readonly List<ContentItem> _contentItems = [];
         Task<string> IDeepLinkingDataService.SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem)
         {
-            _contentItems.Add(contentItem);
-            return Task.FromResult(Guid.NewGuid().ToString());
+            var id = Guid.NewGuid().ToString();
+
+            if (contentItem is LtiResourceLinkContentItem ci && contextId != null)
+            {
+                ResourceLinks.Add(new ResourceLink
+                {
+                    ContextId = contextId,
+                    DeploymentId = deploymentId,
+                    Id = id,
+                    AvailableEndDateTime = ci.Available?.EndDateTime,
+                    AvailableStartDateTime = ci.Available?.StartDateTime,
+                    SubmissionEndDateTime = ci.Submission?.EndDateTime,
+                    SubmissionStartDateTime = ci.Submission?.StartDateTime,
+                    ClonedIdHistory = [],
+                    Custom = ci.Custom,
+                    Text = ci.Text,
+                    Title = ci.Title,
+                    Url = ci.Url
+                });
+            }
+
+            return Task.FromResult(id);
         }
 
 
 
         Task<LineItem?> IAssignmentGradeServicesDataService.GetLineItemAsync(string lineItemId)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(LineItems.SingleOrDefault(x => x.Id == lineItemId));
         }
 
         Task IAssignmentGradeServicesDataService.DeleteLineItemAsync(string lineItemId)
         {
-            throw new NotImplementedException();
+            LineItems.RemoveAll(i => i.Id == lineItemId);
+
+            return Task.CompletedTask;
         }
     }
 

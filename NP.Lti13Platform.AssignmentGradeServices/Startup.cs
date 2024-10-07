@@ -75,7 +75,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
                     return Results.Json(lineItemsResponse.Items.Select(i => new
                     {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, i.Id }),
+                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId = i.Id }),
                         i.StartDateTime,
                         i.EndDateTime,
                         i.ScoreMaximum,
