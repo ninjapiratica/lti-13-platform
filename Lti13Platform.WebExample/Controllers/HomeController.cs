@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.DeepLinking;
 
-namespace NP.Lti13PlatformExample.Controllers
+namespace NP.Lti13Platform.WebExample.Controllers
 {
     public class HomeController(ILogger<HomeController> logger, Service service, ICoreDataService dataService) : Controller
     {
@@ -17,12 +17,14 @@ namespace NP.Lti13PlatformExample.Controllers
             var width = 250;
             var locale = "en-US";
 
+            logger.LogInformation("LOGGING INFORMATION");
+
             var resourceLink = await dataService.GetResourceLinkAsync(new Guid().ToString());
 
             return Results.Ok(new
             {
-                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, new DeepLinkSettingsOverride(null, null, null, null, null, null, null, "TiTlE", "TEXT", "data")), //new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
-                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, deployment!.Id, context!.Id, resourceLink, userId) : null // new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }) : null,
+                deepLinkUrl = service.GetDeepLinkInitiationUrl(tool!, deployment!.Id, context!.Id, userId, null, new DeepLinkSettingsOverride(null, null, null, null, null, null, null, "TiTlE", "TEXT", "data")), //new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
+                contentItemUrl = resourceLink != null ? service.GetResourceLinkInitiationUrl(tool!, deployment!.Id, context!.Id, resourceLink, userId, launchPresentation: new LaunchPresentationOverride { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }) : null,
             });
         }
     }

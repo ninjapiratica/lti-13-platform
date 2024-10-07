@@ -63,6 +63,13 @@
         public bool UserScopeMentor { get; set; }
         public bool UserGradeLevelsOneRoster { get; set; }
 
+        public bool ActualUserId { get; set; }
+        public bool ActualUserImage { get; set; }
+        public bool ActualUserUsername { get; set; }
+        public bool ActualUserOrg { get; set; }
+        public bool ActualUserScopeMentor { get; set; }
+        public bool ActualUserGradeLevelsOneRoster { get; set; }
+
         public bool ContextId { get; set; }
         public bool ContextOrg { get; set; }
         public bool ContextType { get; set; }

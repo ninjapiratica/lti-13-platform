@@ -4,9 +4,9 @@
     {
         /// <summary>
         /// Endpoint used to get a list of members in the context.
-        /// <para>Must include route parameter for {contextId}.</para>
+        /// <para>Must include route parameters for {deploymentId} and {contextId}.</para>
         /// </summary>
-        /// <value>Default: /lti13/{contextId}/memberships</value>
-        public string NamesAndRoleProvisioningServiceUrl { get; set; } = "/lti13/{contextId}/memberships";
+        /// <value>Default: /lti13/{deploymentId}/{contextId}/memberships</value>
+        public string NamesAndRoleProvisioningServiceUrl { get; set; } = "/lti13/{deploymentId}/{contextId}/memberships";
     }
 }

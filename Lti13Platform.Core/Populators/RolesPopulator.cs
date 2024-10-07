@@ -15,7 +15,7 @@ namespace NP.Lti13Platform.Core.Populators
     {
         public override async Task PopulateAsync(IRolesMessage obj, Lti13MessageScope scope)
         {
-            if (scope.Context != null)
+            if (scope.Context != null && scope.User != null)
             {
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
                 if (membership != null)

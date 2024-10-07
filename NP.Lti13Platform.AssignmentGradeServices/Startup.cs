@@ -9,7 +9,6 @@ using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.Models;
 using System.Collections.ObjectModel;
 using System.Net;
-using System.Net.Http;
 using System.Security.Claims;
 
 namespace NP.Lti13Platform.AssignmentGradeServices
@@ -29,45 +28,54 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             configure?.Invoke(config);
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (Tool tool, Deployment deployment, IHttpContextAccessor httpContextAccessor, ICoreDataService dataService, LinkGenerator linkGenerator, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
 
-                    // TODO: NULL DEPLOYMENTID
-                    var deploymentId = string.Empty;
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
 
-                    var context = await dataService.GetContextAsync(contextId);
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
                     {
                         return Results.NotFound();
                     }
 
-                    var lineItemsResponse = await dataService.GetLineItemsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, resource_id, resource_link_id, tag);
+                    var lineItemsResponse = await coreDataService.GetLineItemsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, resource_id, resource_link_id, tag);
 
                     if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
                     {
                         var links = new Collection<string>();
                         if (pageIndex > 0)
                         {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = pageIndex - 1 })}>; rel=\"prev\"");
+                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { deploymentId, contextId, resource_id, resource_link_id, tag, limit, pageIndex = pageIndex - 1 })}>; rel=\"prev\"");
                         }
 
                         if (lineItemsResponse.TotalItems > limit * (pageIndex + 1))
                         {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
+                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { deploymentId, contextId, resource_id, resource_link_id, tag, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
                         }
 
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = 0 })}>; rel=\"first\"");
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { deploymentId, contextId, resource_id, resource_link_id, tag, limit, pageIndex = 0 })}>; rel=\"first\"");
 
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId, resource_id, resource_link_id, tag, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { deploymentId, contextId, resource_id, resource_link_id, tag, limit, pageIndex = Math.Ceiling(lineItemsResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
 
                         httpContext.Response.Headers.Link = new StringValues([.. links]);
                     }
 
                     return Results.Json(lineItemsResponse.Items.Select(i => new
                     {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.Id }),
+                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, i.Id }),
                         i.StartDateTime,
                         i.EndDateTime,
                         i.ScoreMaximum,
@@ -85,7 +93,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPost(config.AssignmentAndGradeServiceLineItemsUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string contextId, LineItemRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -98,10 +106,19 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     const string SCORE_MAXIUMUM_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum";
 
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
 
-                    // TODO: NULL DEPLOYMENTID
-                    var deploymentId = string.Empty;
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -127,29 +144,28 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     if (!string.IsNullOrWhiteSpace(request.ResourceLinkId))
                     {
                         var resourceLink = await coreDataService.GetResourceLinkAsync(request.ResourceLinkId);
-                        if (resourceLink == null)
+                        if (resourceLink?.DeploymentId != deploymentId || resourceLink.ContextId != contextId)
                         {
                             return Results.NotFound();
                         }
                     }
 
-                    var lineItemId = Guid.NewGuid().ToString();
-                    await assignmentGradeServicesDataService.SaveLineItemAsync(new LineItem
+                    var lineItemId = await assignmentGradeServicesDataService.SaveLineItemAsync(new LineItem
                     {
-                        Id = lineItemId,
+                        Id = string.Empty,
                         DeploymentId = deploymentId,
                         ContextId = contextId,
                         Label = request.Label,
-                        ResourceId = request.ResourceId.ToNullIfEmpty(),
+                        ResourceId = request.ResourceId,
                         ResourceLinkId = request.ResourceLinkId,
                         ScoreMaximum = request.ScoreMaximum,
-                        Tag = request.Tag.ToNullIfEmpty(),
+                        Tag = request.Tag,
                         GradesReleased = request.GradesReleased,
                         StartDateTime = request.StartDateTime,
                         EndDateTime = request.EndDateTime,
                     });
 
-                    var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, lineItemId });
+                    var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId });
                     return Results.Created(url, new
                     {
                         Id = url,
@@ -171,10 +187,22 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapGet(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string contextId, string lineItemId) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -183,14 +211,14 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
 
                     var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
+                    if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
 
                     return Results.Json(new
                     {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, lineItemId }),
+                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId }),
                         lineItem.Label,
                         lineItem.ResourceId,
                         lineItem.ResourceLinkId,
@@ -208,7 +236,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPut(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string contextId, string lineItemId, LineItemRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -224,7 +252,19 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     const string LINE_ITEM_UPDATE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item";
 
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -233,7 +273,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
 
                     var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
+                    if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
@@ -259,10 +299,10 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
 
                     lineItem.Label = request.Label;
-                    lineItem.ResourceId = request.ResourceId.ToNullIfEmpty();
+                    lineItem.ResourceId = request.ResourceId;
                     lineItem.ResourceLinkId = request.ResourceLinkId;
                     lineItem.ScoreMaximum = request.ScoreMaximum;
-                    lineItem.Tag = request.Tag.ToNullIfEmpty();
+                    lineItem.Tag = request.Tag;
                     lineItem.GradesReleased = request.GradesReleased;
                     lineItem.StartDateTime = request.StartDateTime;
                     lineItem.EndDateTime = request.EndDateTime;
@@ -271,7 +311,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
                     return Results.Json(new
                     {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, lineItemId }),
+                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId }),
                         lineItem.Label,
                         lineItem.ResourceId,
                         lineItem.ResourceLinkId,
@@ -290,10 +330,22 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapDelete(config.AssignmentAndGradeServiceLineItemBaseUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string contextId, string lineItemId) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string deploymentId, string contextId, string lineItemId) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -302,7 +354,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
 
                     var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
+                    if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
@@ -319,10 +371,22 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapGet($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/results",
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -331,7 +395,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
 
                     var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
+                    if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
@@ -343,25 +407,25 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         var links = new Collection<string>();
                         if (pageIndex > 0)
                         {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = pageIndex - 1 })}>; rel=\"prev\"");
+                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, lineItemId, limit, pageIndex = pageIndex - 1 })}>; rel=\"prev\"");
                         }
 
                         if (gradesResponse.TotalItems > limit * (pageIndex + 1))
                         {
-                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
+                            links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, lineItemId, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
                         }
 
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = 0 })}>; rel=\"first\"");
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, lineItemId, limit, pageIndex = 0 })}>; rel=\"first\"");
 
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, lineItemId, limit, pageIndex = Math.Ceiling(gradesResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, lineItemId, limit, pageIndex = Math.Ceiling(gradesResponse.TotalItems * 1.0 / limit.GetValueOrDefault()) - 1 })}>; rel=\"last\"");
 
                         httpContext.Response.Headers.Link = new StringValues([.. links]);
                     }
 
                     return Results.Json(gradesResponse.Items.Select(i => new
                     {
-                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { contextId, i.LineItemId, user_id = i.UserId }),
-                        ScoreOf = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId, i.LineItemId }),
+                        Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, i.LineItemId, user_id = i.UserId }),
+                        ScoreOf = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, i.LineItemId }),
                         i.UserId,
                         i.ResultScore,
                         i.ResultMaximum,
@@ -377,7 +441,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPost($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/scores",
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string contextId, string lineItemId, ScoreRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request) =>
                 {
                     const string RESULT_TOO_EARLY = "startDateTime";
                     const string RESULT_TOO_EARLY_DESCRIPTION = "lineItem startDateTime is in the future";
@@ -390,7 +454,19 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     const string OUT_OF_DATE_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0/#timestamp";
 
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+
+                    var tool = await coreDataService.GetToolAsync(clientId);
+                    if (tool == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.NotFound();
+                    }
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -399,7 +475,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     }
 
                     var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
-                    if (lineItem == null)
+                    if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }

@@ -31,7 +31,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             }
 
             IEnumerable<string> mentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
+            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null && scope.User != null)
             {
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
@@ -43,7 +43,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             LineItem? lineItem = null;
             Attempt? attempt = null;
             Grade? grade = null;
-            if (scope.Context != null && scope.ResourceLink != null && customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)))
+            if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.User != null && scope.ResourceLink != null)
             {
                 var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, pageIndex: 0, limit: 1, resourceLinkId: scope.ResourceLink.Id);
                 if (lineItems.TotalItems == 1)

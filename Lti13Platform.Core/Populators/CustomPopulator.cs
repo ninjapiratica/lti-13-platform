@@ -36,7 +36,7 @@ namespace NP.Lti13Platform.Core.Populators
             }
 
             IEnumerable<string> mentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
+            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null && scope.User != null)
             {
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
@@ -45,10 +45,20 @@ namespace NP.Lti13Platform.Core.Populators
                 }
             }
 
+            IEnumerable<string> actualUserMentoredUserIds = [];
+            if (customDictionary.Values.Any(v => v == Lti13ActualUserVariables.ScopeMentor) && scope.Context != null && scope.ActualUser != null)
+            {
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.ActualUser.Id);
+                if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
+                {
+                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.ActualUser.Id);
+                }
+            }
+
             LineItem? lineItem = null;
             Attempt? attempt = null;
             Grade? grade = null;
-            if (scope.Context != null && scope.ResourceLink != null && customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)))
+            if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.User != null && scope.ResourceLink != null)
             {
                 var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
                 if (lineItems.TotalItems == 1)
@@ -63,8 +73,7 @@ namespace NP.Lti13Platform.Core.Populators
 
             foreach (var kvp in customDictionary.Where(kvp => kvp.Value.StartsWith('$')))
             {
-                // TODO: missing values
-                // TODO: ActualUser
+                // TODO: LIS variables
                 customDictionary[kvp.Key] = kvp.Value switch
                 {
                     Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId => scope.User?.Id,
@@ -73,6 +82,13 @@ namespace NP.Lti13Platform.Core.Populators
                     Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg => scope.User != null ? string.Join(',', scope.User.Orgs) : string.Empty,
                     Lti13UserVariables.ScopeMentor when scope.Tool.CustomPermissions.UserScopeMentor => string.Join(',', mentoredUserIds),
                     Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster => scope.User != null ? string.Join(',', scope.User.OneRosterGrades) : string.Empty,
+
+                    Lti13ActualUserVariables.Id when scope.Tool.CustomPermissions.ActualUserId => scope.ActualUser?.Id,
+                    Lti13ActualUserVariables.Image when scope.Tool.CustomPermissions.ActualUserImage => scope.ActualUser?.ImageUrl,
+                    Lti13ActualUserVariables.Username when scope.Tool.CustomPermissions.ActualUserUsername => scope.ActualUser?.Username,
+                    Lti13ActualUserVariables.Org when scope.Tool.CustomPermissions.ActualUserOrg => scope.ActualUser != null ? string.Join(',', scope.ActualUser.Orgs) : string.Empty,
+                    Lti13ActualUserVariables.ScopeMentor when scope.Tool.CustomPermissions.ActualUserScopeMentor => string.Join(',', actualUserMentoredUserIds),
+                    Lti13ActualUserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.ActualUserGradeLevelsOneRoster => scope.ActualUser != null ? string.Join(',', scope.ActualUser.OneRosterGrades) : string.Empty,
 
                     Lti13ContextVariables.Id when scope.Tool.CustomPermissions.ContextId => scope.Context?.Id,
                     Lti13ContextVariables.Org when scope.Tool.CustomPermissions.ContextOrg => scope.Context != null ? string.Join(',', scope.Context.Orgs) : string.Empty,

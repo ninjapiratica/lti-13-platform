@@ -13,6 +13,7 @@ namespace NP.Lti13Platform.DeepLinking
             string deploymentId,
             string? contextId = null,
             string? userId = null,
+            string? actualUserId = null,
             DeepLinkSettingsOverride? deepLinkSettings = null,
             LaunchPresentationOverride? launchPresentation = null)
             => service.GetUrl(
@@ -23,6 +24,7 @@ namespace NP.Lti13Platform.DeepLinking
                 contextId,
                 resourceLinkId: null,
                 userId,
+                actualUserId,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings) + "|" + JsonSerializer.Serialize(launchPresentation))));
     }
 }

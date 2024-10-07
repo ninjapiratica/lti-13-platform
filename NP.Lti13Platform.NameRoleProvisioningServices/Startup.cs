@@ -40,7 +40,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServiceUrl,
-                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningServicesDataService nrpsDataService, LinkGenerator linkGenerator, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningServicesDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
@@ -50,10 +50,6 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     const string DELETED = "Deleted";
 
                     var httpContext = httpContextAccessor.HttpContext!;
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-                    // TODO: NULL DEPLOYMENTID
-                    var deploymentId = string.Empty;
 
                     var context = await coreDataService.GetContextAsync(contextId);
                     if (context == null)
@@ -61,11 +57,17 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                         return Results.NotFound();
                     }
 
-                    var tool = clientId != null ? await coreDataService.GetToolAsync(clientId) : null;
+                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                    var tool = await coreDataService.GetToolAsync(clientId);
                     if (tool == null)
                     {
-                        // TODO: provide results
                         return Results.NotFound();
+                    }
+
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    if (deployment?.ToolId != tool.Id)
+                    {
+                        return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
                     }
 
                     var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
@@ -75,10 +77,10 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     if (membersResponse.TotalItems > limit * (pageIndex + 1))
                     {
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
+                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
                     }
 
-                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
+                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
 
                     httpContext.Response.Headers.Link = new StringValues([.. links]);
 
@@ -105,16 +107,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     if (!string.IsNullOrWhiteSpace(rlid))
                     {
                         var resourceLink = await coreDataService.GetResourceLinkAsync(rlid);
-
-                        if (resourceLink == null)
-                        {
-                            return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
-                        }
-
-                        // TODO: RESOURCELINK DEPLOYMENTID
-                        var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
-
-                        if (deployment == null || deployment.ToolId != tool.Id)
+                        if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
                         {
                             return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
                         }
@@ -126,7 +119,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             ICollection<NameRoleProvisioningMessage> userMessages = [];
                             messages.Add(currentUser.User.Id, userMessages);
 
-                            var scope = new Lti13MessageScope(tool, currentUser.User, deployment, context, resourceLink, null);
+                            var scope = new Lti13MessageScope(tool, currentUser.User, deployment, context, resourceLink, null, null);
 
                             foreach (var messageType in messageTypes)
                             {

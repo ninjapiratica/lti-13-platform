@@ -14,6 +14,6 @@ namespace NP.Lti13Platform.DeepLinking
         /// <returns>The id of the content item.</returns>
         Task<string> SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem);
 
-        Task SaveLineItemAsync(LineItem lineItem);
+        Task<string> SaveLineItemAsync(LineItem lineItem);
     }
 }

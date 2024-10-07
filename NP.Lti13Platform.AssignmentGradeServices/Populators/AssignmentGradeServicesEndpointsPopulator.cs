@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Populators
@@ -31,8 +32,8 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
                 obj.ServiceEndpoints = new IServiceEndpoints.LineItemServiceEndpoints
                 {
                     Scopes = lineItemScopes,
-                    LineItemsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { contextId = scope.Context.Id }),
-                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { contextId = scope.Context.Id, lineItemId }),
+                    LineItemsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }),
+                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }),
                 };
             }
         }

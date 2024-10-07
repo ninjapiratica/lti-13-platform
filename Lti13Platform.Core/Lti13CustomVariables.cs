@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace NP.Lti13Platform.Core
 {
-    // TODO: ActualUser
     public static class Lti13UserVariables
     {
         /// <summary>
@@ -40,6 +39,41 @@ namespace NP.Lti13Platform.Core
         /// The permitted vocabulary is from the 'grades' field utilized in OneRoster Users.
         /// </summary>
         public const string GradeLevelsOneRoster = "$User.gradeLevels.oneRoster";
+    }
+
+    public static class Lti13ActualUserVariables
+    {
+        /// <summary>
+        /// user.id message property value; this may not be their real ID if they are masquerading as another user.
+        /// </summary>
+        public const string Id = "$ActualUser.id";
+
+        /// <summary>
+        /// user.image message property value.
+        /// </summary>
+        public const string Image = "$ActualUser.image";
+
+        /// <summary>
+        /// Username by which the message sender knows the user (typically, the name a user logs in with).
+        /// </summary>
+        public const string Username = "$ActualUser.username";
+
+        /// <summary>
+        /// One or more URIs describing the user's organizational properties (for example, an ldap:// URI).
+        /// By best practice, message senders should separate multiple URIs by commas.
+        /// </summary>
+        public const string Org = "$ActualUser.org";
+
+        /// <summary>
+        /// role_scope_mentor message property value.
+        /// </summary>
+        public const string ScopeMentor = "$ActualUser.scope.mentor";
+
+        /// <summary>
+        /// A comma-separated list of grade(s) for which the user is enrolled.
+        /// The permitted vocabulary is from the 'grades' field utilized in OneRoster Users.
+        /// </summary>
+        public const string GradeLevelsOneRoster = "$ActualUser.gradeLevels.oneRoster";
     }
 
     public static class Lti13ContextVariables
@@ -212,7 +246,6 @@ namespace NP.Lti13Platform.Core
         public const string InstanceContactEmail = "$ToolPlatformInstance.contactEmail";
     }
 
-    // TODO: ActualPerson
     public static class LisPersonVariables
     {
         /// <summary>
@@ -349,6 +382,144 @@ namespace NP.Lti13Platform.Core
         /// XPath for value from LIS database: personRecord/person/contactinfo[contactinfoType/instanceValue/text="SMS"]/contactinfoValue/text
         /// </summary>
         public const string Sms = "$Person.sms";
+    }
+
+    public static class LisActualPersonVariables
+    {
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/sourcedId
+        /// (lis_person.sourcedid property)
+        /// </summary>
+        public const string SourcedId = "$ActualPerson.sourcedId";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/formname/[formnameType/instanceValue/text="Full"]/formattedName/text
+        /// (lis_person.name_full property)
+        /// </summary>
+        public const string NameFull = "$ActualPerson.name.full";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/name/partName[instanceName/text="Family"]/instanceValue/text
+        /// (lis_person.name_family property)
+        /// </summary>
+        public const string NameFamily = "$ActualPerson.name.family";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/name/partName[instanceName/text="Given"]/instanceValue/text
+        /// (lis_person.name_given property)
+        /// </summary>
+        public const string NameGiven = "$ActualPerson.name.given";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/name/partName[instanceName/text="Middle"]/instanceValue/text
+        /// </summary>
+        public const string NameMiddle = "$ActualPerson.name.middle";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/name/partName[instanceName/text="Prefix"]/instanceValue/text
+        /// </summary>
+        public const string NamePrefix = "$ActualPerson.name.prefix";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/name/partName[instanceName/text="Suffix"]/instanceValue/text
+        /// </summary>
+        public const string NameSuffix = "$ActualPerson.name.suffix";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/demographics/gender/instanceValue/text
+        /// </summary>
+        public const string Gender = "$ActualPerson.gender";
+
+        /// <summary>
+        /// No XPath available (N/A)
+        /// </summary>
+        public const string GenderPronouns = "$ActualPerson.gender.pronouns";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]/addressPart/nameValuePair/[instanceName/text="NonFieldedStreetAddress1"]/instanceValue/text
+        /// </summary>
+        public const string AddressStreet1 = "$ActualPerson.address.street1";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]/addressPart/nameValuePair[instanceName/text="NonFieldedStreetAddress2"]/instanceValue/text
+        /// </summary>
+        public const string AddressStreet2 = "$ActualPerson.address.street2";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]addressPart/nameValuePair/[instanceName/text="NonFieldedStreetAddress3"]/instanceValue/text
+        /// </summary>
+        public const string AddressStreet3 = "$ActualPerson.address.street3";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]addressPart/nameValuePair/[instanceName/text="NonFieldedStreetAddress4"]/instanceValue/
+        /// </summary>
+        public const string AddressStreet4 = "$ActualPerson.address.street4";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]addressPart/nameValuePair/[instanceName/text="Locality"]/instanceValue/text
+        /// </summary>
+        public const string AddressLocality = "$ActualPerson.address.locality";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred "]addressPart/nameValuePair/[instanceName/text="Statepr"]/instanceValue/text
+        /// </summary>
+        public const string AddressStatepr = "$ActualPerson.address.statepr";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]addressPart/nameValuePair/[instanceName/text="Country"]/instanceValue/text
+        /// </summary>
+        public const string AddressCountry = "$ActualPerson.address.country";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]addressPart/nameValuePair/[instanceName/text="Postcode"]/instanceValue/text
+        /// </summary>
+        public const string AddressPostcode = "$ActualPerson.address.postcode";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/address/[addressType/instanceValue/text="Preferred"]addressPart/nameValuePair/[instanceName/text="Timezone"]/instanceValue/text
+        /// </summary>
+        public const string AddressTimezone = "$ActualPerson.address.timezone";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo[contactinfoType/instanceValue/text="Mobile"]/contactInfoValue/text
+        /// </summary>
+        public const string PhoneMobile = "$ActualPerson.phone.mobile";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo[contactinfoType/instanceValue/text="Telephone_Primary"]/contactinfoValue/text
+        /// </summary>
+        public const string PhonePrimary = "$ActualPerson.phone.primary";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo [contactinfoType/instanceValue/text="Telephone_Home"]/contactinfoValue/text
+        /// </summary>
+        public const string PhoneHome = "$ActualPerson.phone.home";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo [contactinfoType/instanceValue/text="Telephone_Work"]/contactinfoValue /text
+        /// </summary>
+        public const string PhoneWork = "$ActualPerson.phone.work";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo[contactinfoType/instanceValue/text="Email_Primary"]/contactinfoValue/text
+        /// (lis.person_contact_email_primary property)
+        /// </summary>
+        public const string EmailPrimary = "$ActualPerson.email.primary";
+
+        /// <summary>
+        /// XPath for value from LIS database: person/contactinfo[contactinfoType/instanceValue/text="Email_Personal"]/contactinfoValue/text
+        /// </summary>
+        public const string EmailPersonal = "$ActualPerson.email.personal";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo[contactinfoType/instanceValue/text="Web-Address"]/contactinfoValue/text
+        /// </summary>
+        public const string Webaddress = "$ActualPerson.webaddress";
+
+        /// <summary>
+        /// XPath for value from LIS database: personRecord/person/contactinfo[contactinfoType/instanceValue/text="SMS"]/contactinfoValue/text
+        /// </summary>
+        public const string Sms = "$ActualPerson.sms";
     }
 
     public static class LisCourseVariables

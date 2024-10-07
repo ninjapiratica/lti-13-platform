@@ -15,7 +15,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             {
                 obj.NamesRoleService = new IServiceEndpoints.ServiceEndpoints
                 {
-                    ContextMembershipsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { contextId = scope.Context.Id })!,
+                    ContextMembershipsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id })!,
                     ServiceVersions = ["2.0"]
                 };
             }

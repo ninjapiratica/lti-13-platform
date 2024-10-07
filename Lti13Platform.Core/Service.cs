@@ -8,7 +8,7 @@ namespace NP.Lti13Platform.Core
 {
     public class Service(IOptionsMonitor<Lti13PlatformConfig> config)
     {
-        public Uri GetResourceLinkInitiationUrl(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string? userId = null, LaunchPresentationOverride? launchPresentation = null)
+        public Uri GetResourceLinkInitiationUrl(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string? userId = null, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null)
             => GetUrl(
                 Lti13MessageType.LtiResourceLinkRequest,
                 tool,
@@ -17,9 +17,10 @@ namespace NP.Lti13Platform.Core
                 contextId,
                 resourceLink.Id,
                 userId,
+                actualUserId,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(launchPresentation))));
 
-        public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? resourceLinkId = null, string? userId = null, string? messageHint = null)
+        public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? resourceLinkId = null, string? userId = null, string? actualUserId = null, string? messageHint = null)
         {
             var builder = new UriBuilder(tool.OidcInitiationUrl);
 
@@ -28,7 +29,7 @@ namespace NP.Lti13Platform.Core
             query.Add("login_hint", userId);
             query.Add("target_link_uri", targetLinkUri);
             query.Add("client_id", tool.ClientId.ToString());
-            query.Add("lti_message_hint", $"{messageType}|{deploymentId}|{contextId}|{resourceLinkId}|{messageHint}");
+            query.Add("lti_message_hint", $"{messageType}|{deploymentId}|{contextId}|{resourceLinkId}|{actualUserId}|{messageHint}");
             query.Add("lti_deployment_id", deploymentId);
             builder.Query = query.ToString();
 

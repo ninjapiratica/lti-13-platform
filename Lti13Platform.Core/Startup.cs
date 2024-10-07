@@ -12,15 +12,11 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using System.Collections;
-using System.Collections.ObjectModel;
 using System.Net.Mime;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.RegularExpressions;
 using System.Web;
 
 namespace NP.Lti13Platform.Core
@@ -203,21 +199,26 @@ namespace NP.Lti13Platform.Core
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint) ||
-                        request.Lti_Message_Hint.Split('|', 5) is not [var messageTypeString, var deploymentId, var contextId, var resourceLinkId, var messageHintString])
+                        request.Lti_Message_Hint.Split('|', 6) is not [var messageTypeString, var deploymentId, var contextId, var resourceLinkId, var actualUserId, var messageHintString])
                     {
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
                     }
 
                     var deployment = await dataService.GetDeploymentAsync(deploymentId);
-
                     if (deployment?.ToolId != tool.Id)
                     {
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
                     }
 
+                    User? actualUser = null;
+                    if (actualUserId != null)
+                    {
+                        actualUser = await dataService.GetUserAsync(actualUserId);
+                    }
+
                     var userId = request.Login_Hint;
                     var user = await dataService.GetUserAsync(userId);
-                    if (user == null)
+                    if (user == null && userId != null)
                     {
                         return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
                     }
@@ -228,46 +229,49 @@ namespace NP.Lti13Platform.Core
 
                     var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
 
+                    ltiMessage.MessageType = messageTypeString;
+
                     ltiMessage.Audience = tool.ClientId;
                     ltiMessage.IssuedDate = DateTime.UtcNow;
                     ltiMessage.Issuer = config.CurrentValue.Issuer;
                     ltiMessage.Nonce = request.Nonce!;
                     ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds);
 
-                    ltiMessage.Subject = user.Id;
-
-                    ltiMessage.Address = user.Address == null || !tool.UserPermissions.Address ? null : new AddressClaim
+                    if (user != null)
                     {
-                        Country = tool.UserPermissions.AddressCountry ? user.Address.Country : null,
-                        Formatted = tool.UserPermissions.AddressFormatted ? user.Address.Formatted : null,
-                        Locality = tool.UserPermissions.AddressLocality ? user.Address.Locality : null,
-                        PostalCode = tool.UserPermissions.AddressPostalCode ? user.Address.PostalCode : null,
-                        Region = tool.UserPermissions.AddressRegion ? user.Address.Region : null,
-                        StreetAddress = tool.UserPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
-                    };
+                        ltiMessage.Subject = user.Id;
 
-                    ltiMessage.Birthdate = tool.UserPermissions.Birthdate ? user.Birthdate : null;
-                    ltiMessage.Email = tool.UserPermissions.Email ? user.Email : null;
-                    ltiMessage.EmailVerified = tool.UserPermissions.EmailVerified ? user.EmailVerified : null;
-                    ltiMessage.FamilyName = tool.UserPermissions.FamilyName ? user.FamilyName : null;
-                    ltiMessage.Gender = tool.UserPermissions.Gender ? user.Gender : null;
-                    ltiMessage.GivenName = tool.UserPermissions.GivenName ? user.GivenName : null;
-                    ltiMessage.Locale = tool.UserPermissions.Locale ? user.Locale : null;
-                    ltiMessage.MiddleName = tool.UserPermissions.MiddleName ? user.MiddleName : null;
-                    ltiMessage.Name = tool.UserPermissions.Name ? user.Name : null;
-                    ltiMessage.Nickname = tool.UserPermissions.Nickname ? user.Nickname : null;
-                    ltiMessage.PhoneNumber = tool.UserPermissions.PhoneNumber ? user.PhoneNumber : null;
-                    ltiMessage.PhoneNumberVerified = tool.UserPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
-                    ltiMessage.Picture = tool.UserPermissions.Picture ? user.Picture : null;
-                    ltiMessage.PreferredUsername = tool.UserPermissions.PreferredUsername ? user.PreferredUsername : null;
-                    ltiMessage.Profile = tool.UserPermissions.Profile ? user.Profile : null;
-                    ltiMessage.UpdatedAt = tool.UserPermissions.UpdatedAt ? user.UpdatedAt : null;
-                    ltiMessage.Website = tool.UserPermissions.Website ? user.Website : null;
-                    ltiMessage.TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null;
+                        ltiMessage.Address = user.Address == null || !tool.UserPermissions.Address ? null : new AddressClaim
+                        {
+                            Country = tool.UserPermissions.AddressCountry ? user.Address.Country : null,
+                            Formatted = tool.UserPermissions.AddressFormatted ? user.Address.Formatted : null,
+                            Locality = tool.UserPermissions.AddressLocality ? user.Address.Locality : null,
+                            PostalCode = tool.UserPermissions.AddressPostalCode ? user.Address.PostalCode : null,
+                            Region = tool.UserPermissions.AddressRegion ? user.Address.Region : null,
+                            StreetAddress = tool.UserPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
+                        };
 
-                    ltiMessage.MessageType = messageTypeString;
+                        ltiMessage.Birthdate = tool.UserPermissions.Birthdate ? user.Birthdate : null;
+                        ltiMessage.Email = tool.UserPermissions.Email ? user.Email : null;
+                        ltiMessage.EmailVerified = tool.UserPermissions.EmailVerified ? user.EmailVerified : null;
+                        ltiMessage.FamilyName = tool.UserPermissions.FamilyName ? user.FamilyName : null;
+                        ltiMessage.Gender = tool.UserPermissions.Gender ? user.Gender : null;
+                        ltiMessage.GivenName = tool.UserPermissions.GivenName ? user.GivenName : null;
+                        ltiMessage.Locale = tool.UserPermissions.Locale ? user.Locale : null;
+                        ltiMessage.MiddleName = tool.UserPermissions.MiddleName ? user.MiddleName : null;
+                        ltiMessage.Name = tool.UserPermissions.Name ? user.Name : null;
+                        ltiMessage.Nickname = tool.UserPermissions.Nickname ? user.Nickname : null;
+                        ltiMessage.PhoneNumber = tool.UserPermissions.PhoneNumber ? user.PhoneNumber : null;
+                        ltiMessage.PhoneNumberVerified = tool.UserPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
+                        ltiMessage.Picture = tool.UserPermissions.Picture ? user.Picture : null;
+                        ltiMessage.PreferredUsername = tool.UserPermissions.PreferredUsername ? user.PreferredUsername : null;
+                        ltiMessage.Profile = tool.UserPermissions.Profile ? user.Profile : null;
+                        ltiMessage.UpdatedAt = tool.UserPermissions.UpdatedAt ? user.UpdatedAt : null;
+                        ltiMessage.Website = tool.UserPermissions.Website ? user.Website : null;
+                        ltiMessage.TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null;
+                    }
 
-                    var scope = new Lti13MessageScope(tool, user, deployment, context, resourceLink, messageHintString);
+                    var scope = new Lti13MessageScope(tool, user, deployment, context, resourceLink, messageHintString, actualUser);
 
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
                     foreach (var service in services)
@@ -426,7 +430,7 @@ namespace NP.Lti13Platform.Core
 
     internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 
-    public record Lti13MessageScope(Tool Tool, User User, Deployment Deployment, Context? Context, ResourceLink? ResourceLink, string? MessageHint);
+    public record Lti13MessageScope(Tool Tool, User? User, Deployment Deployment, Context? Context, ResourceLink? ResourceLink, string? MessageHint, User? ActualUser);
 
     public static class Lti13MessageType
     {

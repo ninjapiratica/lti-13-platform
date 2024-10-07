@@ -55,6 +55,7 @@ namespace NP.Lti13Platform.DeepLinking
                    const string TYPE = "type";
                    const string VERSION = "1.3.0";
                    const string LTI_DEEP_LINKING_RESPONSE = "LtiDeepLinkingResponse";
+                   const string DEPLOYMENT_ID_CLAIM = "https://purl.imsglobal.org/spec/lti/claim/deployment_id";
 
                    if (string.IsNullOrWhiteSpace(request.Jwt))
                    {
@@ -64,21 +65,21 @@ namespace NP.Lti13Platform.DeepLinking
                    var jwt = new JsonWebToken(request.Jwt);
                    var clientId = jwt.Issuer;
 
-                   if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
+                   var tool = await coreDataService.GetToolAsync(clientId);
+                   if (tool?.Jwks == null)
+                   {
+                       return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                   }
+
+                   if (!jwt.TryGetClaim(DEPLOYMENT_ID_CLAIM, out var deploymentIdClaim))
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
                    var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value);
-                   if (deployment == null)
+                   if (deployment == null || deployment.ToolId != tool.Id)
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
-                   }
-
-                   var tool = await coreDataService.GetToolAsync(clientId);
-                   if (tool?.Jwks == null)
-                   {
-                       return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
                    var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
@@ -114,12 +115,7 @@ namespace NP.Lti13Platform.DeepLinking
                            .Select((x, ix) =>
                            {
                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
-
-                               var contentItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
-
-                               //contentItem.Id = ix == 0 ? new Guid().ToString() : Guid.NewGuid().ToString();
-
-                               return contentItem;
+                               return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
                            })
                            .ToList()
                    };
@@ -144,7 +140,7 @@ namespace NP.Lti13Platform.DeepLinking
                            {
                                await deepLinkingDataService.SaveLineItemAsync(new LineItem
                                {
-                                   Id = Guid.NewGuid().ToString(),
+                                   Id = string.Empty,
                                    DeploymentId = deployment.Id,
                                    ContextId = contextId,
                                    Label = rlci.LineItem!.Label ?? rlci.Title ?? rlci.Type,
