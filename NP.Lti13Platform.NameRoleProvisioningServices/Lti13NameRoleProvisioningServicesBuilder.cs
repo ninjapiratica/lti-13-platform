@@ -59,7 +59,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             return new Lti13NameRoleProvisioningServicesMessageBuilder(messageType, platformBuilder);
         }
 
-        static internal void CreateTypes()
+        internal static void CreateTypes()
         {
             if (LtiMessageTypes.Count == 0)
             {

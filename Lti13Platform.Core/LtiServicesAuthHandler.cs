@@ -8,8 +8,8 @@ using System.Text.Encodings.Web;
 
 namespace NP.Lti13Platform.Core
 {
-    public class LtiServicesAuthHandler(ICoreDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) :
-        AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    public class LtiServicesAuthHandler(ICoreDataService dataService, ITokenService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
         public const string SchemeName = "NP.Lti13Platform.Services";
 
@@ -24,11 +24,15 @@ namespace NP.Lti13Platform.Core
 
             var publicKeys = await dataService.GetPublicKeysAsync();
 
+            var jwt = new JsonWebToken(authHeaderParts[1]);
+
+            var tokenConfig = await tokenService.GetTokenConfigAsync(jwt.Subject);
+
             var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(authHeaderParts[1], new TokenValidationParameters
             {
                 IssuerSigningKeys = publicKeys,
-                ValidAudience = config.CurrentValue.Issuer,
-                ValidIssuer = config.CurrentValue.Issuer
+                ValidAudience = tokenConfig.Issuer,
+                ValidIssuer = tokenConfig.Issuer
             });
 
             return validatedToken.IsValid ? AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal([validatedToken.ClaimsIdentity]), SchemeName)) : AuthenticateResult.NoResult();

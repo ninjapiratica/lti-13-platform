@@ -7,7 +7,7 @@ namespace NP.Lti13Platform.DeepLinking
 {
     public static class ServiceExtensions
     {
-        public static Uri GetDeepLinkInitiationUrl(
+        public static async Task<Uri> GetDeepLinkInitiationUrlAsync(
             this Service service,
             Tool tool,
             string deploymentId,
@@ -17,7 +17,7 @@ namespace NP.Lti13Platform.DeepLinking
             string? contextId = null,
             DeepLinkSettingsOverride? deepLinkSettings = null,
             LaunchPresentationOverride? launchPresentation = null)
-            => service.GetUrl(
+            => await service.GetUrlAsync(
                 Lti13MessageType.LtiDeepLinkingRequest,
                 tool,
                 deploymentId,

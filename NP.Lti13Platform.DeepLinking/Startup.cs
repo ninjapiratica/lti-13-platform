@@ -24,6 +24,8 @@ namespace NP.Lti13Platform.DeepLinking
 
             builder.Services.Configure(configure);
 
+            builder.Services.AddTransient<IDeepLinkingService, DeepLinkingService>();
+
             builder.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
                 .Extend<IDeepLinkingMessage, DeepLinkingPopulator>()
                 .Extend<IPlatformMessage, PlatformPopulator>()
@@ -40,7 +42,7 @@ namespace NP.Lti13Platform.DeepLinking
             configure?.Invoke(config);
 
             app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, IOptionsMonitor<Lti13DeepLinkingConfig> deepLinkingConfig, IOptionsMonitor<Lti13PlatformConfig> platformConfig, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkContentHandler deepLinkContentHandler) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkingService deepLinkingService) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -82,10 +84,12 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
+                   var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId);
+
                    var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                    {
                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
-                       ValidAudience = platformConfig.CurrentValue.Issuer,
+                       ValidAudience = tokenConfig.Issuer,
                        ValidIssuer = tool.ClientId.ToString()
                    });
 
@@ -104,6 +108,8 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = VERSION_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
+                   var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId);
+
                    var response = new DeepLinkResponse
                    {
                        Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
@@ -115,7 +121,7 @@ namespace NP.Lti13Platform.DeepLinking
                            .Select((x, ix) =>
                            {
                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
-                               return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.CurrentValue.ContentItemTypes[(tool.ClientId, type)])!;
+                               return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
                            })
                            .ToList()
                    };
@@ -130,13 +136,13 @@ namespace NP.Lti13Platform.DeepLinking
                        logger.LogError("Deep Link Error: {DeepLinkingError}", response.ErrorLog);
                    }
 
-                   if (deepLinkingConfig.CurrentValue.AutoCreate == true)
+                   if (deepLinkingConfig.AutoCreate == true)
                    {
                        var saveTasks = response.ContentItems.Select(async ci =>
                        {
                            var id = await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci);
 
-                           if (ci is LtiResourceLinkContentItem rlci && deepLinkingConfig.CurrentValue.AcceptLineItem == true && rlci.LineItem != null && contextId != null)
+                           if (ci is LtiResourceLinkContentItem rlci && deepLinkingConfig.AcceptLineItem == true && rlci.LineItem != null && contextId != null)
                            {
                                await deepLinkingDataService.SaveLineItemAsync(new LineItem
                                {
@@ -149,8 +155,8 @@ namespace NP.Lti13Platform.DeepLinking
                                    Tag = rlci.LineItem.Tag,
                                    ResourceId = rlci.LineItem.ResourceId,
                                    ResourceLinkId = id,
-                                   StartDateTime = rlci.Submission?.StartDateTime,
-                                   EndDateTime = rlci.Submission?.EndDateTime
+                                   StartDateTime = rlci.Submission?.StartDateTime?.UtcDateTime,
+                                   EndDateTime = rlci.Submission?.EndDateTime?.UtcDateTime
                                });
                            }
                        });
@@ -158,7 +164,7 @@ namespace NP.Lti13Platform.DeepLinking
                        await Task.WhenAll(saveTasks);
                    }
 
-                   return await deepLinkContentHandler.HandleAsync(response);
+                   return await deepLinkingService.HandleResponseAsync(response);
                })
                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                .DisableAntiforgery();

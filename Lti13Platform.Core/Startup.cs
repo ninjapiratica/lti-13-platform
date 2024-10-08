@@ -43,7 +43,7 @@ namespace NP.Lti13Platform.Core
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
         private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
-        public static Lti13PlatformBuilder AddLti13PlatformCore(this IServiceCollection serviceCollection, Action<Lti13PlatformConfig> configure)
+        public static Lti13PlatformBuilder AddLti13PlatformCore(this IServiceCollection serviceCollection, Action<Lti13PlatformCoreConfig> configure)
         {
             var builder = new Lti13PlatformBuilder(serviceCollection);
 
@@ -51,6 +51,7 @@ namespace NP.Lti13Platform.Core
 
             builder.Services.AddTransient<Service>();
             builder.Services.AddTransient<IPlatformService, PlatformService>();
+            builder.Services.AddTransient<ITokenService, TokenService>();
 
             builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
                 .Extend<IResourceLinkMessage, ResourceLinkPopulator>()
@@ -115,7 +116,7 @@ namespace NP.Lti13Platform.Core
                 });
 
             routeBuilder.Map(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, IOptionsMonitor<Lti13PlatformConfig> config, ICoreDataService dataService) =>
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ITokenService tokenService, ICoreDataService dataService) =>
                 {
                     const string OPENID = "openid";
                     const string ID_TOKEN = "id_token";
@@ -233,15 +234,17 @@ namespace NP.Lti13Platform.Core
 
                     var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId);
 
+                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId);
+
                     var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
 
                     ltiMessage.MessageType = messageTypeString;
 
                     ltiMessage.Audience = tool.ClientId;
                     ltiMessage.IssuedDate = DateTime.UtcNow;
-                    ltiMessage.Issuer = config.CurrentValue.Issuer;
+                    ltiMessage.Issuer = tokenConfig.Issuer;
                     ltiMessage.Nonce = request.Nonce!;
-                    ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds);
+                    ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.IdTokenExpirationSeconds);
 
                     if (!isAnonymous)
                     {
@@ -314,7 +317,7 @@ namespace NP.Lti13Platform.Core
                 .DisableAntiforgery();
 
             routeBuilder.MapPost(config.TokenUrl,
-                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ICoreDataService dataService, IOptionsMonitor<Lti13PlatformConfig> config) =>
+                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ICoreDataService dataService, ITokenService tokenService) =>
                 {
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                     const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";
@@ -381,10 +384,12 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                     }
 
+                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId);
+
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                     {
                         IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
-                        ValidAudience = config.CurrentValue.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
+                        ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
                         ValidIssuer = tool.ClientId.ToString()
                     });
 
@@ -408,9 +413,9 @@ namespace NP.Lti13Platform.Core
                     var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                     {
                         Subject = validatedToken.ClaimsIdentity,
-                        Issuer = config.CurrentValue.Issuer,
-                        Audience = config.CurrentValue.Issuer,
-                        Expires = DateTime.UtcNow.AddSeconds(config.CurrentValue.AccessTokenExpirationSeconds),
+                        Issuer = tokenConfig.Issuer,
+                        Audience = tokenConfig.Issuer,
+                        Expires = DateTime.UtcNow.AddSeconds(tokenConfig.AccessTokenExpirationSeconds),
                         SigningCredentials = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256),
                         Claims = new Dictionary<string, object>
                         {
@@ -422,7 +427,7 @@ namespace NP.Lti13Platform.Core
                     {
                         access_token = token,
                         token_type = "bearer",
-                        expires_in = config.CurrentValue.AccessTokenExpirationSeconds * 60,
+                        expires_in = tokenConfig.AccessTokenExpirationSeconds,
                         scope = string.Join(' ', scopes)
                     });
                 })

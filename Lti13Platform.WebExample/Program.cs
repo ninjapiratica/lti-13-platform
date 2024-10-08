@@ -12,7 +12,7 @@ builder.Services.AddControllersWithViews();
 builder.Services
     .AddLti13PlatformCore(config =>
     {
-        config.Issuer = "https://mytest.com";
+        config.TokenConfig.Issuer = "https://mytest.com";
     })
     .AddLti13PlatformDeepLinking(config =>
     {
@@ -22,7 +22,6 @@ builder.Services
     .AddLti13PlatformNameRoleProvisioningServices();
 
 builder.Services.AddDevTunnelHttpContextAccessor();
-builder.Services.AddTransient<IDeepLinkContentHandler, DeepLinkContentHandler>();
 builder.Services.AddSingleton<ICoreDataService, DataService>();
 builder.Services.AddSingleton<INameRoleProvisioningServicesDataService, DataService>();
 builder.Services.AddSingleton<IDeepLinkingDataService, DataService>();
@@ -58,6 +57,7 @@ app.Run();
 
 namespace NP.Lti13Platform.WebExample
 {
+    using Microsoft.Extensions.Options;
     using Microsoft.IdentityModel.Tokens;
     using NP.Lti13Platform.AssignmentGradeServices;
     using NP.Lti13Platform.Core;
@@ -315,10 +315,10 @@ namespace NP.Lti13Platform.WebExample
                     ContextId = contextId,
                     DeploymentId = deploymentId,
                     Id = id,
-                    AvailableEndDateTime = ci.Available?.EndDateTime,
-                    AvailableStartDateTime = ci.Available?.StartDateTime,
-                    SubmissionEndDateTime = ci.Submission?.EndDateTime,
-                    SubmissionStartDateTime = ci.Submission?.StartDateTime,
+                    AvailableEndDateTime = ci.Available?.EndDateTime?.UtcDateTime,
+                    AvailableStartDateTime = ci.Available?.StartDateTime?.UtcDateTime,
+                    SubmissionEndDateTime = ci.Submission?.EndDateTime?.UtcDateTime,
+                    SubmissionStartDateTime = ci.Submission?.StartDateTime?.UtcDateTime,
                     ClonedIdHistory = [],
                     Custom = ci.Custom,
                     Text = ci.Text,
@@ -342,14 +342,6 @@ namespace NP.Lti13Platform.WebExample
             LineItems.RemoveAll(i => i.Id == lineItemId);
 
             return Task.CompletedTask;
-        }
-    }
-
-    public class DeepLinkContentHandler : IDeepLinkContentHandler
-    {
-        public Task<IResult> HandleAsync(DeepLinkResponse response)
-        {
-            return Task.FromResult(Results.Ok(response));
         }
     }
 }

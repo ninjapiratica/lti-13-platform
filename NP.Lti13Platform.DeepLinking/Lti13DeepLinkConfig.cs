@@ -3,7 +3,7 @@ using NP.Lti13Platform.DeepLinking.Models;
 
 namespace NP.Lti13Platform.DeepLinking
 {
-    public partial class Lti13DeepLinkingConfig
+    public class Lti13DeepLinkingConfig
     {
         private const string MEDIA_TYPE_IMAGE = "image/*";
         private const string MEDIA_TYPE_TEXT_HTML = "text/html";

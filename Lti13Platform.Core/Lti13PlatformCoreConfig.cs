@@ -2,7 +2,14 @@
 
 namespace NP.Lti13Platform.Core
 {
-    public partial class Lti13PlatformConfig
+    public partial class Lti13PlatformCoreConfig
+    {
+        public Lti13PlatformTokenConfig TokenConfig { get; set; } = new Lti13PlatformTokenConfig();
+
+        public Platform? Platform { get; set; }
+    }
+
+    public class Lti13PlatformTokenConfig
     {
         private const string INVALID_ISSUER = "Issuer must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
         private const string INVALID_TOKEN_AUDIENCE = "Token Audience must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
@@ -48,7 +55,5 @@ namespace NP.Lti13Platform.Core
         public int IdTokenExpirationSeconds { get; set; } = 300;
 
         public int AccessTokenExpirationSeconds { get; set; } = 3600;
-
-        public Platform? Platform { get; set; }
     }
 }
