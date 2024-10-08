@@ -182,19 +182,19 @@ namespace NP.Lti13Platform.DeepLinking.Models
         public class LtiResourceLinkAvailable
         {
             [JsonPropertyName("startDateTime")]
-            public DateTime? StartDateTime { get; set; }
+            public DateTimeOffset? StartDateTime { get; set; }
 
             [JsonPropertyName("endDateTime")]
-            public DateTime? EndDateTime { get; set; }
+            public DateTimeOffset? EndDateTime { get; set; }
         }
 
         public class LtiResourceLinkSubmission
         {
             [JsonPropertyName("startDateTime")]
-            public DateTime? StartDateTime { get; set; }
+            public DateTimeOffset? StartDateTime { get; set; }
 
             [JsonPropertyName("endDateTime")]
-            public DateTime? EndDateTime { get; set; }
+            public DateTimeOffset? EndDateTime { get; set; }
         }
     }
 
@@ -216,7 +216,7 @@ namespace NP.Lti13Platform.DeepLinking.Models
         public ContentItemThumbnail? Thumbnail { get; set; }
 
         [JsonPropertyName("expiresAt")]
-        public DateTime? ExpiresAt { get; set; }
+        public DateTimeOffset? ExpiresAt { get; set; }
     }
 
     public class HtmlContentItem : ContentItem

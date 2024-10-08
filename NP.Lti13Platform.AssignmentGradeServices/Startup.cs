@@ -160,8 +160,8 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         ScoreMaximum = request.ScoreMaximum,
                         Tag = request.Tag,
                         GradesReleased = request.GradesReleased,
-                        StartDateTime = request.StartDateTime,
-                        EndDateTime = request.EndDateTime,
+                        StartDateTime = request.StartDateTime?.UtcDateTime,
+                        EndDateTime = request.EndDateTime?.UtcDateTime,
                     });
 
                     var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId });
@@ -303,8 +303,8 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     lineItem.ScoreMaximum = request.ScoreMaximum;
                     lineItem.Tag = request.Tag;
                     lineItem.GradesReleased = request.GradesReleased;
-                    lineItem.StartDateTime = request.StartDateTime;
-                    lineItem.EndDateTime = request.EndDateTime;
+                    lineItem.StartDateTime = request.StartDateTime?.UtcDateTime;
+                    lineItem.EndDateTime = request.EndDateTime?.UtcDateTime;
 
                     await assignmentGradeServicesDataService.SaveLineItemAsync(lineItem);
 
@@ -524,13 +524,13 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     grade.ResultMaximum = request.ScoreMaximum;
                     grade.Comment = request.Comment;
                     grade.ScoringUserId = request.ScoringUserId;
-                    grade.Timestamp = request.TimeStamp;
+                    grade.Timestamp = request.TimeStamp.UtcDateTime;
                     grade.ActivityProgress = Enum.Parse<ActivityProgress>(request.ActivityProgress);
                     grade.GradingProgress = Enum.Parse<GradingProgress>(request.GradingProgress);
 
                     if (request.Submission?.StartedAt != null)
                     {
-                        grade.StartedAt = request.Submission.StartedAt;
+                        grade.StartedAt = request.Submission.StartedAt?.UtcDateTime;
                     }
                     else if (grade.ActivityProgress == ActivityProgress.Initialized)
                     {
@@ -543,7 +543,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
                     if (request.Submission?.SubmittedAt != null)
                     {
-                        grade.SubmittedAt = request.Submission.SubmittedAt;
+                        grade.SubmittedAt = request.Submission.SubmittedAt?.UtcDateTime;
                     }
                     else if (grade.ActivityProgress == ActivityProgress.Initialized || grade.ActivityProgress == ActivityProgress.Started || grade.ActivityProgress == ActivityProgress.InProgress)
                     {
@@ -569,15 +569,15 @@ namespace NP.Lti13Platform.AssignmentGradeServices
         }
     }
 
-    internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTime? StartDateTime, DateTime? EndDateTime);
+    internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-    internal record LineItemPutRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId);
+    internal record LineItemPutRequest(DateTimeOffset StartDateTime, DateTimeOffset EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId);
 
-    internal record LineItemsPostRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId, bool? GradesReleased);
+    internal record LineItemsPostRequest(DateTimeOffset StartDateTime, DateTimeOffset EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId, bool? GradesReleased);
 
-    internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTime TimeStamp, string ActivityProgress, string GradingProgress);
+    internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, string ActivityProgress, string GradingProgress);
 
-    internal record ScoreSubmissionRequest(DateTime? StartedAt, DateTime? SubmittedAt);
+    internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
 
     internal static class Lti13ContentTypes
     {
