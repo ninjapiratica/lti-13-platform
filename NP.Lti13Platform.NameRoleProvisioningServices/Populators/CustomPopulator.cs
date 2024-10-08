@@ -31,29 +31,29 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             }
 
             IEnumerable<string> mentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null && scope.User != null)
+            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null )
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.User.Id);
+                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id);
                 }
             }
 
             LineItem? lineItem = null;
             Attempt? attempt = null;
             Grade? grade = null;
-            if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.User != null && scope.ResourceLink != null)
+            if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.ResourceLink != null)
             {
                 var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, pageIndex: 0, limit: 1, resourceLinkId: scope.ResourceLink.Id);
                 if (lineItems.TotalItems == 1)
                 {
                     lineItem = lineItems.Items.First();
 
-                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.User.Id);
+                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.UserScope.User.Id);
                 }
 
-                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.User.Id);
+                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id);
             }
 
             var dictionaryValues = customDictionary.ToList();
@@ -61,12 +61,12 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             {
                 var value = kvp.Value switch
                 {
-                    Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId => scope.User?.Id,
-                    Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage => scope.User?.ImageUrl,
-                    Lti13UserVariables.Username when scope.Tool.CustomPermissions.UserUsername => scope.User?.Username,
-                    Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg => scope.User != null ? string.Join(',', scope.User.Orgs) : string.Empty,
+                    Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId => scope.UserScope.User.Id,
+                    Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage => scope.UserScope.User.ImageUrl,
+                    Lti13UserVariables.Username when scope.Tool.CustomPermissions.UserUsername => scope.UserScope.User.Username,
+                    Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg => string.Join(',', scope.UserScope.User.Orgs),
                     Lti13UserVariables.ScopeMentor when scope.Tool.CustomPermissions.UserScopeMentor => string.Join(',', mentoredUserIds),
-                    Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster => scope.User != null ? string.Join(',', scope.User.OneRosterGrades) : string.Empty,
+                    Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster => string.Join(',', scope.UserScope.User.OneRosterGrades),
 
                     Lti13ResourceLinkVariables.AvailableUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
                     Lti13ResourceLinkVariables.AvailableUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),

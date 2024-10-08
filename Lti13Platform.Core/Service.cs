@@ -8,25 +8,36 @@ namespace NP.Lti13Platform.Core
 {
     public class Service(IOptionsMonitor<Lti13PlatformConfig> config)
     {
-        public Uri GetResourceLinkInitiationUrl(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string? userId = null, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null)
+        public Uri GetResourceLinkInitiationUrl(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null)
             => GetUrl(
                 Lti13MessageType.LtiResourceLinkRequest,
                 tool,
                 deploymentId,
                 string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url,
+                userId,
+                isAnonymous,
+                actualUserId,
                 contextId,
                 resourceLink.Id,
-                userId,
-                actualUserId,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(launchPresentation))));
 
-        public Uri GetUrl(string messageType, Tool tool, string deploymentId, string targetLinkUri, string? contextId = null, string? resourceLinkId = null, string? userId = null, string? actualUserId = null, string? messageHint = null)
+        public Uri GetUrl(
+            string messageType,
+            Tool tool,
+            string deploymentId,
+            string targetLinkUri,
+            string userId,
+            bool isAnonymous,
+            string? actualUserId = null,
+            string? contextId = null,
+            string? resourceLinkId = null,
+            string? messageHint = null)
         {
             var builder = new UriBuilder(tool.OidcInitiationUrl);
 
             var query = HttpUtility.ParseQueryString(builder.Query);
             query.Add("iss", config.CurrentValue.Issuer);
-            query.Add("login_hint", userId);
+            query.Add("login_hint", $"{userId}|{(isAnonymous ? "1" : string.Empty)}|{actualUserId}");
             query.Add("target_link_uri", targetLinkUri);
             query.Add("client_id", tool.ClientId.ToString());
             query.Add("lti_message_hint", $"{messageType}|{deploymentId}|{contextId}|{resourceLinkId}|{actualUserId}|{messageHint}");

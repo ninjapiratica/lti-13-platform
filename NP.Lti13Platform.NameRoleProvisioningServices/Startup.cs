@@ -119,7 +119,13 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             ICollection<NameRoleProvisioningMessage> userMessages = [];
                             messages.Add(currentUser.User.Id, userMessages);
 
-                            var scope = new Lti13MessageScope(tool, currentUser.User, deployment, context, resourceLink, null, null);
+                            var scope = new Lti13MessageScope(
+                                new Lti13UserScope(currentUser.User, ActualUser: null, IsAnonymous: false),
+                                tool,
+                                deployment,
+                                context,
+                                resourceLink,
+                                MessageHint: null);
 
                             foreach (var messageType in messageTypes)
                             {

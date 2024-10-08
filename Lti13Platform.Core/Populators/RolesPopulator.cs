@@ -15,16 +15,16 @@ namespace NP.Lti13Platform.Core.Populators
     {
         public override async Task PopulateAsync(IRolesMessage obj, Lti13MessageScope scope)
         {
-            if (scope.Context != null && scope.User != null)
+            if (scope.Context != null)
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id);
                 if (membership != null)
                 {
                     obj.Roles = membership.Roles;
 
                     if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
                     {
-                        obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.User.Id);
+                        obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id);
                     }
                 }
             }

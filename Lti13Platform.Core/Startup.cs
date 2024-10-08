@@ -199,7 +199,7 @@ namespace NP.Lti13Platform.Core
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint) ||
-                        request.Lti_Message_Hint.Split('|', 6) is not [var messageTypeString, var deploymentId, var contextId, var resourceLinkId, var actualUserId, var messageHintString])
+                        request.Lti_Message_Hint.Split('|', 5) is not [var messageTypeString, var deploymentId, var contextId, var resourceLinkId, var messageHintString])
                     {
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
                     }
@@ -210,15 +210,21 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    User? actualUser = null;
-                    if (actualUserId != null)
+                    if (request.Login_Hint.Split('|', 3) is not [var userId, var isAnonymousString, var actualUserId])
                     {
-                        actualUser = await dataService.GetUserAsync(actualUserId);
+                        return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
                     }
 
-                    var userId = request.Login_Hint;
+                    var isAnonymous = !string.IsNullOrWhiteSpace(isAnonymousString);
+
                     var user = await dataService.GetUserAsync(userId);
-                    if (user == null && userId != null)
+                    if (user == null)
+                    {
+                        return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
+                    }
+
+                    var actualUser = await dataService.GetUserAsync(actualUserId);
+                    if (actualUser == null && !string.IsNullOrWhiteSpace(actualUserId))
                     {
                         return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
                     }
@@ -237,7 +243,7 @@ namespace NP.Lti13Platform.Core
                     ltiMessage.Nonce = request.Nonce!;
                     ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(config.CurrentValue.IdTokenExpirationSeconds);
 
-                    if (user != null)
+                    if (!isAnonymous)
                     {
                         ltiMessage.Subject = user.Id;
 
@@ -271,7 +277,13 @@ namespace NP.Lti13Platform.Core
                         ltiMessage.TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null;
                     }
 
-                    var scope = new Lti13MessageScope(tool, user, deployment, context, resourceLink, messageHintString, actualUser);
+                    var scope = new Lti13MessageScope(
+                        new Lti13UserScope(user, actualUser, isAnonymous),
+                        tool,
+                        deployment,
+                        context,
+                        resourceLink,
+                        messageHintString);
 
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
                     foreach (var service in services)
@@ -430,7 +442,9 @@ namespace NP.Lti13Platform.Core
 
     internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 
-    public record Lti13MessageScope(Tool Tool, User? User, Deployment Deployment, Context? Context, ResourceLink? ResourceLink, string? MessageHint, User? ActualUser);
+    public record Lti13MessageScope(Lti13UserScope UserScope, Tool Tool, Deployment Deployment, Context? Context, ResourceLink? ResourceLink, string? MessageHint);
+
+    public record Lti13UserScope(User User, User? ActualUser, bool IsAnonymous);
 
     public static class Lti13MessageType
     {

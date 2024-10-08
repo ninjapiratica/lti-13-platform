@@ -36,39 +36,39 @@ namespace NP.Lti13Platform.Core.Populators
             }
 
             IEnumerable<string> mentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null && scope.User != null)
+            if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.User.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.User.Id);
+                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id);
                 }
             }
 
             IEnumerable<string> actualUserMentoredUserIds = [];
-            if (customDictionary.Values.Any(v => v == Lti13ActualUserVariables.ScopeMentor) && scope.Context != null && scope.ActualUser != null)
+            if (customDictionary.Values.Any(v => v == Lti13ActualUserVariables.ScopeMentor) && scope.Context != null && scope.UserScope.ActualUser != null)
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.ActualUser.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.ActualUser.Id);
+                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.ActualUser.Id);
                 }
             }
 
             LineItem? lineItem = null;
             Attempt? attempt = null;
             Grade? grade = null;
-            if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.User != null && scope.ResourceLink != null)
+            if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.ResourceLink != null)
             {
                 var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
                 if (lineItems.TotalItems == 1)
                 {
                     lineItem = lineItems.Items.Single();
 
-                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.User.Id);
+                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.UserScope.User.Id);
                 }
 
-                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.User.Id);
+                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id);
             }
 
             foreach (var kvp in customDictionary.Where(kvp => kvp.Value.StartsWith('$')))
@@ -76,19 +76,19 @@ namespace NP.Lti13Platform.Core.Populators
                 // TODO: LIS variables
                 customDictionary[kvp.Key] = kvp.Value switch
                 {
-                    Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId => scope.User?.Id,
-                    Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage => scope.User?.ImageUrl,
-                    Lti13UserVariables.Username when scope.Tool.CustomPermissions.UserUsername => scope.User?.Username,
-                    Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg => scope.User != null ? string.Join(',', scope.User.Orgs) : string.Empty,
-                    Lti13UserVariables.ScopeMentor when scope.Tool.CustomPermissions.UserScopeMentor => string.Join(',', mentoredUserIds),
-                    Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster => scope.User != null ? string.Join(',', scope.User.OneRosterGrades) : string.Empty,
+                    Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id,
+                    Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage && !scope.UserScope.IsAnonymous => scope.UserScope.User.ImageUrl,
+                    Lti13UserVariables.Username when scope.Tool.CustomPermissions.UserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.User.Username,
+                    Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.Orgs),
+                    Lti13UserVariables.ScopeMentor when scope.Tool.CustomPermissions.UserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', mentoredUserIds),
+                    Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.OneRosterGrades),
 
-                    Lti13ActualUserVariables.Id when scope.Tool.CustomPermissions.ActualUserId => scope.ActualUser?.Id,
-                    Lti13ActualUserVariables.Image when scope.Tool.CustomPermissions.ActualUserImage => scope.ActualUser?.ImageUrl,
-                    Lti13ActualUserVariables.Username when scope.Tool.CustomPermissions.ActualUserUsername => scope.ActualUser?.Username,
-                    Lti13ActualUserVariables.Org when scope.Tool.CustomPermissions.ActualUserOrg => scope.ActualUser != null ? string.Join(',', scope.ActualUser.Orgs) : string.Empty,
-                    Lti13ActualUserVariables.ScopeMentor when scope.Tool.CustomPermissions.ActualUserScopeMentor => string.Join(',', actualUserMentoredUserIds),
-                    Lti13ActualUserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.ActualUserGradeLevelsOneRoster => scope.ActualUser != null ? string.Join(',', scope.ActualUser.OneRosterGrades) : string.Empty,
+                    Lti13ActualUserVariables.Id when scope.Tool.CustomPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id,
+                    Lti13ActualUserVariables.Image when scope.Tool.CustomPermissions.ActualUserImage && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.ImageUrl,
+                    Lti13ActualUserVariables.Username when scope.Tool.CustomPermissions.ActualUserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Username,
+                    Lti13ActualUserVariables.Org when scope.Tool.CustomPermissions.ActualUserOrg && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.Orgs) : string.Empty,
+                    Lti13ActualUserVariables.ScopeMentor when scope.Tool.CustomPermissions.ActualUserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', actualUserMentoredUserIds),
+                    Lti13ActualUserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.ActualUserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.OneRosterGrades) : string.Empty,
 
                     Lti13ContextVariables.Id when scope.Tool.CustomPermissions.ContextId => scope.Context?.Id,
                     Lti13ContextVariables.Org when scope.Tool.CustomPermissions.ContextOrg => scope.Context != null ? string.Join(',', scope.Context.Orgs) : string.Empty,
