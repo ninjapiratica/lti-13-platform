@@ -17,5 +17,30 @@
         public DateTime Timestamp { get; set; }
 
         public DateTime? ReleaseDateTime { get; set; }
+
+        public ActivityProgress ActivityProgress { get; set; }
+
+        public GradingProgress GradingProgress { get; set; }
+
+        public DateTime? StartedAt { get; set; }
+
+        public DateTime? SubmittedAt { get; set; }
+    }
+
+    public enum ActivityProgress
+    {
+        Initialized,
+        Started,
+        InProgress,
+        Submitted,
+        Completed
+    }
+    public enum GradingProgress
+    {
+        FullyGraded,
+        Pending,
+        PendingManual,
+        Failed,
+        NotReady
     }
 }

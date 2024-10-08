@@ -5,7 +5,6 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.Models;
 using System.Collections.ObjectModel;
 using System.Net;
@@ -526,6 +525,34 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     grade.Comment = request.Comment;
                     grade.ScoringUserId = request.ScoringUserId;
                     grade.Timestamp = request.TimeStamp;
+                    grade.ActivityProgress = Enum.Parse<ActivityProgress>(request.ActivityProgress);
+                    grade.GradingProgress = Enum.Parse<GradingProgress>(request.GradingProgress);
+
+                    if (request.Submission?.StartedAt != null)
+                    {
+                        grade.StartedAt = request.Submission.StartedAt;
+                    }
+                    else if (grade.ActivityProgress == ActivityProgress.Initialized)
+                    {
+                        grade.StartedAt = null;
+                    }
+                    else if (grade.StartedAt == null && (grade.ActivityProgress == ActivityProgress.Started || grade.ActivityProgress == ActivityProgress.InProgress))
+                    {
+                        grade.StartedAt = DateTime.UtcNow;
+                    }
+
+                    if (request.Submission?.SubmittedAt != null)
+                    {
+                        grade.SubmittedAt = request.Submission.SubmittedAt;
+                    }
+                    else if (grade.ActivityProgress == ActivityProgress.Initialized || grade.ActivityProgress == ActivityProgress.Started || grade.ActivityProgress == ActivityProgress.InProgress)
+                    {
+                        grade.SubmittedAt = null;
+                    }
+                    else if (grade.SubmittedAt == null && (grade.ActivityProgress == ActivityProgress.Submitted || grade.ActivityProgress == ActivityProgress.Completed))
+                    {
+                        grade.SubmittedAt = DateTime.UtcNow;
+                    }
 
                     await assignmentGradeServicesDataService.SaveGradeAsync(grade);
 
@@ -548,7 +575,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
     internal record LineItemsPostRequest(DateTime StartDateTime, DateTime EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId, bool? GradesReleased);
 
-    internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submision, DateTime TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
+    internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTime TimeStamp, string ActivityProgress, string GradingProgress);
 
     internal record ScoreSubmissionRequest(DateTime? StartedAt, DateTime? SubmittedAt);
 
@@ -566,23 +593,5 @@ namespace NP.Lti13Platform.AssignmentGradeServices
         public const string LineItemReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly";
         public const string ResultReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
         public const string Score = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
-    }
-
-    public enum ActivityProgress
-    {
-        Initialized,
-        Started,
-        InProgress,
-        Submitted,
-        Completed
-    }
-
-    public enum GradingProgress
-    {
-        FullyGraded,
-        Pending,
-        PendingManual,
-        Failed,
-        NotReady
     }
 }
