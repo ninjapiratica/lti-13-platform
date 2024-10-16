@@ -1,6 +1,6 @@
-﻿namespace NP.Lti13Platform.NameRoleProvisioningServices
+﻿namespace NP.Lti13Platform.NameRoleProvisioningServices.Configs
 {
-    public class Lti13PlatformNameRoleProvisioningServicesEndpointsConfig
+    public class EndpointsConfig
     {
         /// <summary>
         /// Endpoint used to get a list of members in the context.

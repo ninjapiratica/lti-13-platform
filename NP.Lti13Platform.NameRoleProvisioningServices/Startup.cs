@@ -9,6 +9,9 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
+using NP.Lti13Platform.NameRoleProvisioningServices.Populators;
+using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 using System.Collections.ObjectModel;
 using System.Security.Claims;
 using System.Text.Json;
@@ -27,17 +30,17 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             var builder = platformBuilder
                 .ExtendNameRoleProvisioningMessage<Populators.ICustomMessage, Populators.CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest);
 
-            builder.ExtendLti13Message<IServiceEndpoints, NameRoleProvisioningServiceEndpointsPopulator>();
+            builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultNameRoleProvisioningService(this Lti13PlatformBuilder builder, Action<Lti13NameRoleProvisioningServicesConfig>? configure = null)
+        public static Lti13PlatformBuilder AddDefaultNameRoleProvisioningService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
         {
             configure ??= (x) => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
+            builder.Services.AddTransient<IServiceHelper, ServiceHelper>();
             return builder;
         }
 
@@ -91,15 +94,15 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             }
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this Lti13PlatformEndpointRouteBuilder routeBuilder, Action<Lti13PlatformNameRoleProvisioningServicesEndpointsConfig>? configure = null)
+        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this Lti13PlatformEndpointRouteBuilder routeBuilder, Action<EndpointsConfig>? configure = null)
         {
             CreateTypes();
 
-            var config = new Lti13PlatformNameRoleProvisioningServicesEndpointsConfig();
+            var config = new EndpointsConfig();
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningServicesDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
@@ -248,14 +251,4 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
     }
 
     internal record MessageType(string Name, HashSet<Type> Interfaces);
-
-    internal static class Lti13ContentTypes
-    {
-        internal const string MembershipContainer = "application/vnd.ims.lti-nrps.v2.membershipcontainer+json";
-    }
-
-    public static class Lti13ServiceScopes
-    {
-        public const string MembershipReadOnly = "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly";
-    }
 }

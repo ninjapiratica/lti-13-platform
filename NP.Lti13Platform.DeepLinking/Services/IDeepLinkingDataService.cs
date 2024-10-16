@@ -1,7 +1,7 @@
 ﻿using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.DeepLinking.Models;
 
-namespace NP.Lti13Platform.DeepLinking
+namespace NP.Lti13Platform.DeepLinking.Services
 {
     public interface IDeepLinkingDataService
     {

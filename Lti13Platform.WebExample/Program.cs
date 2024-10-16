@@ -45,9 +45,9 @@ namespace NP.Lti13Platform.WebExample
     using NP.Lti13Platform.AssignmentGradeServices.Services;
     using NP.Lti13Platform.Core;
     using NP.Lti13Platform.Core.Models;
-    using NP.Lti13Platform.DeepLinking;
     using NP.Lti13Platform.DeepLinking.Models;
-    using NP.Lti13Platform.NameRoleProvisioningServices;
+    using NP.Lti13Platform.DeepLinking.Services;
+    using NP.Lti13Platform.NameRoleProvisioningServices.Services;
     using System.Security.Cryptography;
 
     public class DataService : IDataService
@@ -264,7 +264,7 @@ namespace NP.Lti13Platform.WebExample
 
 
 
-        Task<PartialList<Membership>> INameRoleProvisioningServicesDataService.GetMembershipsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate)
+        Task<PartialList<Membership>> INameRoleProvisioningDataService.GetMembershipsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate)
         {
             if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
@@ -280,7 +280,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(PartialList<Membership>.Empty);
         }
 
-        Task<IEnumerable<User>> INameRoleProvisioningServicesDataService.GetUsersAsync(IEnumerable<string> userIds, DateTime? asOfDate)
+        Task<IEnumerable<User>> INameRoleProvisioningDataService.GetUsersAsync(IEnumerable<string> userIds, DateTime? asOfDate)
         {
             return Task.FromResult(Users.Where(x => userIds.Contains(x.Id)));
         }

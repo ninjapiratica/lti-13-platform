@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace NP.Lti13Platform.DeepLinking
+namespace NP.Lti13Platform.DeepLinking.Services
 {
     public interface IDeepLinkingService
     {

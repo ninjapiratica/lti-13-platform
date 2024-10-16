@@ -11,6 +11,7 @@ using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.DeepLinking.Models;
 using NP.Lti13Platform.DeepLinking.Populators;
+using NP.Lti13Platform.DeepLinking.Services;
 using System.Text.Json;
 
 namespace NP.Lti13Platform.DeepLinking

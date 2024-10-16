@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Configs\" />
+  </ItemGroup>
+
 </Project>
