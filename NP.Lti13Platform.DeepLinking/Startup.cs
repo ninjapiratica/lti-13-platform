@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.DeepLinking.Models;
 using NP.Lti13Platform.DeepLinking.Populators;
 using NP.Lti13Platform.DeepLinking.Services;
@@ -30,22 +31,22 @@ namespace NP.Lti13Platform.DeepLinking
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<Lti13DeepLinkingConfig>? configure = null)
+        public static Lti13PlatformBuilder AddDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<DeepLinkingConfig>? configure = null)
         {
             configure ??= x => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<IDeepLinkingService, DeepLinkingService>();
+            builder.Services.AddTransient<IServiceHelper, ServiceHelper>();
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformDeepLinking(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13DeepLinkingEndpointsConfig>? configure = null)
+        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformDeepLinking(this Lti13PlatformEndpointRouteBuilder app, Action<DeepLinkingEndpointsConfig>? configure = null)
         {
-            var config = new Lti13DeepLinkingEndpointsConfig();
+            var config = new DeepLinkingEndpointsConfig();
             configure?.Invoke(config);
 
             app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkingService deepLinkingService) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IServiceHelper deepLinkingService) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -177,9 +178,4 @@ namespace NP.Lti13Platform.DeepLinking
     }
 
     internal record DeepLinkResponseRequest(string? Jwt);
-
-    public static class Lti13MessageType
-    {
-        public const string LtiDeepLinkingRequest = "LtiDeepLinkingRequest";
-    }
 }

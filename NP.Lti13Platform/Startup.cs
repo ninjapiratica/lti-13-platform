@@ -7,6 +7,7 @@ using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.DeepLinking;
+using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.DeepLinking.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
@@ -29,7 +30,7 @@ namespace NP.Lti13Platform
             this IServiceCollection services,
             Action<Lti13PlatformTokenConfig> configureToken,
             Action<Platform>? configurePlatform = null,
-            Action<Lti13DeepLinkingConfig>? configureDeepLinking = null,
+            Action<DeepLinkingConfig>? configureDeepLinking = null,
             Action<AssignmentGradeServices.Configs.ServicesConfig>? configureAssignmentGradeService = null,
             Action<NameRoleProvisioningServices.Configs.ServicesConfig>? configureNameRoleProvisioningService = null)
         {
@@ -95,7 +96,7 @@ namespace NP.Lti13Platform
     public class Lti13PlatformEndpointsConfig
     {
         public Lti13PlatformCoreEndpointsConfig? Core { get; set; }
-        public Lti13DeepLinkingEndpointsConfig? DeepLinking { get; set; }
+        public DeepLinkingEndpointsConfig? DeepLinking { get; set; }
         public EndpointsConfig? NameRoleProvisioningServices { get; set; }
         public ServiceEndpointsConfig? AssignmentGradeServices { get; set; }
     }

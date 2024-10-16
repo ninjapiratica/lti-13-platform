@@ -1,6 +1,6 @@
-﻿namespace NP.Lti13Platform.DeepLinking
+﻿namespace NP.Lti13Platform.DeepLinking.Configs
 {
-    public class Lti13DeepLinkingEndpointsConfig
+    public class DeepLinkingEndpointsConfig
     {
         /// <summary>
         /// Endpoint for the response of LTI 1.3 deep link messages.
