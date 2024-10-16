@@ -1,6 +1,6 @@
-﻿namespace NP.Lti13Platform.AssignmentGradeServices
+﻿namespace NP.Lti13Platform.AssignmentGradeServices.Configs
 {
-    public class Lti13AssignmentGradeServicesEndpointsConfig
+    public class ServiceEndpointsConfig
     {
         /// <summary>
         /// Endpoint used to get a list of line items or create a new line item.

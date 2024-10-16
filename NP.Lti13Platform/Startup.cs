@@ -2,6 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform.AssignmentGradeServices;
+using NP.Lti13Platform.AssignmentGradeServices.Configs;
+using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.DeepLinking;
@@ -25,7 +27,7 @@ namespace NP.Lti13Platform
             Action<Lti13PlatformTokenConfig> configureToken,
             Action<Platform>? configurePlatform = null,
             Action<Lti13DeepLinkingConfig>? configureDeepLinking = null,
-            Action<Lti13AssignmentGradeServicesConfig>? configureAssignmentGradeService = null,
+            Action<ServicesConfig>? configureAssignmentGradeService = null,
             Action<Lti13NameRoleProvisioningServicesConfig>? configureNameRoleProvisioningService = null)
         {
             return services.AddLti13Platform()
@@ -42,7 +44,7 @@ namespace NP.Lti13Platform
             builder.Services.TryAdd(new ServiceDescriptor(typeof(ICoreDataService), typeof(T), serviceLifetime));
             builder.Services.TryAdd(new ServiceDescriptor(typeof(IDeepLinkingDataService), typeof(T), serviceLifetime));
             builder.Services.TryAdd(new ServiceDescriptor(typeof(INameRoleProvisioningServicesDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(IAssignmentGradeServicesDataService), typeof(T), serviceLifetime));
+            builder.Services.TryAdd(new ServiceDescriptor(typeof(IAssignmentGradeDataService), typeof(T), serviceLifetime));
 
             return builder;
         }
@@ -92,6 +94,6 @@ namespace NP.Lti13Platform
         public Lti13PlatformCoreEndpointsConfig? Core { get; set; }
         public Lti13DeepLinkingEndpointsConfig? DeepLinking { get; set; }
         public Lti13PlatformNameRoleProvisioningServicesEndpointsConfig? NameRoleProvisioningServices { get; set; }
-        public Lti13AssignmentGradeServicesEndpointsConfig? AssignmentGradeServices { get; set; }
+        public ServiceEndpointsConfig? AssignmentGradeServices { get; set; }
     }
 }

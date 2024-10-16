@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
+using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
+using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using System.Collections.ObjectModel;
@@ -17,23 +19,23 @@ namespace NP.Lti13Platform.AssignmentGradeServices
     {
         public static Lti13PlatformBuilder AddLti13PlatformAssignmentGradeServices(this Lti13PlatformBuilder builder)
         {
-            builder.ExtendLti13Message<IServiceEndpoints, AssignmentGradeServicesEndpointsPopulator>();
+            builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultAssignmentGradeService(this Lti13PlatformBuilder builder, Action<Lti13AssignmentGradeServicesConfig>? configure = null)
+        public static Lti13PlatformBuilder AddDefaultAssignmentGradeService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
         {
             configure ??= (x) => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
+            builder.Services.AddTransient<IServiceHelper, ServiceHelper>();
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13AssignmentGradeServicesEndpointsConfig>? configure = null)
+        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this Lti13PlatformEndpointRouteBuilder app, Action<ServiceEndpointsConfig>? configure = null)
         {
-            var config = new Lti13AssignmentGradeServicesEndpointsConfig();
+            var config = new ServiceEndpointsConfig();
             configure?.Invoke(config);
 
             app.MapGet(config.LineItemsUrl,
@@ -92,17 +94,17 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         i.Tag,
                         i.ResourceId,
                         i.ResourceLinkId
-                    }), contentType: Lti13ContentTypes.LineItemContainer);
+                    }), contentType: ContentTypes.LineItemContainer);
                 })
                 .WithName(RouteNames.GET_LINE_ITEMS)
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
+                    policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
                 });
 
             app.MapPost(config.LineItemsUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -135,7 +137,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         return Results.NotFound();
                     }
 
-                    if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
+                    if (httpContext.Request.ContentType != ContentTypes.LineItem)
                     {
                         return Results.BadRequest(new { Error = INVALID_CONTENT_TYPE, Error_Description = CONTENT_TYPE_REQUIRED, Error_Uri = CONTENT_TYPE_SPEC_URI });
                     }
@@ -159,7 +161,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         }
                     }
 
-                    var lineItemId = await assignmentGradeServicesDataService.SaveLineItemAsync(new LineItem
+                    var lineItemId = await assignmentGradeDataService.SaveLineItemAsync(new LineItem
                     {
                         Id = string.Empty,
                         DeploymentId = deploymentId,
@@ -191,12 +193,12 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem);
+                    policy.RequireRole(ServiceScopes.LineItem);
                 })
                 .DisableAntiforgery();
 
             app.MapGet(config.LineItemUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -219,7 +221,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         return Results.NotFound();
                     }
 
-                    var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
+                    var lineItem = await assignmentGradeDataService.GetLineItemAsync(lineItemId);
                     if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
@@ -235,17 +237,17 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         lineItem.Tag,
                         lineItem.StartDateTime,
                         lineItem.EndDateTime,
-                    }, contentType: Lti13ContentTypes.LineItem);
+                    }, contentType: ContentTypes.LineItem);
                 })
                 .WithName(RouteNames.GET_LINE_ITEM)
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
+                    policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
                 });
 
             app.MapPut(config.LineItemUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -281,13 +283,13 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         return Results.NotFound();
                     }
 
-                    var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
+                    var lineItem = await assignmentGradeDataService.GetLineItemAsync(lineItemId);
                     if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
 
-                    if (httpContext.Request.ContentType != Lti13ContentTypes.LineItem)
+                    if (httpContext.Request.ContentType != ContentTypes.LineItem)
                     {
                         return Results.BadRequest(new { Error = INVALID_CONTENT_TYPE, Error_Description = CONTENT_TYPE_REQUIRED, Error_Uri = CONTENT_TYPE_SPEC_URI });
                     }
@@ -316,7 +318,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     lineItem.StartDateTime = request.StartDateTime?.UtcDateTime;
                     lineItem.EndDateTime = request.EndDateTime?.UtcDateTime;
 
-                    await assignmentGradeServicesDataService.SaveLineItemAsync(lineItem);
+                    await assignmentGradeDataService.SaveLineItemAsync(lineItem);
 
                     return Results.Json(new
                     {
@@ -329,17 +331,17 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         lineItem.GradesReleased,
                         lineItem.StartDateTime,
                         lineItem.EndDateTime,
-                    }, contentType: Lti13ContentTypes.LineItem);
+                    }, contentType: ContentTypes.LineItem);
                 })
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem);
+                    policy.RequireRole(ServiceScopes.LineItem);
                 })
                 .DisableAntiforgery();
 
             app.MapDelete(config.LineItemUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string deploymentId, string contextId, string lineItemId) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -362,25 +364,25 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         return Results.NotFound();
                     }
 
-                    var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
+                    var lineItem = await assignmentGradeDataService.GetLineItemAsync(lineItemId);
                     if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
 
-                    await assignmentGradeServicesDataService.DeleteLineItemAsync(lineItemId);
+                    await assignmentGradeDataService.DeleteLineItemAsync(lineItemId);
 
                     return Results.NoContent();
                 })
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.LineItem);
+                    policy.RequireRole(ServiceScopes.LineItem);
                 })
                 .DisableAntiforgery();
 
             app.MapGet($"{config.LineItemUrl}/results",
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -403,13 +405,13 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         return Results.NotFound();
                     }
 
-                    var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
+                    var lineItem = await assignmentGradeDataService.GetLineItemAsync(lineItemId);
                     if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
                     }
 
-                    var gradesResponse = await assignmentGradeServicesDataService.GetGradesAsync(lineItemId, pageIndex, limit ?? int.MaxValue, user_id);
+                    var gradesResponse = await assignmentGradeDataService.GetGradesAsync(lineItemId, pageIndex, limit ?? int.MaxValue, user_id);
 
                     if (gradesResponse.TotalItems > 0 && limit.HasValue)
                     {
@@ -440,17 +442,17 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         i.ResultMaximum,
                         i.ScoringUserId,
                         i.Comment
-                    }), contentType: Lti13ContentTypes.ResultContainer);
+                    }), contentType: ContentTypes.ResultContainer);
                 })
                 .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.ResultReadOnly);
+                    policy.RequireRole(ServiceScopes.ResultReadOnly);
                 });
 
             app.MapPost($"{config.LineItemUrl}/scores",
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request) =>
+                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request) =>
                 {
                     const string RESULT_TOO_EARLY = "startDateTime";
                     const string RESULT_TOO_EARLY_DESCRIPTION = "lineItem startDateTime is in the future";
@@ -483,7 +485,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         return Results.NotFound();
                     }
 
-                    var lineItem = await assignmentGradeServicesDataService.GetLineItemAsync(lineItemId);
+                    var lineItem = await assignmentGradeDataService.GetLineItemAsync(lineItemId);
                     if (lineItem?.DeploymentId != deploymentId || lineItem.ContextId != contextId)
                     {
                         return Results.NotFound();
@@ -564,14 +566,14 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                         grade.SubmittedAt = DateTime.UtcNow;
                     }
 
-                    await assignmentGradeServicesDataService.SaveGradeAsync(grade);
+                    await assignmentGradeDataService.SaveGradeAsync(grade);
 
                     return isNew ? Results.Created() : Results.NoContent();
                 })
                 .RequireAuthorization(policy =>
                 {
                     policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.Score);
+                    policy.RequireRole(ServiceScopes.Score);
                 })
                 .DisableAntiforgery();
 
@@ -581,27 +583,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 
     internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-    internal record LineItemPutRequest(DateTimeOffset StartDateTime, DateTimeOffset EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId);
-
-    internal record LineItemsPostRequest(DateTimeOffset StartDateTime, DateTimeOffset EndDateTime, decimal ScoreMaximum, string Label, string Tag, string ResourceId, string ResourceLinkId, bool? GradesReleased);
-
     internal record ScoreRequest(string UserId, string ScoringUserId, decimal ScoreGiven, decimal ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, string ActivityProgress, string GradingProgress);
 
     internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
-
-    internal static class Lti13ContentTypes
-    {
-        internal const string LineItemContainer = "application/vnd.ims.lis.v2.lineitemcontainer+json";
-        internal const string LineItem = "application/vnd.ims.lis.v2.lineitem+json";
-        internal const string ResultContainer = "application/vnd.ims.lis.v2.resultcontainer+json";
-        internal const string Score = "application/vnd.ims.lis.v1.score+json";
-    }
-
-    public static class Lti13ServiceScopes
-    {
-        public const string LineItem = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem";
-        public const string LineItemReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly";
-        public const string ResultReadOnly = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
-        public const string Score = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
-    }
 }

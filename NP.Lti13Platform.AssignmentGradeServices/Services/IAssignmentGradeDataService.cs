@@ -1,8 +1,8 @@
 ﻿using NP.Lti13Platform.Core.Models;
 
-namespace NP.Lti13Platform.AssignmentGradeServices
+namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
-    public interface IAssignmentGradeServicesDataService
+    public interface IAssignmentGradeDataService
     {
         Task<LineItem?> GetLineItemAsync(string lineItemId);
         Task DeleteLineItemAsync(string lineItemId);

@@ -1,17 +1,37 @@
 ﻿using Microsoft.AspNetCore.Http;
+using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
+using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Populators
 {
-    public class AssignmentGradeServicesEndpointsPopulator(IHttpContextAccessor httpContextAccessor, ILtiLinkGenerator linkGenerator, ICoreDataService dataService, IAssignmentGradeService assignmentGradeService) : Populator<IServiceEndpoints>
+    public interface IServiceEndpoints
+    {
+        [JsonPropertyName("https://purl.imsglobal.org/spec/lti-ags/claim/endpoint")]
+        public LineItemServiceEndpoints? ServiceEndpoints { get; set; }
+
+        public class LineItemServiceEndpoints
+        {
+            [JsonPropertyName("scope")]
+            public required IEnumerable<string> Scopes { get; set; }
+
+            [JsonPropertyName("lineitems")]
+            public string? LineItemsUrl { get; set; }
+
+            [JsonPropertyName("lineitem")]
+            public string? LineItemUrl { get; set; }
+        }
+    }
+
+    public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, ILtiLinkGenerator linkGenerator, ICoreDataService dataService, IServiceHelper assignmentGradeService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
         {
             var httpContext = httpContextAccessor.HttpContext;
 
             var lineItemScopes = scope.Tool.ServiceScopes
-                .Intersect([Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly, Lti13ServiceScopes.ResultReadOnly, Lti13ServiceScopes.Score])
+                .Intersect([ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly, ServiceScopes.ResultReadOnly, ServiceScopes.Score])
                 .ToList();
 
             if (lineItemScopes.Count > 0 && scope.Context != null && httpContext != null)

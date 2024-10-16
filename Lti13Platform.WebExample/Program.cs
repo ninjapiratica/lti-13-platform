@@ -42,7 +42,7 @@ app.Run();
 namespace NP.Lti13Platform.WebExample
 {
     using Microsoft.IdentityModel.Tokens;
-    using NP.Lti13Platform.AssignmentGradeServices;
+    using NP.Lti13Platform.AssignmentGradeServices.Services;
     using NP.Lti13Platform.Core;
     using NP.Lti13Platform.Core.Models;
     using NP.Lti13Platform.DeepLinking;
@@ -79,10 +79,10 @@ namespace NP.Lti13Platform.WebExample
                 CustomPermissions = new CustomPermissions() { UserUsername = true },
                 ServiceScopes =
                 [
-                    AssignmentGradeServices.Lti13ServiceScopes.LineItem,
-                    AssignmentGradeServices.Lti13ServiceScopes.LineItemReadOnly,
-                    AssignmentGradeServices.Lti13ServiceScopes.ResultReadOnly,
-                    AssignmentGradeServices.Lti13ServiceScopes.Score,
+                    AssignmentGradeServices.ServiceScopes.LineItem,
+                    AssignmentGradeServices.ServiceScopes.LineItemReadOnly,
+                    AssignmentGradeServices.ServiceScopes.ResultReadOnly,
+                    AssignmentGradeServices.ServiceScopes.Score,
                     NameRoleProvisioningServices.Lti13ServiceScopes.MembershipReadOnly
                 ]
             });
@@ -183,7 +183,7 @@ namespace NP.Lti13Platform.WebExample
             return await Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
 
-        Task<PartialList<Grade>> IAssignmentGradeServicesDataService.GetGradesAsync(string lineItemId, int pageIndex, int limit, string? userId)
+        Task<PartialList<Grade>> IAssignmentGradeDataService.GetGradesAsync(string lineItemId, int pageIndex, int limit, string? userId)
         {
             var grades = Grades.Where(x => x.LineItemId == lineItemId && (userId == null || x.UserId == userId)).ToList();
 
@@ -199,7 +199,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
 
-        Task IAssignmentGradeServicesDataService.SaveGradeAsync(Grade grade)
+        Task IAssignmentGradeDataService.SaveGradeAsync(Grade grade)
         {
             var existingGrade = Grades.SingleOrDefault(x => x.LineItemId == grade.LineItemId && x.UserId == grade.UserId);
             if (existingGrade != null)
@@ -315,12 +315,12 @@ namespace NP.Lti13Platform.WebExample
 
 
 
-        Task<LineItem?> IAssignmentGradeServicesDataService.GetLineItemAsync(string lineItemId)
+        Task<LineItem?> IAssignmentGradeDataService.GetLineItemAsync(string lineItemId)
         {
             return Task.FromResult(LineItems.SingleOrDefault(x => x.Id == lineItemId));
         }
 
-        Task IAssignmentGradeServicesDataService.DeleteLineItemAsync(string lineItemId)
+        Task IAssignmentGradeDataService.DeleteLineItemAsync(string lineItemId)
         {
             LineItems.RemoveAll(i => i.Id == lineItemId);
 
