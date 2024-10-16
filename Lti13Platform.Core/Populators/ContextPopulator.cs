@@ -25,7 +25,7 @@ namespace NP.Lti13Platform.Core.Populators
 
     public class ContextPopulator() : Populator<IContextMessage>
     {
-        public override async Task PopulateAsync(IContextMessage obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IContextMessage obj, MessageScope scope)
         {
             if (scope.Context != null)
             {

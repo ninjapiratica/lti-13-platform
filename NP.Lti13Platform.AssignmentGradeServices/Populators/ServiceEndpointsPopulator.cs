@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
-using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
 using System.Text.Json.Serialization;
@@ -27,7 +26,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
 
     public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, ICoreDataService dataService, IServiceHelper assignmentGradeService) : Populator<IServiceEndpoints>
     {
-        public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope)
         {
             var httpContext = httpContextAccessor.HttpContext;
 

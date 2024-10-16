@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
@@ -182,8 +183,8 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             ICollection<NameRoleProvisioningMessage> userMessages = [];
                             messages.Add(currentUser.User.Id, userMessages);
 
-                            var scope = new Lti13MessageScope(
-                                new Lti13UserScope(currentUser.User, ActualUser: null, IsAnonymous: false),
+                            var scope = new MessageScope(
+                                new UserScope(currentUser.User, ActualUser: null, IsAnonymous: false),
                                 tool,
                                 deployment,
                                 context,

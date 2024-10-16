@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
@@ -49,7 +50,7 @@ namespace NP.Lti13Platform.Core
             var builder = new Lti13PlatformBuilder(serviceCollection);
 
             builder.Services.AddTransient<LtiLinkGenerator>();
-            builder.Services.TryAddTransient<Service>();
+            builder.Services.AddTransient<IUrlServiceHelper, UrlServiceHelper>();
 
             builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
                 .Extend<IResourceLinkMessage, ResourceLinkPopulator>()
@@ -120,7 +121,7 @@ namespace NP.Lti13Platform.Core
                 });
 
             routeBuilder.Map(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ITokenService tokenService, ICoreDataService dataService) =>
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ITokenService tokenService, ICoreDataService dataService, IUrlServiceHelper urlServiceHelper) =>
                 {
                     const string OPENID = "openid";
                     const string ID_TOKEN = "id_token";
@@ -203,11 +204,12 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint) ||
-                        request.Lti_Message_Hint.Split('|', 5) is not [var messageTypeString, var deploymentId, var contextId, var resourceLinkId, var messageHintString])
+                    if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint))
                     {
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
                     }
+
+                    var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint);
 
                     var deployment = await dataService.GetDeploymentAsync(deploymentId);
                     if (deployment?.ToolId != tool.Id)
@@ -215,12 +217,7 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (request.Login_Hint.Split('|', 3) is not [var userId, var isAnonymousString, var actualUserId])
-                    {
-                        return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
-                    }
-
-                    var isAnonymous = !string.IsNullOrWhiteSpace(isAnonymousString);
+                    var (userId, actualUserId, isAnonymous) = await urlServiceHelper.ParseLoginHintAsync(request.Login_Hint);
 
                     var user = await dataService.GetUserAsync(userId);
                     if (user == null)
@@ -228,10 +225,15 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
                     }
 
-                    var actualUser = await dataService.GetUserAsync(actualUserId);
-                    if (actualUser == null && !string.IsNullOrWhiteSpace(actualUserId))
+                    User? actualUser = null; ;
+                    if (!string.IsNullOrWhiteSpace(actualUserId))
                     {
-                        return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
+                        actualUser = await dataService.GetUserAsync(actualUserId);
+
+                        if (actualUser == null)
+                        {
+                            return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
+                        }
                     }
 
                     var context = string.IsNullOrWhiteSpace(contextId) ? null : await dataService.GetContextAsync(contextId);
@@ -284,8 +286,8 @@ namespace NP.Lti13Platform.Core
                         ltiMessage.TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null;
                     }
 
-                    var scope = new Lti13MessageScope(
-                        new Lti13UserScope(user, actualUser, isAnonymous),
+                    var scope = new MessageScope(
+                        new UserScope(user, actualUser, isAnonymous),
                         tool,
                         deployment,
                         context,
@@ -442,21 +444,10 @@ namespace NP.Lti13Platform.Core
         }
     }
 
-    internal static class RouteNames
-    {
-        public const string TOKEN = "TOKEN";
-    }
-
     internal record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, string? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
 
     internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 
-    public record Lti13MessageScope(Lti13UserScope UserScope, Tool Tool, Deployment Deployment, Context? Context, ResourceLink? ResourceLink, string? MessageHint);
-
-    public record Lti13UserScope(User User, User? ActualUser, bool IsAnonymous);
-
-    public static class Lti13MessageType
-    {
-        public const string LtiResourceLinkRequest = "LtiResourceLinkRequest";
-    }
+    /// <param name="DocumentTarget"> <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values. </param>
+    public record LaunchPresentationOverride(string? DocumentTarget, double? Height, double? Width, string? ReturnUrl, string? Locale);
 }

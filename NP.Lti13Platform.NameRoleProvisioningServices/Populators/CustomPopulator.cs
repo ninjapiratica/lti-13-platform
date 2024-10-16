@@ -1,5 +1,4 @@
-﻿using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Constants;
+﻿using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
@@ -23,7 +22,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             Lti13ResourceLinkVariables.SubmissionUserEndDateTime,
             Lti13ResourceLinkVariables.LineItemUserReleaseDateTime];
 
-        public override async Task PopulateAsync(ICustomMessage obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope)
         {
             var customDictionary = scope.Tool.Custom.Merge(scope.Deployment.Custom).Merge(scope.ResourceLink?.Custom);
 

@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Constants;
-using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
 
 namespace NP.Lti13Platform.WebExample.Controllers
 {
-    public class HomeController(ILogger<HomeController> logger, Service service, ICoreDataService dataService) : Controller
+    public class HomeController(ILogger<HomeController> logger, UrlServiceHelper service, ICoreDataService dataService) : Controller
     {
         public async Task<IResult> Index()
         {
@@ -25,7 +25,7 @@ namespace NP.Lti13Platform.WebExample.Controllers
             {
                 deepLinkUrl = await service.GetDeepLinkInitiationUrlAsync(tool!, deployment!.Id, userId, false, null, context!.Id, new DeepLinkSettingsOverride(null, null, null, null, null, null, null, "TiTlE", "TEXT", "data")), //new LaunchPresentation { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }),
                 resourceLinkUrls = DataService.ResourceLinks
-                    .Select(async resourceLink => await service.GetResourceLinkInitiationUrlAsync(tool!, deployment!.Id, context!.Id, resourceLink, userId, false, launchPresentation: new LaunchPresentationOverride { DocumentTarget = documentTarget, Height = height, Width = width, Locale = locale, ReturnUrl = "" }))
+                    .Select(async resourceLink => await service.GetResourceLinkInitiationUrlAsync(tool!, deployment!.Id, context!.Id, resourceLink, userId, false, launchPresentation: new LaunchPresentationOverride(documentTarget, height, width, "", locale)))
                     .Select(t => t.Result)
             });
         }

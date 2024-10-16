@@ -1,5 +1,5 @@
-﻿using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Populators;
+﻿using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Text;
 using System.Text.Json;
@@ -9,7 +9,7 @@ namespace NP.Lti13Platform.DeepLinking
     public static class ServiceExtensions
     {
         public static async Task<Uri> GetDeepLinkInitiationUrlAsync(
-            this Service service,
+            this IUrlServiceHelper service,
             Tool tool,
             string deploymentId,
             string userId,

@@ -22,7 +22,7 @@ namespace NP.Lti13Platform.Core.Populators
             Lti13ResourceLinkVariables.LineItemReleaseDateTime,
             Lti13ResourceLinkVariables.LineItemUserReleaseDateTime];
 
-        public override async Task PopulateAsync(ICustomMessage obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope)
         {
             var customDictionary = scope.Tool.Custom.Merge(scope.Deployment.Custom).Merge(scope.ResourceLink?.Custom);
 

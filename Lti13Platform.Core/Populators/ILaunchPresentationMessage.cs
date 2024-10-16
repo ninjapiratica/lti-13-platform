@@ -29,20 +29,4 @@ namespace NP.Lti13Platform.Core.Populators
             public string? Locale { get; set; }
         }
     }
-
-    public class LaunchPresentationOverride
-    {
-        /// <summary>
-        /// <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values.
-        /// </summary>
-        public string? DocumentTarget { get; set; }
-
-        public double? Height { get; set; }
-
-        public double? Width { get; set; }
-
-        public string? ReturnUrl { get; set; }
-
-        public string? Locale { get; set; }
-    }
 }

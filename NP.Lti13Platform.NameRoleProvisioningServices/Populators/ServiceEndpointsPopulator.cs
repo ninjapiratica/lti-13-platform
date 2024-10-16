@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
@@ -24,7 +23,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
 
     public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IServiceHelper nameRoleProvisioningService) : Populator<IServiceEndpoints>
     {
-        public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
+        public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope)
         {
             var httpContext = httpContextAccessor.HttpContext;
 
