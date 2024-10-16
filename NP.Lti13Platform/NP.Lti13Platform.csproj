@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,7 +11,6 @@
     <ProjectReference Include="..\NP.Lti13Platform.AssignmentGradeServices\NP.Lti13Platform.AssignmentGradeServices.csproj" />
     <ProjectReference Include="..\NP.Lti13Platform.DeepLinking\NP.Lti13Platform.DeepLinking.csproj" />
     <ProjectReference Include="..\NP.Lti13Platform.NameRoleProvisioningServices\NP.Lti13Platform.NameRoleProvisioningServices.csproj" />
-    <ProjectReference Include="..\NP.Lti13Platform\NP.Lti13Platform.csproj" />
   </ItemGroup>
 
 </Project>

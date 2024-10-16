@@ -1,7 +1,5 @@
-using NP.Lti13Platform.AssignmentGradeServices;
-using NP.Lti13Platform.Core;
-using NP.Lti13Platform.DeepLinking;
-using NP.Lti13Platform.NameRoleProvisioningServices;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using NP.Lti13Platform;
 using NP.Lti13Platform.WebExample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,22 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddLti13PlatformCore(config =>
-    {
-        config.TokenConfig.Issuer = "https://mytest.com";
-    })
-    .AddLti13PlatformDeepLinking(config =>
-    {
-        config.AddDefaultContentItemMapping();
-    })
-    .AddLti13PlatformAssignmentGradeServices()
-    .AddLti13PlatformNameRoleProvisioningServices();
+    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://test.com"; })
+    .AddDataService<DataService>();
 
-builder.Services.AddDevTunnelHttpContextAccessor();
-builder.Services.AddSingleton<ICoreDataService, DataService>();
-builder.Services.AddSingleton<INameRoleProvisioningServicesDataService, DataService>();
-builder.Services.AddSingleton<IDeepLinkingDataService, DataService>();
-builder.Services.AddTransient<IAssignmentGradeServicesDataService, DataService>();
+builder.Services.RemoveAll<IHttpContextAccessor>();
+builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
 
 var app = builder.Build();
 
@@ -44,10 +31,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13PlatformCore()
-    .UseLti13PlatformDeepLinking()
-    .UseLti13PlatformAssignmentGradeServices()
-    .UseLti13PlatformNameRoleProvisioningServices();
+app.UseLti13Platform();
 
 app.MapControllerRoute(
     name: "default",
@@ -57,7 +41,6 @@ app.Run();
 
 namespace NP.Lti13Platform.WebExample
 {
-    using Microsoft.Extensions.Options;
     using Microsoft.IdentityModel.Tokens;
     using NP.Lti13Platform.AssignmentGradeServices;
     using NP.Lti13Platform.Core;
@@ -67,7 +50,7 @@ namespace NP.Lti13Platform.WebExample
     using NP.Lti13Platform.NameRoleProvisioningServices;
     using System.Security.Cryptography;
 
-    public class DataService : ICoreDataService, INameRoleProvisioningServicesDataService, IDeepLinkingDataService, IAssignmentGradeServicesDataService
+    public class DataService : IDataService
     {
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
@@ -21,12 +22,21 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13PlatformAGSEndpointsConfig>? configure = null)
+        public static Lti13PlatformBuilder AddDefaultAssignmentGradeService(this Lti13PlatformBuilder builder, Action<Lti13AssignmentGradeServicesConfig>? configure = null)
         {
-            var config = new Lti13PlatformAGSEndpointsConfig();
+            configure ??= (x) => { };
+
+            builder.Services.Configure(configure);
+            builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
+            return builder;
+        }
+
+        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13AssignmentGradeServicesEndpointsConfig>? configure = null)
+        {
+            var config = new Lti13AssignmentGradeServicesEndpointsConfig();
             configure?.Invoke(config);
 
-            app.MapGet(config.AssignmentAndGradeServiceLineItemsUrl,
+            app.MapGet(config.LineItemsUrl,
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
@@ -91,7 +101,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
                 });
 
-            app.MapPost(config.AssignmentAndGradeServiceLineItemsUrl,
+            app.MapPost(config.LineItemsUrl,
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
@@ -185,7 +195,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 })
                 .DisableAntiforgery();
 
-            app.MapGet(config.AssignmentAndGradeServiceLineItemBaseUrl,
+            app.MapGet(config.LineItemUrl,
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
@@ -234,7 +244,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
                 });
 
-            app.MapPut(config.AssignmentAndGradeServiceLineItemBaseUrl,
+            app.MapPut(config.LineItemUrl,
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
@@ -328,7 +338,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 })
                 .DisableAntiforgery();
 
-            app.MapDelete(config.AssignmentAndGradeServiceLineItemBaseUrl,
+            app.MapDelete(config.LineItemUrl,
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string deploymentId, string contextId, string lineItemId) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
@@ -369,7 +379,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 })
                 .DisableAntiforgery();
 
-            app.MapGet($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/results",
+            app.MapGet($"{config.LineItemUrl}/results",
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
@@ -439,7 +449,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                     policy.RequireRole(Lti13ServiceScopes.ResultReadOnly);
                 });
 
-            app.MapPost($"{config.AssignmentAndGradeServiceLineItemBaseUrl}/scores",
+            app.MapPost($"{config.LineItemUrl}/scores",
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeServicesDataService assignmentGradeServicesDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request) =>
                 {
                     const string RESULT_TOO_EARLY = "startDateTime";

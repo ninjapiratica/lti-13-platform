@@ -8,8 +8,8 @@ namespace NP.Lti13Platform.Core
         Task<Platform?> GetPlatformAsync(string clientId);
     }
 
-    internal class PlatformService(IOptionsMonitor<Lti13PlatformCoreConfig> config) : IPlatformService
+    internal class PlatformService(IOptionsMonitor<Platform> config) : IPlatformService
     {
-        public virtual async Task<Platform?> GetPlatformAsync(string clientId) => await Task.FromResult(config.CurrentValue.Platform);
+        public virtual async Task<Platform?> GetPlatformAsync(string clientId) => await Task.FromResult(config.CurrentValue);
     }
 }

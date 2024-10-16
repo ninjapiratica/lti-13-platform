@@ -11,9 +11,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.WebExample
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.AssignmentGradeServices", "NP.Lti13Platform.AssignmentGradeServices\NP.Lti13Platform.AssignmentGradeServices.csproj", "{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.DeepLinking", "NP.Lti13Platform.DeepLinking\NP.Lti13Platform.DeepLinking.csproj", "{77EDBF5D-0981-4DF5-9CBA-318111238806}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.DeepLinking", "NP.Lti13Platform.DeepLinking\NP.Lti13Platform.DeepLinking.csproj", "{77EDBF5D-0981-4DF5-9CBA-318111238806}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.NameRoleProvisioningServices", "NP.Lti13Platform.NameRoleProvisioningServices\NP.Lti13Platform.NameRoleProvisioningServices.csproj", "{F66A42F5-6EB2-4488-A620-36FF6B2685A8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.NameRoleProvisioningServices", "NP.Lti13Platform.NameRoleProvisioningServices\NP.Lti13Platform.NameRoleProvisioningServices.csproj", "{F66A42F5-6EB2-4488-A620-36FF6B2685A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform", "NP.Lti13Platform\NP.Lti13Platform.csproj", "{37BBC1AF-908E-41DF-B017-95BF4DAE31DE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.SubmissionReviewService", "NP.Lti13Platform.SubmissionReviewService\NP.Lti13Platform.SubmissionReviewService.csproj", "{115CAE56-F9D9-4418-B426-47D689318826}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.DynamicRegistration", "NP.Lti13Platform.DynamicRegistration\NP.Lti13Platform.DynamicRegistration.csproj", "{FE6EACB1-C553-47D7-B931-AB5ECEC1E709}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.CourseGroupsService", "NP.Lti13Platform.CourseGroupsService\NP.Lti13Platform.CourseGroupsService.csproj", "{E824DEE4-84B4-4BC6-8940-43EFA9099AE1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.ProctoringServices", "NP.Lti13Platform.ProctoringServices\NP.Lti13Platform.ProctoringServices.csproj", "{E119A4C8-5B2E-467E-AFAD-3C601D030D99}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +55,26 @@ Global
 		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F66A42F5-6EB2-4488-A620-36FF6B2685A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37BBC1AF-908E-41DF-B017-95BF4DAE31DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37BBC1AF-908E-41DF-B017-95BF4DAE31DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37BBC1AF-908E-41DF-B017-95BF4DAE31DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37BBC1AF-908E-41DF-B017-95BF4DAE31DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{115CAE56-F9D9-4418-B426-47D689318826}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{115CAE56-F9D9-4418-B426-47D689318826}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{115CAE56-F9D9-4418-B426-47D689318826}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{115CAE56-F9D9-4418-B426-47D689318826}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE6EACB1-C553-47D7-B931-AB5ECEC1E709}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE6EACB1-C553-47D7-B931-AB5ECEC1E709}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE6EACB1-C553-47D7-B931-AB5ECEC1E709}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE6EACB1-C553-47D7-B931-AB5ECEC1E709}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E824DEE4-84B4-4BC6-8940-43EFA9099AE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E824DEE4-84B4-4BC6-8940-43EFA9099AE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E824DEE4-84B4-4BC6-8940-43EFA9099AE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E824DEE4-84B4-4BC6-8940-43EFA9099AE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

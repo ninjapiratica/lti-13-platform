@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Populators
 {
-    public class AssignmentGradeServicesEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, ICoreDataService dataService) : Populator<IServiceEndpoints>
+    public class AssignmentGradeServicesEndpointsPopulator(IHttpContextAccessor httpContextAccessor, ILtiLinkGenerator linkGenerator, ICoreDataService dataService, IAssignmentGradeService assignmentGradeService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, Lti13MessageScope scope)
         {
@@ -28,11 +27,13 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
                     }
                 }
 
+                var config = await assignmentGradeService.GetConfigAsync(scope.Tool.ClientId);
+
                 obj.ServiceEndpoints = new IServiceEndpoints.LineItemServiceEndpoints
                 {
                     Scopes = lineItemScopes,
-                    LineItemsUrl = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEMS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }),
-                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }),
+                    LineItemsUrl = linkGenerator.GetUriString(RouteNames.GET_LINE_ITEMS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }, httpContext.Request, config.ServiceAddress),
+                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriString(RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }, httpContext.Request, config.ServiceAddress),
                 };
             }
         }

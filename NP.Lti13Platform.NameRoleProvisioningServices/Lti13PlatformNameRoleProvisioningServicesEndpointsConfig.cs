@@ -7,6 +7,6 @@
         /// <para>Must include route parameters for {deploymentId} and {contextId}.</para>
         /// </summary>
         /// <value>Default: /lti13/{deploymentId}/{contextId}/memberships</value>
-        public string NamesAndRoleProvisioningServiceUrl { get; set; } = "/lti13/{deploymentId}/{contextId}/memberships";
+        public string NamesAndRoleProvisioningServicesUrl { get; set; } = "/lti13/{deploymentId}/{contextId}/memberships";
     }
 }

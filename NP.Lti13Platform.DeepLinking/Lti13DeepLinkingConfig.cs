@@ -27,7 +27,9 @@ namespace NP.Lti13Platform.DeepLinking
         /// </summary>
         public bool? AutoCreate { get; set; } = true;
 
-        public IDictionary<(string? ToolId, string ContentItemType), Type> ContentItemTypes { get; set; } = new ContentItemDictionary();
+        public IDictionary<(string? ToolId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
+
+        public Uri? ServiceAddress { get; set; }
 
         public void AddDefaultContentItemMapping()
         {

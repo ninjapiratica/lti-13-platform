@@ -7,8 +7,8 @@ namespace NP.Lti13Platform.Core
         Task<Lti13PlatformTokenConfig> GetTokenConfigAsync(string clientId);
     }
 
-    internal class TokenService(IOptionsMonitor<Lti13PlatformCoreConfig> config) : ITokenService
+    internal class TokenService(IOptionsMonitor<Lti13PlatformTokenConfig> config) : ITokenService
     {
-        public virtual async Task<Lti13PlatformTokenConfig> GetTokenConfigAsync(string clientId) => await Task.FromResult(config.CurrentValue.TokenConfig);
+        public virtual async Task<Lti13PlatformTokenConfig> GetTokenConfigAsync(string clientId) => await Task.FromResult(config.CurrentValue);
     }
 }

@@ -10,7 +10,7 @@ namespace NP.Lti13Platform.DeepLinking
         Task<Lti13DeepLinkingConfig> GetConfigAsync(string clientId);
     }
 
-    public class DeepLinkingService(IOptionsMonitor<Lti13DeepLinkingConfig> config) : IDeepLinkingService
+    internal class DeepLinkingService(IOptionsMonitor<Lti13DeepLinkingConfig> config) : IDeepLinkingService
     {
         public virtual Task<IResult> HandleResponseAsync(DeepLinkResponse response)
         {

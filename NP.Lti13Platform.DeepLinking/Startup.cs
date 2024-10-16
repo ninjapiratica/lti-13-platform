@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
@@ -18,14 +17,8 @@ namespace NP.Lti13Platform.DeepLinking
 {
     public static class Startup
     {
-        public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder, Action<Lti13DeepLinkingConfig>? configure = null)
+        public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
         {
-            configure ??= (config) => { };
-
-            builder.Services.Configure(configure);
-
-            builder.Services.AddTransient<IDeepLinkingService, DeepLinkingService>();
-
             builder.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
                 .Extend<IDeepLinkingMessage, DeepLinkingPopulator>()
                 .Extend<IPlatformMessage, PlatformPopulator>()
@@ -36,9 +29,18 @@ namespace NP.Lti13Platform.DeepLinking
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformDeepLinking(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13PlatformDeepLinkingEndpointsConfig>? configure = null)
+        public static Lti13PlatformBuilder AddDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<Lti13DeepLinkingConfig>? configure = null)
         {
-            var config = new Lti13PlatformDeepLinkingEndpointsConfig();
+            configure ??= x => { };
+
+            builder.Services.Configure(configure);
+            builder.Services.AddTransient<IDeepLinkingService, DeepLinkingService>();
+            return builder;
+        }
+
+        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformDeepLinking(this Lti13PlatformEndpointRouteBuilder app, Action<Lti13DeepLinkingEndpointsConfig>? configure = null)
+        {
+            var config = new Lti13DeepLinkingEndpointsConfig();
             configure?.Invoke(config);
 
             app.MapPost(config.DeepLinkingResponseUrl,

@@ -1,14 +1,5 @@
-﻿using NP.Lti13Platform.Core.Models;
-
-namespace NP.Lti13Platform.Core
+﻿namespace NP.Lti13Platform.Core
 {
-    public partial class Lti13PlatformCoreConfig
-    {
-        public Lti13PlatformTokenConfig TokenConfig { get; set; } = new Lti13PlatformTokenConfig();
-
-        public Platform? Platform { get; set; }
-    }
-
     public class Lti13PlatformTokenConfig
     {
         private const string INVALID_ISSUER = "Issuer must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";

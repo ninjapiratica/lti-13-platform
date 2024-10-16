@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-
-namespace NP.Lti13Platform.Core
+﻿namespace NP.Lti13Platform.WebExample
 {
     // Copied from HttpContextAccessor (with VS_TUNNEL_URL modification)
     public class DevTunnelHttpContextAccessor : IHttpContextAccessor

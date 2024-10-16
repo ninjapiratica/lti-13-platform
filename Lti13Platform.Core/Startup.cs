@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Models;
@@ -43,15 +42,12 @@ namespace NP.Lti13Platform.Core
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
         private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
-        public static Lti13PlatformBuilder AddLti13PlatformCore(this IServiceCollection serviceCollection, Action<Lti13PlatformCoreConfig> configure)
+        public static Lti13PlatformBuilder AddLti13PlatformCore(this IServiceCollection serviceCollection)
         {
             var builder = new Lti13PlatformBuilder(serviceCollection);
 
-            builder.Services.Configure(configure);
-
-            builder.Services.AddTransient<Service>();
-            builder.Services.AddTransient<IPlatformService, PlatformService>();
-            builder.Services.AddTransient<ITokenService, TokenService>();
+            builder.Services.AddTransient<ILtiLinkGenerator, LtiLinkGenerator>();
+            builder.Services.TryAddTransient<Service>();
 
             builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
                 .Extend<IResourceLinkMessage, ResourceLinkPopulator>()
@@ -68,12 +64,20 @@ namespace NP.Lti13Platform.Core
             return builder;
         }
 
-        public static T AddDevTunnelHttpContextAccessor<T>(this T serviceCollection) where T : IServiceCollection
+        public static Lti13PlatformBuilder AddDefaultPlatformService(this Lti13PlatformBuilder builder, Action<Platform>? configure = null)
         {
-            serviceCollection.RemoveAll<IHttpContextAccessor>();
-            serviceCollection.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
+            configure ??= x => { };
 
-            return serviceCollection;
+            builder.Services.Configure(configure);
+            builder.Services.AddTransient<IPlatformService, PlatformService>();
+            return builder;
+        }
+
+        public static Lti13PlatformBuilder AddDefaultTokenService(this Lti13PlatformBuilder builder, Action<Lti13PlatformTokenConfig> configure)
+        {
+            builder.Services.Configure(configure);
+            builder.Services.AddTransient<ITokenService, TokenService>();
+            return builder;
         }
 
         public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
