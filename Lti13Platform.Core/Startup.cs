@@ -8,8 +8,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Services;
 using System.Collections;
 using System.Net.Mime;
 using System.Security.Claims;
@@ -46,7 +48,7 @@ namespace NP.Lti13Platform.Core
         {
             var builder = new Lti13PlatformBuilder(serviceCollection);
 
-            builder.Services.AddTransient<ILtiLinkGenerator, LtiLinkGenerator>();
+            builder.Services.AddTransient<LtiLinkGenerator>();
             builder.Services.TryAddTransient<Service>();
 
             builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
@@ -80,11 +82,9 @@ namespace NP.Lti13Platform.Core
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
         {
             Lti13PlatformBuilder.CreateTypes();
-
-            var routeBuilder = new Lti13PlatformEndpointRouteBuilder(endpointRouteBuilder);
 
             var config = new Lti13PlatformCoreEndpointsConfig();
             configure?.Invoke(config);

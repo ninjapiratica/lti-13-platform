@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Constants;
+using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
 
 namespace NP.Lti13Platform.WebExample.Controllers

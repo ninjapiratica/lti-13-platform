@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.Net.Http.Json;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Models
 {
     public abstract class Jwks
     {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Populators
 {
     public class LtiMessage
     {

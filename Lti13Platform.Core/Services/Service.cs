@@ -1,9 +1,10 @@
 ﻿using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.Populators;
 using System.Text;
 using System.Text.Json;
 using System.Web;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Services
 {
     public class Service(ITokenService tokenService)
     {

@@ -1,5 +1,5 @@
 ﻿using NP.Lti13Platform.AssignmentGradeServices.Services;
-using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 

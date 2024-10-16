@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Core
+﻿namespace NP.Lti13Platform.Core.Constants
 {
     public static class Lti13SystemRoles
     {
@@ -103,7 +103,7 @@
         public const string Mentor_Mentor = "http://purl.imsglobal.org/vocab/lis/v2/membership/Mentor#Mentor";
         public const string Mentor_Reviewer = "http://purl.imsglobal.org/vocab/lis/v2/membership/Mentor#Reviewer";
         public const string Mentor_Tutor = "http://purl.imsglobal.org/vocab/lis/v2/membership/Mentor#Tutor";
-        
+
         public const string Manager_AreaManager = "http://purl.imsglobal.org/vocab/lis/v2/membership/Manager#AreaManager";
         public const string Manager_CourseCoordinator = "http://purl.imsglobal.org/vocab/lis/v2/membership/Manager#CourseCoordinator";
         public const string Manager_ExternalObserver = "http://purl.imsglobal.org/vocab/lis/v2/membership/Manager#ExternalObserver";

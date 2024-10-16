@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Core
+﻿namespace NP.Lti13Platform.Core.Constants
 {
     public static class Lti13ContextTypes
     {
@@ -7,5 +7,4 @@
         public const string CourseSection = "http://purl.imsglobal.org/vocab/lis/v2/course#CourseSection";
         public const string Group = "http://purl.imsglobal.org/vocab/lis/v2/course#Group";
     }
-
 }

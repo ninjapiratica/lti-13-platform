@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
+using NP.Lti13Platform.Core.Constants;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Populators
 {
     public interface ILaunchPresentationMessage
     {

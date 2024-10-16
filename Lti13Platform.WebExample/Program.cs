@@ -43,8 +43,9 @@ namespace NP.Lti13Platform.WebExample
 {
     using Microsoft.IdentityModel.Tokens;
     using NP.Lti13Platform.AssignmentGradeServices.Services;
-    using NP.Lti13Platform.Core;
+    using NP.Lti13Platform.Core.Constants;
     using NP.Lti13Platform.Core.Models;
+    using NP.Lti13Platform.Core.Services;
     using NP.Lti13Platform.DeepLinking.Models;
     using NP.Lti13Platform.DeepLinking.Services;
     using NP.Lti13Platform.NameRoleProvisioningServices.Services;

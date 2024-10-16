@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking.Services;
 using System.Text;
 using System.Text.Json;
@@ -56,7 +57,7 @@ namespace NP.Lti13Platform.DeepLinking.Populators
         }
     }
 
-    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, ILtiLinkGenerator linkGenerator, IServiceHelper deepLinkingService) : Populator<IDeepLinkingMessage>
+    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IServiceHelper deepLinkingService) : Populator<IDeepLinkingMessage>
     {
         public override async Task PopulateAsync(IDeepLinkingMessage obj, Lti13MessageScope scope)
         {

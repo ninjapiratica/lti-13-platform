@@ -1,4 +1,4 @@
-﻿using NP.Lti13Platform.Core;
+﻿using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.DeepLinking.Models;
 
 namespace NP.Lti13Platform.DeepLinking.Configs

@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Core
+﻿namespace NP.Lti13Platform.Core.Constants
 {
     public static class Lti13PresentationTargetDocuments
     {

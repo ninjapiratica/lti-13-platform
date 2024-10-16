@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.DeepLinking.Models;
 using NP.Lti13Platform.DeepLinking.Populators;
@@ -40,7 +41,7 @@ namespace NP.Lti13Platform.DeepLinking
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformDeepLinking(this Lti13PlatformEndpointRouteBuilder app, Action<DeepLinkingEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder app, Action<DeepLinkingEndpointsConfig>? configure = null)
         {
             var config = new DeepLinkingEndpointsConfig();
             configure?.Invoke(config);

@@ -9,6 +9,7 @@ using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Security.Claims;
@@ -33,7 +34,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this Lti13PlatformEndpointRouteBuilder app, Action<ServiceEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder app, Action<ServiceEndpointsConfig>? configure = null)
         {
             var config = new ServiceEndpointsConfig();
             configure?.Invoke(config);

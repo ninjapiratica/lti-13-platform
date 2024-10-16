@@ -10,6 +10,7 @@
 
         public required IEnumerable<string> Roles { get; set; }
     }
+
     public enum MembershipStatus
     {
         Active,

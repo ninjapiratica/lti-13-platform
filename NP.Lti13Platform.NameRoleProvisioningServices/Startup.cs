@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Populators;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
@@ -94,7 +95,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             }
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this Lti13PlatformEndpointRouteBuilder routeBuilder, Action<EndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder routeBuilder, Action<EndpointsConfig>? configure = null)
         {
             CreateTypes();
 

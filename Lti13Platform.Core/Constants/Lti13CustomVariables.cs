@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Constants
 {
     public static class Lti13UserVariables
     {

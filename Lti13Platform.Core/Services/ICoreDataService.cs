@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Models;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Services
 {
     public interface ICoreDataService
     {

@@ -5,7 +5,9 @@ using NP.Lti13Platform.AssignmentGradeServices;
 using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.DeepLinking.Services;
@@ -53,7 +55,7 @@ namespace NP.Lti13Platform
             return builder;
         }
 
-        public static Lti13PlatformEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformEndpointsConfig>? configure = null)
         {
             var endpointsConfig = new Lti13PlatformEndpointsConfig();
             configure?.Invoke(endpointsConfig);

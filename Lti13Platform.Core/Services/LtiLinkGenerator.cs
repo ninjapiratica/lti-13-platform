@@ -1,14 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core.Services
 {
-    public interface ILtiLinkGenerator
-    {
-        string GetUriString(string endpointName, object endpointValues, HttpRequest httpRequest, Uri? baseUri = null);
-    }
-
-    public class LtiLinkGenerator(LinkGenerator linkGenerator) : ILtiLinkGenerator
+    public class LtiLinkGenerator(LinkGenerator linkGenerator)
     {
         public string GetUriString(string endpointName, object endpointValues, HttpRequest httpRequest, Uri? baseUri = null)
         {
