@@ -4,6 +4,19 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>LTI 1.3 Platform Core</Title>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/ninjapiratica/lti-13-platform</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ninjapiratica/lti-13-platform</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>LTI; Advantage; 1.3; Platform</PackageTags>
+    <Authors>Ninja.Piratica</Authors>
+    <Company>Ninja.Piratica</Company>
+    <Description>A platform implementation of the LTI 1.3 spec.</Description>
+    <PackageIcon>package-icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+	<VersionPrefix>0.1.0</VersionPrefix>
+	<VersionSuffix>beta</VersionSuffix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +26,17 @@
 
   <ItemGroup>
 	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="package-icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 
