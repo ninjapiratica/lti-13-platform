@@ -21,8 +21,6 @@ namespace NP.Lti13Platform.AssignmentGradeServices
 {
     public static class Startup
     {
-        private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
-        
         public static Lti13PlatformBuilder AddLti13PlatformAssignmentGradeServices(this Lti13PlatformBuilder builder)
         {
             builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
