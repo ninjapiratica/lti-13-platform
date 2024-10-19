@@ -4,11 +4,11 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
     public interface IAssignmentGradeDataService
     {
-        Task<LineItem?> GetLineItemAsync(string lineItemId);
-        Task DeleteLineItemAsync(string lineItemId);
-        Task<string> SaveLineItemAsync(LineItem lineItem);
+        Task<LineItem?> GetLineItemAsync(string lineItemId, CancellationToken cancellationToken = default);
+        Task DeleteLineItemAsync(string lineItemId, CancellationToken cancellationToken = default);
+        Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
 
-        Task<PartialList<Grade>> GetGradesAsync(string lineItemId, int pageIndex, int limit, string? userId = null);
-        Task SaveGradeAsync(Grade result);
+        Task<PartialList<Grade>> GetGradesAsync(string lineItemId, int pageIndex, int limit, string? userId = null, CancellationToken cancellationToken = default);
+        Task SaveGradeAsync(Grade result, CancellationToken cancellationToken = default);
     }
 }

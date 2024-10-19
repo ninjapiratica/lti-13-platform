@@ -12,8 +12,8 @@ namespace NP.Lti13Platform.DeepLinking.Services
         /// <param name="contextId"></param>
         /// <param name="contentItem"></param>
         /// <returns>The id of the content item.</returns>
-        Task<string> SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem);
+        Task<string> SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem, CancellationToken cancellationToken = default);
 
-        Task<string> SaveLineItemAsync(LineItem lineItem);
+        Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
     }
 }

@@ -22,7 +22,7 @@ namespace NP.Lti13Platform.Core.Populators
             Lti13ResourceLinkVariables.LineItemReleaseDateTime,
             Lti13ResourceLinkVariables.LineItemUserReleaseDateTime];
 
-        public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope)
+        public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
             var customDictionary = scope.Tool.Custom.Merge(scope.Deployment.Custom).Merge(scope.ResourceLink?.Custom);
 
@@ -34,26 +34,26 @@ namespace NP.Lti13Platform.Core.Populators
             Platform? platform = null;
             if (customDictionary.Values.Any(v => v.StartsWith(Lti13ToolPlatformVariables.Version.Split('.')[0])) == true)
             {
-                platform = await platformService.GetPlatformAsync(scope.Tool.ClientId);
+                platform = await platformService.GetPlatformAsync(scope.Tool.ClientId, cancellationToken);
             }
 
             IEnumerable<string> mentoredUserIds = [];
             if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id);
+                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 }
             }
 
             IEnumerable<string> actualUserMentoredUserIds = [];
             if (customDictionary.Values.Any(v => v == Lti13ActualUserVariables.ScopeMentor) && scope.Context != null && scope.UserScope.ActualUser != null)
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.ActualUser.Id);
+                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
                 }
             }
 
@@ -62,15 +62,15 @@ namespace NP.Lti13Platform.Core.Populators
             Grade? grade = null;
             if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.ResourceLink != null)
             {
-                var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
+                var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null, cancellationToken);
                 if (lineItems.TotalItems == 1)
                 {
                     lineItem = lineItems.Items.Single();
 
-                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.UserScope.User.Id);
+                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.UserScope.User.Id, cancellationToken);
                 }
 
-                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id);
+                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id, cancellationToken);
             }
 
             foreach (var kvp in customDictionary.Where(kvp => kvp.Value.StartsWith('$')))

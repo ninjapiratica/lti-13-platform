@@ -59,7 +59,7 @@ namespace NP.Lti13Platform.DeepLinking.Populators
 
     public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IServiceHelper deepLinkingService) : Populator<IDeepLinkingMessage>
     {
-        public override async Task PopulateAsync(IDeepLinkingMessage obj, MessageScope scope)
+        public override async Task PopulateAsync(IDeepLinkingMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext == null)
@@ -80,7 +80,7 @@ namespace NP.Lti13Platform.DeepLinking.Populators
                 launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(parts[1]);
             }
 
-            var config = await deepLinkingService.GetConfigAsync(scope.Tool.ClientId);
+            var config = await deepLinkingService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 
             obj.DeepLinkSettings = new IDeepLinkingMessage.DeepLinkSettingsMessage
             {
@@ -107,8 +107,6 @@ namespace NP.Lti13Platform.DeepLinking.Populators
                     Width = launchPresentation.Width,
                 };
             }
-
-            await Task.CompletedTask;
         }
     }
 }

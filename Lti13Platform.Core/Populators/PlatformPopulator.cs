@@ -35,9 +35,9 @@ namespace NP.Lti13Platform.Core.Populators
 
     public class PlatformPopulator(IPlatformService platformService) : Populator<IPlatformMessage>
     {
-        public override async Task PopulateAsync(IPlatformMessage obj, MessageScope scope)
+        public override async Task PopulateAsync(IPlatformMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
-            var platform = await platformService.GetPlatformAsync(scope.Tool.ClientId);
+            var platform = await platformService.GetPlatformAsync(scope.Tool.ClientId, cancellationToken);
 
             if (platform != null)
             {

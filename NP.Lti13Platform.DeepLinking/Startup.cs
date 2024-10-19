@@ -47,7 +47,7 @@ namespace NP.Lti13Platform.DeepLinking
             configure?.Invoke(config);
 
             app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IServiceHelper deepLinkingService) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IServiceHelper deepLinkingService, CancellationToken cancellationToken) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -72,7 +72,7 @@ namespace NP.Lti13Platform.DeepLinking
                    var jwt = new JsonWebToken(request.Jwt);
                    var clientId = jwt.Issuer;
 
-                   var tool = await coreDataService.GetToolAsync(clientId);
+                   var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                    if (tool?.Jwks == null)
                    {
                        return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
@@ -83,17 +83,17 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value);
+                   var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value, cancellationToken);
                    if (deployment == null || deployment.ToolId != tool.Id)
                    {
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId);
+                   var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
                    var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                    {
-                       IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
+                       IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                        ValidAudience = tokenConfig.Issuer,
                        ValidIssuer = tool.ClientId.ToString()
                    });
@@ -113,7 +113,7 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = VERSION_INVALID, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId);
+                   var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
 
                    var response = new DeepLinkResponse
                    {
@@ -169,7 +169,7 @@ namespace NP.Lti13Platform.DeepLinking
                        await Task.WhenAll(saveTasks);
                    }
 
-                   return await deepLinkingService.HandleResponseAsync(response);
+                   return await deepLinkingService.HandleResponseAsync(response, cancellationToken);
                })
                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                .DisableAntiforgery();

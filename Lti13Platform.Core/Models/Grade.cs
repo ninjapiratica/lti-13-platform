@@ -8,9 +8,9 @@
 
         public string? ScoringUserId { get; set; }
 
-        public decimal ResultScore { get; set; }
+        public decimal? ResultScore { get; set; }
 
-        public decimal ResultMaximum { get; set; }
+        public decimal? ResultMaximum { get; set; }
 
         public string? Comment { get; set; }
 

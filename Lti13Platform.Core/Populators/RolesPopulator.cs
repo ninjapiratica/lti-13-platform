@@ -15,18 +15,18 @@ namespace NP.Lti13Platform.Core.Populators
 
     public class RolesPopulator(ICoreDataService dataService) : Populator<IRolesMessage>
     {
-        public override async Task PopulateAsync(IRolesMessage obj, MessageScope scope)
+        public override async Task PopulateAsync(IRolesMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
             if (scope.Context != null)
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 if (membership != null)
                 {
                     obj.Roles = membership.Roles;
 
                     if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
                     {
-                        obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id);
+                        obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                     }
                 }
             }

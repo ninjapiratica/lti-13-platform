@@ -5,6 +5,6 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
     internal class ServiceHelper(IOptionsMonitor<ServicesConfig> config) : IServiceHelper
     {
-        public virtual Task<ServicesConfig> GetConfigAsync(string clientId) => Task.FromResult(config.CurrentValue);
+        public Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default) => Task.FromResult(config.CurrentValue);
     }
 }

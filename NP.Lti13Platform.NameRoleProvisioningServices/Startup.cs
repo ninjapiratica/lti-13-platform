@@ -104,7 +104,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure?.Invoke(config);
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null) =>
+                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
@@ -115,27 +115,27 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     var httpContext = httpContextAccessor.HttpContext!;
 
-                    var context = await coreDataService.GetContextAsync(contextId);
+                    var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
                     if (context == null)
                     {
                         return Results.NotFound();
                     }
 
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
-                    var tool = await coreDataService.GetToolAsync(clientId);
+                    var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                     if (tool == null)
                     {
                         return Results.NotFound();
                     }
 
-                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId);
+                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId, cancellationToken);
                     if (deployment?.ToolId != tool.Id)
                     {
                         return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
                     }
 
-                    var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid);
-                    var usersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId));
+                    var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
+                    var usersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), cancellationToken: cancellationToken);
 
                     var links = new Collection<string>();
 
@@ -153,8 +153,8 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     if (since.HasValue)
                     {
                         var asOfDate = new DateTime(since.GetValueOrDefault());
-                        var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate);
-                        var oldUsersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), asOfDate);
+                        var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
+                        var oldUsersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), asOfDate, cancellationToken);
 
                         var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
 
@@ -170,7 +170,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     var messages = new Dictionary<string, ICollection<NameRoleProvisioningMessage>>();
                     if (!string.IsNullOrWhiteSpace(rlid))
                     {
-                        var resourceLink = await coreDataService.GetResourceLinkAsync(rlid);
+                        var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
                         if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
                         {
                             return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
@@ -201,7 +201,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                                     foreach (var populator in messageType.Value)
                                     {
-                                        await populator.PopulateAsync(message, scope);
+                                        await populator.PopulateAsync(message, scope, cancellationToken);
                                     }
 
                                     userMessages.Add(message);

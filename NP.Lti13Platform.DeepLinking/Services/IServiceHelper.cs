@@ -5,8 +5,8 @@ namespace NP.Lti13Platform.DeepLinking.Services
 {
     public interface IServiceHelper
     {
-        Task<IResult> HandleResponseAsync(DeepLinkResponse response);
+        Task<IResult> HandleResponseAsync(DeepLinkResponse response, CancellationToken cancellationToken = default);
 
-        Task<DeepLinkingConfig> GetConfigAsync(string clientId);
+        Task<DeepLinkingConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
     }
 }

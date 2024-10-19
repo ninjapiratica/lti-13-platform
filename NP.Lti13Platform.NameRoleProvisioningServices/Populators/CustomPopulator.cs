@@ -22,7 +22,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             Lti13ResourceLinkVariables.SubmissionUserEndDateTime,
             Lti13ResourceLinkVariables.LineItemUserReleaseDateTime];
 
-        public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope)
+        public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
             var customDictionary = scope.Tool.Custom.Merge(scope.Deployment.Custom).Merge(scope.ResourceLink?.Custom);
 
@@ -34,10 +34,10 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             IEnumerable<string> mentoredUserIds = [];
             if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null )
             {
-                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id);
+                var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id);
+                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 }
             }
 
@@ -46,15 +46,15 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
             Grade? grade = null;
             if (customDictionary.Values.Any(v => LineItemAttemptGradeVariables.Contains(v)) && scope.Context != null && scope.ResourceLink != null)
             {
-                var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, pageIndex: 0, limit: 1, resourceLinkId: scope.ResourceLink.Id);
+                var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, pageIndex: 0, limit: 1, resourceLinkId: scope.ResourceLink.Id, cancellationToken: cancellationToken);
                 if (lineItems.TotalItems == 1)
                 {
                     lineItem = lineItems.Items.First();
 
-                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.UserScope.User.Id);
+                    grade = await dataService.GetGradeAsync(lineItem.Id, scope.UserScope.User.Id, cancellationToken);
                 }
 
-                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id);
+                attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id, cancellationToken);
             }
 
             var dictionaryValues = customDictionary.ToList();

@@ -4,6 +4,6 @@ namespace NP.Lti13Platform.Core.Services
 {
     public interface IPlatformService
     {
-        Task<Platform?> GetPlatformAsync(string clientId);
+        Task<Platform?> GetPlatformAsync(string clientId, CancellationToken cancellationToken = default);
     }
 }

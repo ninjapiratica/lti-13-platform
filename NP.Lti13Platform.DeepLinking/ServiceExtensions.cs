@@ -17,7 +17,8 @@ namespace NP.Lti13Platform.DeepLinking
             string? actualUserId = null,
             string? contextId = null,
             DeepLinkSettingsOverride? deepLinkSettings = null,
-            LaunchPresentationOverride? launchPresentation = null)
+            LaunchPresentationOverride? launchPresentation = null,
+            CancellationToken cancellationToken = default)
             => await service.GetUrlAsync(
                 Lti13MessageType.LtiDeepLinkingRequest,
                 tool,
@@ -28,6 +29,7 @@ namespace NP.Lti13Platform.DeepLinking
                 actualUserId,
                 contextId,
                 resourceLinkId: null,
-                Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings) + "|" + JsonSerializer.Serialize(launchPresentation))));
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(deepLinkSettings) + "|" + JsonSerializer.Serialize(launchPresentation))),
+                cancellationToken);
     }
 }

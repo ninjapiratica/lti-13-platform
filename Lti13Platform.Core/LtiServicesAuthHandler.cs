@@ -23,11 +23,11 @@ namespace NP.Lti13Platform.Core
                 return AuthenticateResult.NoResult();
             }
 
-            var publicKeys = await dataService.GetPublicKeysAsync();
+            var publicKeys = await dataService.GetPublicKeysAsync(CancellationToken.None);
 
             var jwt = new JsonWebToken(authHeaderParts[1]);
 
-            var tokenConfig = await tokenService.GetTokenConfigAsync(jwt.Subject);
+            var tokenConfig = await tokenService.GetTokenConfigAsync(jwt.Subject, CancellationToken.None);
 
             var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(authHeaderParts[1], new TokenValidationParameters
             {

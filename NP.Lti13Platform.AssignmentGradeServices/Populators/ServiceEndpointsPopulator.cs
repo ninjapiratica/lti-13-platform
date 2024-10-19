@@ -26,7 +26,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
 
     public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, ICoreDataService dataService, IServiceHelper assignmentGradeService) : Populator<IServiceEndpoints>
     {
-        public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope)
+        public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
             var httpContext = httpContextAccessor.HttpContext;
 
@@ -40,14 +40,14 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
 
                 if (scope.ResourceLink != null)
                 {
-                    var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null);
+                    var lineItems = await dataService.GetLineItemsAsync(scope.Deployment.Id, scope.Context.Id, 0, 1, null, scope.ResourceLink.Id, null, cancellationToken);
                     if (lineItems.TotalItems == 1)
                     {
                         lineItemId = lineItems.Items.FirstOrDefault()?.Id;
                     }
                 }
 
-                var config = await assignmentGradeService.GetConfigAsync(scope.Tool.ClientId);
+                var config = await assignmentGradeService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 
                 obj.ServiceEndpoints = new IServiceEndpoints.LineItemServiceEndpoints
                 {

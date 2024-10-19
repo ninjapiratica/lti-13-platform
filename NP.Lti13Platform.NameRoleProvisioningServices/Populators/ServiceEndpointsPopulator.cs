@@ -23,13 +23,13 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
 
     public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IServiceHelper nameRoleProvisioningService) : Populator<IServiceEndpoints>
     {
-        public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope)
+        public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
             var httpContext = httpContextAccessor.HttpContext;
 
             if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && !string.IsNullOrWhiteSpace(scope.Context?.Id) && httpContext != null)
             {
-                var config = await nameRoleProvisioningService.GetConfigAsync(scope.Tool.ClientId);
+                var config = await nameRoleProvisioningService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 
                 obj.NamesRoleService = new IServiceEndpoints.ServiceEndpoints
                 {

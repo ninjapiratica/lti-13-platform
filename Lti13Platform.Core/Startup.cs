@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -104,9 +103,9 @@ namespace NP.Lti13Platform.Core
             }
 
             routeBuilder.MapGet(config.JwksUrl,
-                async (ICoreDataService dataService) =>
+                async (ICoreDataService dataService, CancellationToken cancellationToken) =>
                 {
-                    var keys = await dataService.GetPublicKeysAsync();
+                    var keys = await dataService.GetPublicKeysAsync(cancellationToken);
                     var keySet = new JsonWebKeySet();
 
                     foreach (var key in keys)
@@ -121,7 +120,7 @@ namespace NP.Lti13Platform.Core
                 });
 
             routeBuilder.Map(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ITokenService tokenService, ICoreDataService dataService, IUrlServiceHelper urlServiceHelper) =>
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ITokenService tokenService, ICoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
                 {
                     const string OPENID = "openid";
                     const string ID_TOKEN = "id_token";
@@ -192,7 +191,7 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    var tool = await dataService.GetToolAsync(request.Client_Id);
+                    var tool = await dataService.GetToolAsync(request.Client_Id, cancellationToken);
 
                     if (tool == null)
                     {
@@ -209,17 +208,17 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
                     }
 
-                    var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint);
+                    var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint, cancellationToken);
 
-                    var deployment = await dataService.GetDeploymentAsync(deploymentId);
+                    var deployment = await dataService.GetDeploymentAsync(deploymentId, cancellationToken);
                     if (deployment?.ToolId != tool.Id)
                     {
                         return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    var (userId, actualUserId, isAnonymous) = await urlServiceHelper.ParseLoginHintAsync(request.Login_Hint);
+                    var (userId, actualUserId, isAnonymous) = await urlServiceHelper.ParseLoginHintAsync(request.Login_Hint, cancellationToken);
 
-                    var user = await dataService.GetUserAsync(userId);
+                    var user = await dataService.GetUserAsync(userId, cancellationToken);
                     if (user == null)
                     {
                         return Results.BadRequest(new { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH });
@@ -228,7 +227,7 @@ namespace NP.Lti13Platform.Core
                     User? actualUser = null; ;
                     if (!string.IsNullOrWhiteSpace(actualUserId))
                     {
-                        actualUser = await dataService.GetUserAsync(actualUserId);
+                        actualUser = await dataService.GetUserAsync(actualUserId, cancellationToken);
 
                         if (actualUser == null)
                         {
@@ -236,11 +235,11 @@ namespace NP.Lti13Platform.Core
                         }
                     }
 
-                    var context = string.IsNullOrWhiteSpace(contextId) ? null : await dataService.GetContextAsync(contextId);
+                    var context = string.IsNullOrWhiteSpace(contextId) ? null : await dataService.GetContextAsync(contextId, cancellationToken);
 
-                    var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId);
+                    var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId, cancellationToken);
 
-                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId);
+                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
                     var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
 
@@ -297,10 +296,10 @@ namespace NP.Lti13Platform.Core
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
                     foreach (var service in services)
                     {
-                        await service.PopulateAsync(ltiMessage, scope);
+                        await service.PopulateAsync(ltiMessage, scope, cancellationToken);
                     }
 
-                    var privateKey = await dataService.GetPrivateKeyAsync();
+                    var privateKey = await dataService.GetPrivateKeyAsync(cancellationToken);
 
                     var token = new JsonWebTokenHandler().CreateToken(
                         JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
@@ -323,7 +322,7 @@ namespace NP.Lti13Platform.Core
                 .DisableAntiforgery();
 
             routeBuilder.MapPost(config.TokenUrl,
-                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ICoreDataService dataService, ITokenService tokenService) =>
+                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ICoreDataService dataService, ITokenService tokenService, CancellationToken cancellationToken) =>
                 {
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                     const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";
@@ -374,7 +373,7 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                     }
 
-                    var tool = await dataService.GetToolAsync(jwt.Issuer);
+                    var tool = await dataService.GetToolAsync(jwt.Issuer, cancellationToken);
                     if (tool?.Jwks == null)
                     {
                         return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
@@ -390,11 +389,11 @@ namespace NP.Lti13Platform.Core
                         return Results.BadRequest(new { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                     }
 
-                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId);
+                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
                     var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                     {
-                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(),
+                        IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                         ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
                         ValidIssuer = tool.ClientId.ToString()
                     });
@@ -405,16 +404,16 @@ namespace NP.Lti13Platform.Core
                     }
                     else
                     {
-                        var serviceToken = await dataService.GetServiceTokenRequestAsync(tool.Id, validatedToken.SecurityToken.Id);
+                        var serviceToken = await dataService.GetServiceTokenRequestAsync(tool.Id, validatedToken.SecurityToken.Id, cancellationToken);
                         if (serviceToken?.Expiration > DateTime.UtcNow)
                         {
                             return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = JTI_REUSE, Error_Uri = AUTH_SPEC_URI });
                         }
 
-                        await dataService.SaveServiceTokenRequestAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo });
+                        await dataService.SaveServiceTokenRequestAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                     }
 
-                    var privateKey = await dataService.GetPrivateKeyAsync();
+                    var privateKey = await dataService.GetPrivateKeyAsync(cancellationToken);
 
                     var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                     {

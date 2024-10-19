@@ -6,11 +6,8 @@ namespace NP.Lti13Platform.DeepLinking.Services
 {
     internal class ServiceHelper(IOptionsMonitor<DeepLinkingConfig> config) : IServiceHelper
     {
-        public virtual Task<IResult> HandleResponseAsync(DeepLinkResponse response)
-        {
-            return Task.FromResult(Results.Ok(response));
-        }
+        public Task<IResult> HandleResponseAsync(DeepLinkResponse response, CancellationToken cancellationToken = default) => Task.FromResult(Results.Ok(response));
 
-        public virtual Task<DeepLinkingConfig> GetConfigAsync(string clientId) => Task.FromResult(config.CurrentValue);
+        public Task<DeepLinkingConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default) => Task.FromResult(config.CurrentValue);
     }
 }
