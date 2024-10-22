@@ -17,6 +17,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
 	<VersionPrefix>0.1.0</VersionPrefix>
 	<VersionSuffix>beta</VersionSuffix>
+	<PackageLicenseExpression>MIT-0</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
