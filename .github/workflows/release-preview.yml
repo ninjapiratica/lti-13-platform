@@ -29,7 +29,7 @@ jobs:
         dotnet nuget push NP.Lti13Platform.Core.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
         dotnet nuget push NP.Lti13Platform.AssignmentGradeServices.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
         dotnet nuget push NP.Lti13Platform.DeepLinking.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-        dotnet nuget push NP.Lti13Platform.NameRoleProvisioningService.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
+        dotnet nuget push NP.Lti13Platform.NameRoleProvisioningServices.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
         dotnet nuget push NP.Lti13Platform.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
