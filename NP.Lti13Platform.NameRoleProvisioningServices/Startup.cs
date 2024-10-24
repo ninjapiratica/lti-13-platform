@@ -42,7 +42,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure ??= (x) => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<IServiceHelper, ServiceHelper>();
+            builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
             return builder;
         }
 

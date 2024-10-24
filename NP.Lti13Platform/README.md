@@ -60,3 +60,20 @@ builder.Services
 ```
 
 All of the internal services are transient and therefore the data services may be added at any scope (Transient, Scoped, Singleton).
+
+## Defaults
+
+Many of the specs have default implementations that use a static configuration on startup. The defaults are set in the `AddLti13PlatformWithDefaults` method. If you can't configure the services at startup you can use the non-default extension method and add your own implementation of the services.
+
+```csharp
+builder.Services
+-    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
++    .AddLti13Platform()
+    .AddDataService<DataService>();
+
++builder.Services.AddTransient<ITokenService, TokenService>();
++builder.Services.AddTransient<IPlatformService, PlatformService>();
++builder.Services.AddTransient<IDeepLinkingService, TokenService>();
++builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
++builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
+```
