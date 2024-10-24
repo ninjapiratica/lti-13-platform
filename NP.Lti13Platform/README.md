@@ -26,7 +26,8 @@ public class DataService: IDataService
 }
 ```
 
-3. Add the required services to your project:
+3. Add the required services (most configurations are optional, the required configurations are shown):
+**For information regarding configurations, please see the individual projects.*
 
 ```csharp
 builder.Services
@@ -42,9 +43,9 @@ app.UseLti13Platform();
 
 ## IDataService
 
-There is no default IDataService implementation to allow for each project to store the data how they see fit.
+There is no default IDataService implementation to allow each project to store the data how they see fit.
 
-The IDataService interface is a combination of all data services required for all the specs of the LTI 1.3 platform. Each service can be individually overrideen instead of implementing the entire data service in a single service. 
+The IDataService interface is a combination of all data services required for all the specs of the LTI 1.3 platform. Each service can be individually overridden instead of implementing the entire data service in a single service. 
 
 ```diff
 builder.Services
