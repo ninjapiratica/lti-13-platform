@@ -71,9 +71,9 @@ builder.Services
 +    .AddLti13Platform()
     .AddDataService<DataService>();
 
-+builder.Services.AddTransient<ITokenService, TokenService>();
-+builder.Services.AddTransient<IPlatformService, PlatformService>();
-+builder.Services.AddTransient<IDeepLinkingService, TokenService>();
-+builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
-+builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
++ builder.Services.AddTransient<ITokenService, TokenService>();
++ builder.Services.AddTransient<IPlatformService, PlatformService>();
++ builder.Services.AddTransient<IDeepLinkingService, TokenService>();
++ builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
++ builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
 ```
