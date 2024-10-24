@@ -65,7 +65,7 @@ All of the internal services are transient and therefore the data services may b
 
 Many of the specs have default implementations that use a static configuration on startup. The defaults are set in the `AddLti13PlatformWithDefaults` method. If you can't configure the services at startup you can use the non-default extension method and add your own implementation of the services.
 
-```csharp
+```diff
 builder.Services
 -    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
 +    .AddLti13Platform()
