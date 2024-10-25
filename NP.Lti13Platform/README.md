@@ -13,10 +13,6 @@ NP.Lti13Platform is a .NET 8 project that provides an implementation of an LTI 1
 
 1. Add the nuget package to your project:
 
-```bash
-nuget install NP.Lti13Platform
-```
-
 2. Add an implementation of the `IDataService` interface:
 
 ```csharp
