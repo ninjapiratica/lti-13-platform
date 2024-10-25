@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Core", "Lti13Platform.Core\NP.Lti13Platform.Core.csproj", "{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Core", "NP.Lti13Platform.Core\NP.Lti13Platform.Core.csproj", "{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Test", "Lti13Platform.Test\NP.Lti13Platform.Test.csproj", "{FFA6228F-50F4-4D72-A644-CD64A7F549FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Test", "NP.Lti13Platform.Test\NP.Lti13Platform.Test.csproj", "{FFA6228F-50F4-4D72-A644-CD64A7F549FF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.WebExample", "Lti13Platform.WebExample\NP.Lti13Platform.WebExample.csproj", "{EA964601-16BF-447B-B4B1-AE510F1E3A94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.WebExample", "NP.Lti13Platform.WebExample\NP.Lti13Platform.WebExample.csproj", "{EA964601-16BF-447B-B4B1-AE510F1E3A94}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.AssignmentGradeServices", "NP.Lti13Platform.AssignmentGradeServices\NP.Lti13Platform.AssignmentGradeServices.csproj", "{3C6B14C7-5392-4F85-A6B7-72BE2771ACB0}"
 EndProject

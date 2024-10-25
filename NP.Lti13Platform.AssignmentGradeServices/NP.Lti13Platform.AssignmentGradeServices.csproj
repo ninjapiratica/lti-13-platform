@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
+    <ProjectReference Include="..\NP.Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

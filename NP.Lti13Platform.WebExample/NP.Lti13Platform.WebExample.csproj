@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
     <ProjectReference Include="..\NP.Lti13Platform.AssignmentGradeServices\NP.Lti13Platform.AssignmentGradeServices.csproj" />
+    <ProjectReference Include="..\NP.Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
     <ProjectReference Include="..\NP.Lti13Platform.DeepLinking\NP.Lti13Platform.DeepLinking.csproj" />
     <ProjectReference Include="..\NP.Lti13Platform.NameRoleProvisioningServices\NP.Lti13Platform.NameRoleProvisioningServices.csproj" />
     <ProjectReference Include="..\NP.Lti13Platform\NP.Lti13Platform.csproj" />

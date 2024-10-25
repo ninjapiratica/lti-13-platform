@@ -1,4 +1,4 @@
-﻿# NP.Lti13Platform.DeepLinking
+﻿# NP.Lti13Platform.Core
 
 NP.Lti13Platform is a .NET 8 project that provides an implementation of an LTI 1.3 platform. This project is a wrapper for the other LTI 1.3 projects. For specific information regarding any of the specific specs, please see their respective projects.
 
