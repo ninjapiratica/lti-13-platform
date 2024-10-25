@@ -1,10 +1,20 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using NP.Lti13Platform.AssignmentGradeServices.Configs;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
-    internal class AssignmentGradeService(IOptionsMonitor<ServicesConfig> config) : IAssignmentGradeService
+    internal class AssignmentGradeService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : IAssignmentGradeService
     {
-        public Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default) => Task.FromResult(config.CurrentValue);
+        public async Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
+        {
+            var servicesConfig = config.CurrentValue;
+            if (servicesConfig.ServiceAddress == ServicesConfig.DefaultUri)
+            {
+                servicesConfig = servicesConfig with { ServiceAddress = new UriBuilder(httpContextAccessor.HttpContext?.Request.Scheme, httpContextAccessor.HttpContext?.Request.Host.Value).Uri };
+            }
+
+            return await Task.FromResult(servicesConfig);
+        }
     }
 }

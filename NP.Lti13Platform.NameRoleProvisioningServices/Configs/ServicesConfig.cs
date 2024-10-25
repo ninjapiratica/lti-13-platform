@@ -1,7 +1,9 @@
 ﻿namespace NP.Lti13Platform.NameRoleProvisioningServices.Configs
 {
-    public class ServicesConfig
+    public record ServicesConfig
     {
-        public Uri? ServiceAddress { get; set; }
+        public Uri ServiceAddress { get; set; } = DefaultUri;
+
+        internal readonly static Uri DefaultUri = new("x://x.x.x");
     }
 }
