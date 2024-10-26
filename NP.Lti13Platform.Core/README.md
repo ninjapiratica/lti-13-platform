@@ -1,4 +1,4 @@
-﻿# NP.Lti13Platform.DeepLinking
+﻿# NP.Lti13Platform.Core
 
 The IMS [Lti Core](https://www.imsglobal.org/spec/lti/v1p3/) spec defines a way that platforms can launch resources that exist in the tool. This project provides an implementation of the spec.
 
