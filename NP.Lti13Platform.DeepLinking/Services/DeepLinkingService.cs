@@ -11,7 +11,7 @@ namespace NP.Lti13Platform.DeepLinking.Services
         public async Task<DeepLinkingConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
         {
             var deepLinkingConfig = config.CurrentValue;
-            if (deepLinkingConfig.ServiceAddress == null)
+            if (deepLinkingConfig.ServiceAddress == DeepLinkingConfig.DefaultUri)
             {
                 deepLinkingConfig = deepLinkingConfig with { ServiceAddress = new UriBuilder(httpContextAccessor.HttpContext?.Request.Scheme, httpContextAccessor.HttpContext?.Request.Host.Value).Uri };
             }
