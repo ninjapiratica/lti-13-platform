@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Populators;
-using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking.Services;
 using System.Text;
 using System.Text.Json;
@@ -57,16 +57,10 @@ namespace NP.Lti13Platform.DeepLinking.Populators
         }
     }
 
-    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IDepLinkingService deepLinkingService) : Populator<IDeepLinkingMessage>
+    public class DeepLinkingPopulator(LinkGenerator linkGenerator, IDepLinkingService deepLinkingService) : Populator<IDeepLinkingMessage>
     {
         public override async Task PopulateAsync(IDeepLinkingMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
-            var httpContext = httpContextAccessor.HttpContext;
-            if (httpContext == null)
-            {
-                return;
-            }
-
             obj.LtiVersion = "1.3.0";
             obj.DeploymentId = scope.Deployment.Id;
 
@@ -86,7 +80,7 @@ namespace NP.Lti13Platform.DeepLinking.Populators
             {
                 AcceptPresentationDocumentTargets = deepLinkSettings?.AcceptPresentationDocumentTargets ?? config.AcceptPresentationDocumentTargets,
                 AcceptTypes = deepLinkSettings?.AcceptTypes ?? config.AcceptTypes,
-                DeepLinkReturnUrl = linkGenerator.GetUriString(RouteNames.DEEP_LINKING_RESPONSE, new { contextId = scope.Context?.Id }, httpContext.Request, config.ServiceAddress) ?? string.Empty,
+                DeepLinkReturnUrl = linkGenerator.GetUriByName(RouteNames.DEEP_LINKING_RESPONSE, new { contextId = scope.Context?.Id }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)) ?? string.Empty,
                 AcceptLineItem = deepLinkSettings?.AcceptLineItem ?? config.AcceptLineItem,
                 AcceptMediaTypes = deepLinkSettings?.AcceptMediaTypes ?? config.AcceptMediaTypes,
                 AcceptMultiple = deepLinkSettings?.AcceptMultiple ?? config.AcceptMultiple,

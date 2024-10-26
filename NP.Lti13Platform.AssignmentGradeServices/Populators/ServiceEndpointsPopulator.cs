@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
@@ -24,17 +25,15 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
         }
     }
 
-    public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, ICoreDataService dataService, IAssignmentGradeService assignmentGradeService) : Populator<IServiceEndpoints>
+    public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ICoreDataService dataService, IAssignmentGradeService assignmentGradeService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
-            var httpContext = httpContextAccessor.HttpContext;
-
             var lineItemScopes = scope.Tool.ServiceScopes
                 .Intersect([ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly, ServiceScopes.ResultReadOnly, ServiceScopes.Score])
                 .ToList();
 
-            if (lineItemScopes.Count > 0 && scope.Context != null && httpContext != null)
+            if (lineItemScopes.Count > 0 && scope.Context != null)
             {
                 string? lineItemId = null;
 
@@ -52,8 +51,8 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
                 obj.ServiceEndpoints = new IServiceEndpoints.LineItemServiceEndpoints
                 {
                     Scopes = lineItemScopes,
-                    LineItemsUrl = linkGenerator.GetUriString(RouteNames.GET_LINE_ITEMS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }, httpContext.Request, config.ServiceAddress),
-                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriString(RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }, httpContext.Request, config.ServiceAddress),
+                    LineItemsUrl = linkGenerator.GetUriByName(RouteNames.GET_LINE_ITEMS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)),
+                    LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)),
                 };
             }
         }

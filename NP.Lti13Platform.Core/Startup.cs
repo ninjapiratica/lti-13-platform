@@ -48,7 +48,6 @@ namespace NP.Lti13Platform.Core
         {
             var builder = new Lti13PlatformBuilder(serviceCollection);
 
-            builder.Services.AddTransient<LtiLinkGenerator>();
             builder.Services.AddTransient<IUrlServiceHelper, UrlServiceHelper>();
 
             builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)

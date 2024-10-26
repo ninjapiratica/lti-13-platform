@@ -3,7 +3,7 @@ using NP.Lti13Platform.DeepLinking.Models;
 
 namespace NP.Lti13Platform.DeepLinking.Configs
 {
-    public class DeepLinkingConfig
+    public record DeepLinkingConfig
     {
         private const string MEDIA_TYPE_IMAGE = "image/*";
         private const string MEDIA_TYPE_TEXT_HTML = "text/html";
@@ -29,7 +29,7 @@ namespace NP.Lti13Platform.DeepLinking.Configs
 
         public IDictionary<(string? ToolId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
 
-        public Uri? ServiceAddress { get; set; }
+        public Uri ServiceAddress { get; set; } = DefaultUri;
 
         public void AddDefaultContentItemMapping()
         {
@@ -39,5 +39,7 @@ namespace NP.Lti13Platform.DeepLinking.Configs
             ContentItemTypes.Add((null, ContentItemType.Link), typeof(LinkContentItem));
             ContentItemTypes.Add((null, ContentItemType.LtiResourceLink), typeof(LtiResourceLinkContentItem));
         }
+
+        internal readonly static Uri DefaultUri = new("x://x.x.x");
     }
 }

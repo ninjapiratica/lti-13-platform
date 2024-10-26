@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core.Populators;
-using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 using System.Text.Json.Serialization;
 
@@ -21,19 +21,17 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
         }
     }
 
-    public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, INameRoleProvisioningService nameRoleProvisioningService) : Populator<IServiceEndpoints>
+    public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, INameRoleProvisioningService nameRoleProvisioningService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
-            var httpContext = httpContextAccessor.HttpContext;
-
-            if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && !string.IsNullOrWhiteSpace(scope.Context?.Id) && httpContext != null)
+            if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && !string.IsNullOrWhiteSpace(scope.Context?.Id))
             {
                 var config = await nameRoleProvisioningService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 
                 obj.NamesRoleService = new IServiceEndpoints.ServiceEndpoints
                 {
-                    ContextMembershipsUrl = linkGenerator.GetUriString(RouteNames.GET_MEMBERSHIPS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }, httpContext.Request, config.ServiceAddress),
+                    ContextMembershipsUrl = linkGenerator.GetUriByName(RouteNames.GET_MEMBERSHIPS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)) ?? string.Empty,
                     ServiceVersions = ["2.0"]
                 };
             }
