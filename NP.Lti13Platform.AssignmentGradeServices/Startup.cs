@@ -14,8 +14,6 @@ using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.AssignmentGradeServices
 {

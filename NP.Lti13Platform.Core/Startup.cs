@@ -248,7 +248,7 @@ namespace NP.Lti13Platform.Core
                     ltiMessage.IssuedDate = DateTime.UtcNow;
                     ltiMessage.Issuer = tokenConfig.Issuer;
                     ltiMessage.Nonce = request.Nonce!;
-                    ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.IdTokenExpirationSeconds);
+                    ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.MessageTokenExpirationSeconds);
 
                     if (!isAnonymous)
                     {

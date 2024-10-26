@@ -19,8 +19,7 @@ public class DataService: INameRoleProvisioningDataService
 }
 ```
 
-3. Add the required services (most configurations are optional, the required configurations are shown):  
-**For information regarding configurations, please see the individual projects.*
+3. Add the required services.
 
 ```csharp
 builder.Services
@@ -47,6 +46,16 @@ All of the internal services are transient and therefore the data service may be
 
 ## Defaults
 
+### Routing
+
+Default routes are provided for all endpoints. Routes can be configured when calling `UseLti13PlatformNameRoleProvisioningServices()`.
+
+```csharp
+app.UseLti13PlatformNameRoleProvisioningServices(config => {
+    config.NamesAndRoleProvisioningServicesUrl = "/lti13/{deploymentId}/{contextId}/memberships"; // {deploymentId} and {contextId} are required
+});
+```
+
 ### INameRoleProvisioningService
 
 The `INameRoleProvisioningService` interface is used to get the config for the name and role provisioning service. The config is used to tell the tools how to request the members of a context.
@@ -62,7 +71,7 @@ builder.Services
 
 ## Member Message
 
-The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section) spec defines a way to give tools access to the parts of LTI messages that are specific to members. This project includes the specifics for the core message and known properties defined within the spec. Additional message can be added by calling `ExtendNameRoleProvisioningMessage` on startup. This follows the same pattern as [Populators](../NP.Lti13Platform.Core/README.md) from the core spec. These messages should only contain the user specific message properties of the given message. Multiple populators may be added for the same interface and multiple interfaces may be added for the same <message_type>.
+The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section) spec defines a way to give tools access to the parts of LTI messages that are specific to members. This project includes the specifics for the core message and known properties defined within the spec. Additional message can be added by calling `ExtendNameRoleProvisioningMessage` on startup. This follows the same pattern as [Populators](../NP.Lti13Platform.Core/README.md#populators) from the core spec. These messages should only contain the user specific message properties of the given message. Multiple populators may be added for the same interface and multiple interfaces may be added for the same <message_type>.
 
 ```csharp
 builder.Services

@@ -1,79 +1,72 @@
 ﻿# NP.Lti13Platform.AssignmentGradeServices
 
-NP.Lti13Platform is a .NET 8 project that provides an implementation of an LTI 1.3 platform. This project is a wrapper for the other LTI 1.3 projects. For specific information regarding any of the specific specs, please see their respective projects.
+The IMS [Assignment and Grade Services](https://www.imsglobal.org/spec/lti-ags/v2p0/) spec defines a way that tools can platforms can communicate grades back and forth. This project provides an implementation of the spec.
 
 ## Features
 
-- LTI 1.3 Core (Launch)
-- Deep Linking
-- Assignment and Grade Services
-- Name and Role Provisioning Services
+- Gets,creates, updates, and deletes line items
+- Gets and creates grades
 
 ## Getting Started
 
 1. Add the nuget package to your project:
 
-```bash
-nuget install NP.Lti13Platform
-```
-
-2. Add an implementation of the `IDataService` interface:
+2. Add an implementation of the `IAssignmentGradeDataService` interface:
 
 ```csharp
-public class DataService: IDataService
+public class DataService: IAssignmentGradeDataService
 {
     ...
 }
 ```
 
-3. Add the required services (most configurations are optional, the required configurations are shown):  
-**For information regarding configurations, please see the individual projects.*
+3. Add the required services.
 
 ```csharp
 builder.Services
-    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
-    .AddDataService<DataService>();
+    .AddLti13PlatformCore()
+    .AddLti13PlatformAssignmentGradeServices()
+    .AddDefaultAssignmentGradeService();
+
+builder.Services.AddTransient<IAssignmentGradeDataService, DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
 
 ```csharp
-app.UseLti13Platform();
+app.UseLti13PlatformAssignmentGradeServices();
 ```
 
-## IDataService
+## IAssignmentGradeDataService
 
-There is no default `IDataService` implementation to allow each project to store the data how they see fit.
+There is no default `IAssignmentGradeDataService` implementation to allow each project to store the data how they see fit.
 
-The `IDataService` interface is a combination of all data services required for all the specs of the LTI 1.3 platform. Each service can be individually overridden instead of implementing the entire data service in a single service. 
+The `IAssignmentGradeDataService` interface is used to manage the persistance of line items and grades.
 
-```diff
-builder.Services
-+    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; });
--    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
--    .AddDataService<DataService>();
-
-+ builder.Services.AddTransient<ICoreDataService, CustomCoreDataService>();
-+ builder.Services.AddTransient<IDeepLinkingDataService, CustomDeepLinkingDataService>();
-+ builder.Services.AddTransient<INameRoleProvisioningDataService, CustomNameRoleProvisioningDataService>();
-+ builder.Services.AddTransient<IAssignmentGradeDataService, CustomAssignmentGradeDataService>();
-```
-
-All of the internal services are transient and therefore the data services may be added at any scope (Transient, Scoped, Singleton).
+All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
 ## Defaults
 
-Many of the specs have default implementations that use a static configuration on startup. The defaults are set in the `AddLti13PlatformWithDefaults` method. If you can't configure the services at startup you can use the non-default extension method and add your own implementation of the services.
+### Routing
 
-```diff
+Default routes are provided for all endpoints. Routes can be configured when calling `UseLti13PlatformAssignmentGradeServices()`.
+
+```csharp
+app.UseLti13PlatformAssignmentGradeServices(config => {
+    config.LineItemsUrl = "/lti13/{deploymentId}/{contextId}/lineItems"; // {deploymentId} and {contextId} are required
+    config.LineItemUrl = "/lti13/{deploymentId}/{contextId}/lineItems/{lineItemId}"; // {deploymentId}, {contextId}, and {lineItemId} are required
+});
+```
+
+### IAssignmentGradeService
+
+The `IAssignmentGradeService` interface is used to get the config for the assignment and grade service. The config is used to tell the tools how to request the members of a context.
+
+There is a default implementation of the `IAssignmentGradeService` interface that uses a configuration set up on app start. When calling the `AddDefaultAssignmentGradeService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
+
+```csharp
 builder.Services
--    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
-+    .AddLti13Platform()
-    .AddDataService<DataService>();
-
-+ builder.Services.AddTransient<ITokenService, TokenService>();
-+ builder.Services.AddTransient<IPlatformService, PlatformService>();
-+ builder.Services.AddTransient<IDeepLinkingService, TokenService>();
-+ builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
-+ builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
+    .AddLti13PlatformCore()
+    .AddLti13PlatformAssignmentGradeServices()
+    .AddDefaultAssignmentGradeService(x => { x.ServiceAddress = new Uri("https://<mysite>") });
 ```
