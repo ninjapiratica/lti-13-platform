@@ -199,7 +199,7 @@ builder.Services
 
 ## Custom Messgage Types
 
-LTI allows for message types not defined officially in any spec. A custom message type can be defined between tools and platforms. This is handled here by creating a new message handler and extending it with the interfaces and populators it needs.
+LTI allows for message types not defined officially in any spec. A custom message type can be defined between tools and platforms. This is handled here by extending a message type name it with the interfaces and populators it needs.
 
 ```csharp
 interface ICustomMessage
@@ -223,7 +223,6 @@ class CustomPopulator: Populator<ICustomMessage>
 
 builder.Services
     .AddLti13PlatformCore()
-    .AddMessageHandler("CustomMessage")
     .ExtendLti13Message<ICustomMessage, CustomPopulator>("CustomMessage");
 ```
 

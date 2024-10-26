@@ -50,7 +50,18 @@ namespace NP.Lti13Platform.Core
             {
                 if (!MessageTypes.TryGetValue(messageType, out var mt))
                 {
-                    AddMessageHandler(messageType);
+                    MessageTypes.TryAdd(messageType, new MessageType(messageType, [.. GlobalInterfaces]));
+
+                    foreach (var globalPopulator in GlobalPopulators)
+                    {
+                        services.AddKeyedTransient(typeof(Populator), messageType, globalPopulator);
+                    }
+
+                    services.AddKeyedTransient(messageType, (sp, obj) =>
+                    {
+                        return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
+                    });
+
                     mt = MessageTypes[messageType];
                 }
 
@@ -59,23 +70,6 @@ namespace NP.Lti13Platform.Core
             }
 
             return this;
-        }
-
-        public Lti13PlatformMessageBuilder AddMessageHandler(string messageType)
-        {
-            MessageTypes.TryAdd(messageType, new MessageType(messageType, [.. GlobalInterfaces]));
-
-            foreach (var globalPopulator in GlobalPopulators)
-            {
-                services.AddKeyedTransient(typeof(Populator), messageType, globalPopulator);
-            }
-
-            services.AddKeyedTransient(messageType, (sp, obj) =>
-            {
-                return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
-            });
-
-            return new Lti13PlatformMessageBuilder(services, messageType);
         }
 
         internal static void CreateTypes()
@@ -92,17 +86,5 @@ namespace NP.Lti13Platform.Core
         }
 
         public IServiceCollection Services => services;
-    }
-
-    public class Lti13PlatformMessageBuilder(IServiceCollection baseCollection, string messageType) : Lti13PlatformBuilder(baseCollection)
-    {
-        public Lti13PlatformMessageBuilder Extend<T, U>()
-            where T : class
-            where U : Populator<T>
-        {
-            base.ExtendLti13Message<T, U>(messageType);
-
-            return this;
-        }
     }
 }

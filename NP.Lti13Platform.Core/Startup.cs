@@ -50,12 +50,12 @@ namespace NP.Lti13Platform.Core
 
             builder.Services.AddTransient<IUrlServiceHelper, UrlServiceHelper>();
 
-            builder.AddMessageHandler(Lti13MessageType.LtiResourceLinkRequest)
-                .Extend<IResourceLinkMessage, ResourceLinkPopulator>()
-                .Extend<IPlatformMessage, PlatformPopulator>()
-                .Extend<IContextMessage, ContextPopulator>()
-                .Extend<ICustomMessage, CustomPopulator>()
-                .Extend<IRolesMessage, RolesPopulator>();
+            builder
+                .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IPlatformMessage, PlatformPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IContextMessage, ContextPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+                .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiResourceLinkRequest);
 
             builder.Services.AddAuthentication()
                 .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
