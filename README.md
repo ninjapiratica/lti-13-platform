@@ -4,7 +4,7 @@ This project is designed to supply platform support for the LTI 1.3 standards. E
 
 ## Features
 
-Please see the corresponding projects for more information on the features of each specthe [IMS Global](https://www.1edtech.org/standards/lti) website for more information on the LTI 1.3 standards.
+Please see the corresponding projects for more information on the features of each spec or the [IMS Global](https://www.1edtech.org/standards/lti) website for more information on the LTI 1.3 standards.
 
 - [All Specs Wrapper](NP.Lti13Platform/README.md)
 - [LTI 1.3 Core (Launch)](NP.Lti13Platform.Core/README.md)
