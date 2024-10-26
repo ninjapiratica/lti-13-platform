@@ -22,12 +22,12 @@ namespace NP.Lti13Platform.DeepLinking
     {
         public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
         {
-            builder.AddMessageHandler(Lti13MessageType.LtiDeepLinkingRequest)
-                .Extend<IDeepLinkingMessage, DeepLinkingPopulator>()
-                .Extend<IPlatformMessage, PlatformPopulator>()
-                .Extend<IContextMessage, ContextPopulator>()
-                .Extend<ICustomMessage, CustomPopulator>()
-                .Extend<IRolesMessage, RolesPopulator>();
+            builder
+                .ExtendLti13Message<IDeepLinkingMessage, DeepLinkingPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
+                .ExtendLti13Message<IPlatformMessage, PlatformPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
+                .ExtendLti13Message<IContextMessage, ContextPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
+                .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
+                .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
             return builder;
         }

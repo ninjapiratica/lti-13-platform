@@ -3,7 +3,6 @@
     public class Lti13PlatformTokenConfig
     {
         private const string INVALID_ISSUER = "Issuer must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
-        private const string INVALID_TOKEN_AUDIENCE = "Token Audience must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier";
 
         private string _issuer = string.Empty;
         /// <summary>
