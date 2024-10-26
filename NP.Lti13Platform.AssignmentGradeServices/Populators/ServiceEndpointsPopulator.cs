@@ -24,7 +24,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Populators
         }
     }
 
-    public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, ICoreDataService dataService, IServiceHelper assignmentGradeService) : Populator<IServiceEndpoints>
+    public class ServiceEndpointsPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, ICoreDataService dataService, IAssignmentGradeService assignmentGradeService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
         {

@@ -57,7 +57,7 @@ namespace NP.Lti13Platform.DeepLinking.Populators
         }
     }
 
-    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IServiceHelper deepLinkingService) : Populator<IDeepLinkingMessage>
+    public class DeepLinkingPopulator(IHttpContextAccessor httpContextAccessor, LtiLinkGenerator linkGenerator, IDepLinkingService deepLinkingService) : Populator<IDeepLinkingMessage>
     {
         public override async Task PopulateAsync(IDeepLinkingMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {

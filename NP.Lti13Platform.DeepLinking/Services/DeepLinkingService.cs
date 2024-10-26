@@ -4,7 +4,7 @@ using NP.Lti13Platform.DeepLinking.Configs;
 
 namespace NP.Lti13Platform.DeepLinking.Services
 {
-    internal class ServiceHelper(IOptionsMonitor<DeepLinkingConfig> config) : IServiceHelper
+    internal class DeepLinkingService(IOptionsMonitor<DeepLinkingConfig> config) : IDepLinkingService
     {
         public Task<IResult> HandleResponseAsync(DeepLinkResponse response, CancellationToken cancellationToken = default) => Task.FromResult(Results.Ok(response));
 
