@@ -1,6 +1,6 @@
 ﻿# NP.Lti13Platform.DeepLinking
 
-The IMS [Deep Linking](https://www.imsglobal.org/spec/lti-dl/v2p0) spec defines a way that platforms can get content from tools.. This project provides an implementation of the spec.
+The IMS [Deep Linking](https://www.imsglobal.org/spec/lti-dl/v2p0) spec defines a way that platforms can get content from tools. This project provides an implementation of the spec.
 
 ## Features
 
