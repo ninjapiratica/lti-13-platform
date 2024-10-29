@@ -3,7 +3,7 @@ using NP.Lti13Platform.DeepLinking.Configs;
 
 namespace NP.Lti13Platform.DeepLinking.Services
 {
-    public interface IDepLinkingService
+    public interface IDeepLinkingService
     {
         Task<IResult> HandleResponseAsync(DeepLinkResponse response, CancellationToken cancellationToken = default);
 

@@ -57,11 +57,11 @@ app.UseLti13PlatformDeepLinking(config => {
 });
 ```
 
-### IDepLinkingService
+### IDeepLinkingService
 
-The `IDepLinkingService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
+The `IDeepLinkingService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
 
-There is a default implementation of the `IDepLinkingService` interface that uses a configuration set up on app start. When calling the `AddDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `IDepLinkingService` interface and not including the Default.
+There is a default implementation of the `IDeepLinkingService` interface that uses a configuration set up on app start. When calling the `AddDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `IDeepLinkingService` interface and not including the Default.
 
 ```csharp
 builder.Services

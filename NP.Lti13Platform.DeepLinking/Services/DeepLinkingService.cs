@@ -4,7 +4,7 @@ using NP.Lti13Platform.DeepLinking.Configs;
 
 namespace NP.Lti13Platform.DeepLinking.Services
 {
-    internal class DeepLinkingService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : IDepLinkingService
+    internal class DeepLinkingService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : IDeepLinkingService
     {
         public Task<IResult> HandleResponseAsync(DeepLinkResponse response, CancellationToken cancellationToken = default) => Task.FromResult(Results.Ok(response));
 
