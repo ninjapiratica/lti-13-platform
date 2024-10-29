@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://mytest.com"; }, configureDeepLinking: x => { x.AddDefaultContentItemMapping(); })
+    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://mytest.com"; })
     .AddDataService<DataService>();
 
 builder.Services.RemoveAll<IHttpContextAccessor>();
