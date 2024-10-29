@@ -169,7 +169,7 @@ namespace NP.Lti13Platform.DeepLinking
                        await Task.WhenAll(saveTasks);
                    }
 
-                   return await deepLinkingService.HandleResponseAsync(response, cancellationToken);
+                   return await deepLinkingService.HandleResponseAsync(tool.ClientId, deployment.Id, contextId, response, cancellationToken);
                })
                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                .DisableAntiforgery();
