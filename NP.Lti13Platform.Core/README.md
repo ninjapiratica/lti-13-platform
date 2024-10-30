@@ -96,43 +96,43 @@ builder.Services
 
 The platform information to identify the platform server, contacts, etc.
 
-<hr>
+***
 
 `Guid`
 
 A stable locally unique to the iss identifier for an instance of the tool platform. The value of guid is a case-sensitive string that MUST NOT exceed 255 ASCII characters in length. The use of Universally Unique IDentifier (UUID) defined in [RFC4122](https://www.rfc-editor.org/rfc/rfc4122) is recommended.
 
-<hr>
+***
 
 `ContactEmail`
 
 Administrative contact email for the platform instance.
 
-<hr>
+***
 
 `Description`
 
 Descriptive phrase for the platform instance.
 
-<hr>
+***
 
 `Name`
 
 Name for the platform instance.
 
-<hr>
+***
 
 `Url`
 
 Home HTTPS URL endpoint for the platform instance.
 
-<hr>
+***
 
 `ProductFamilyCode`
 
 Vendor product family code for the type of platform.
 
-<hr>
+***
 
 `Version`
 
@@ -142,25 +142,25 @@ Vendor product version for the platform.
 
 The configuration for handling of tokens between the platform and the tools.
 
-<hr>
+***
 
 `Issuer`
 
 A case-sensitive URL using the HTTPS scheme that contains: scheme, host; and, optionally, port number, and path components; and, no query or fragment components. The issuer identifies the platform to the tools.
 
-<hr>
+***
 
 `TokenAudience`
 
 The value used to validate a token request from a tool. This is used to compare against the 'aud' claim of that JWT token request. If not provided, the token endpoint url will be used as a fallback.
 
-<hr>
+***
 
 `MessageTokenExpirationSeconds` Default: `300`
 
 The expiration time of the lti messages that are sent to the tools.
 
-<hr>
+***
 
 `AccessTokenExpirationSeconds` Default: `3600`
 
