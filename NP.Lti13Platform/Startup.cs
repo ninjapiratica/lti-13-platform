@@ -39,7 +39,7 @@ namespace NP.Lti13Platform
             return services.AddLti13Platform()
                 .AddDefaultTokenService(configureToken)
                 .AddDefaultPlatformService(configurePlatform)
-                .AddDefaultDeepLinkingService(configureDeepLinking)
+                .WithDefaultDeepLinkingService(configureDeepLinking)
                 .AddDefaultAssignmentGradeService(configureAssignmentGradeService)
                 .WithDefaultNameRoleProvisioningService(configureNameRoleProvisioningService);
         }

@@ -32,7 +32,7 @@ namespace NP.Lti13Platform.DeepLinking
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<DeepLinkingConfig>? configure = null)
+        public static Lti13PlatformBuilder WithDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<DeepLinkingConfig>? configure = null)
         {
             configure ??= x => { };
 

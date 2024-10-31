@@ -26,7 +26,7 @@ public class DataService: IDeepLinkingDataService
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformDeepLinking()
-    .AddDefaultDeepLinkingService();
+    .WithDefaultDeepLinkingService();
 
 builder.Services.AddTransient<IDeepLinkingDataService, DataService>();
 ```
@@ -61,13 +61,13 @@ app.UseLti13PlatformDeepLinking(config => {
 
 The `IDeepLinkingService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
 
-There is a default implementation of the `IDeepLinkingService` interface that uses a configuration set up on app start. When calling the `AddDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `IDeepLinkingService` interface and not including the Default.
+There is a default implementation of the `IDeepLinkingService` interface that uses a configuration set up on app start. When calling the `WithDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `IDeepLinkingService` interface and not including the Default.
 
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformDeepLinking()
-    .AddDefaultDeepLinkingService(x => { /* Update config as needed */ });
+    .WithDefaultDeepLinkingService(x => { /* Update config as needed */ });
 ```
 
 ***Recommended***:
@@ -130,7 +130,7 @@ A dictionary of type configurations to be used when deserialzing the content ite
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformDeepLinking()
-    .AddDefaultDeepLinkingService(x => 
+    .WithDefaultDeepLinkingService(x => 
     {
         x.AddDefaultContentItemMapping();
     });
