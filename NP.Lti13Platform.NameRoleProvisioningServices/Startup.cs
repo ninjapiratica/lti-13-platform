@@ -34,7 +34,6 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
             builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
-
             builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:NameRoleProvisioningServices");
             builder.Services.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
 

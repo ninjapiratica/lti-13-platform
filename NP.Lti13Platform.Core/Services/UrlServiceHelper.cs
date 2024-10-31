@@ -60,6 +60,7 @@ namespace NP.Lti13Platform.Core.Services
 
             return builder.Uri;
         }
+
         public async Task<string> GetLoginHintAsync(string userId, string? actualUserId, bool isAnonymous, CancellationToken cancellationToken = default) =>
             await Task.FromResult($"{userId}|{(isAnonymous ? "1" : string.Empty)}|{actualUserId}");
 
