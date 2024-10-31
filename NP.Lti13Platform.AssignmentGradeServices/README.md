@@ -26,7 +26,7 @@ public class DataService: IAssignmentGradeDataService
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformAssignmentGradeServices()
-    .AddDefaultAssignmentGradeService();
+    .WithDefaultAssignmentGradeService();
 
 builder.Services.AddTransient<IAssignmentGradeDataService, DataService>();
 ```
@@ -62,11 +62,11 @@ app.UseLti13PlatformAssignmentGradeServices(config => {
 
 The `IAssignmentGradeService` interface is used to get the config for the assignment and grade service. The config is used to tell the tools how to request the members of a context.
 
-There is a default implementation of the `IAssignmentGradeService` interface that uses a configuration set up on app start. When calling the `AddDefaultAssignmentGradeService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
+There is a default implementation of the `IAssignmentGradeService` interface that uses a configuration set up on app start. When calling the `WithDefaultAssignmentGradeService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformAssignmentGradeServices()
-    .AddDefaultAssignmentGradeService(x => { x.ServiceAddress = new Uri("https://<mysite>") });
+    .WithDefaultAssignmentGradeService(x => { x.ServiceAddress = new Uri("https://<mysite>") });
 ```

@@ -26,7 +26,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultAssignmentGradeService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
+        public static Lti13PlatformBuilder WithDefaultAssignmentGradeService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
         {
             configure ??= (x) => { };
 
