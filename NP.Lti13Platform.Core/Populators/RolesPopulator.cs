@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.Core.Populators
         public IEnumerable<string>? RoleScopeMentor { get; set; }
     }
 
-    public class RolesPopulator(ICoreDataService dataService) : Populator<IRolesMessage>
+    public class RolesPopulator(ILti13CoreDataService dataService) : Populator<IRolesMessage>
     {
         public override async Task PopulateAsync(IRolesMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {

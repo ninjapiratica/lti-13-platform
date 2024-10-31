@@ -31,7 +31,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             configure ??= (x) => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
+            builder.Services.AddTransient<ILti13AssignmentGradeService, AssignmentGradeService>();
             return builder;
         }
 
@@ -41,7 +41,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             config = configure?.Invoke(config) ?? config;
 
             app.MapGet(config.LineItemsUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -106,7 +106,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPost(config.LineItemsUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request, CancellationToken cancellationToken) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request, CancellationToken cancellationToken) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -200,7 +200,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapGet(config.LineItemUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -249,7 +249,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPut(config.LineItemUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
                 {
                     const string INVALID_CONTENT_TYPE = "Invalid Content-Type";
                     const string CONTENT_TYPE_REQUIRED = "Content-Type must be 'application/vnd.ims.lis.v2.lineitem+json'";
@@ -343,7 +343,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapDelete(config.LineItemUrl,
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -384,7 +384,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 .DisableAntiforgery();
 
             app.MapGet($"{config.LineItemUrl}/results",
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
                 {
                     var httpContext = httpContextAccessor.HttpContext!;
                     var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
@@ -454,7 +454,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
                 });
 
             app.MapPost($"{config.LineItemUrl}/scores",
-                async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, IAssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
+                async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
                 {
                     const string RESULT_TOO_EARLY = "startDateTime";
                     const string RESULT_TOO_EARLY_DESCRIPTION = "lineItem startDateTime is in the future";

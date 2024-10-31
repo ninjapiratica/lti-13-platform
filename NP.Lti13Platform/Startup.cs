@@ -44,13 +44,13 @@ namespace NP.Lti13Platform
                 .WithDefaultNameRoleProvisioningService(configureNameRoleProvisioningService);
         }
 
-        public static Lti13PlatformBuilder WithDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-            where T : IDataService
+        public static Lti13PlatformBuilder WithLti13DataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+            where T : ILti13DataService
         {
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(ICoreDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(IDeepLinkingDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(INameRoleProvisioningDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(IAssignmentGradeDataService), typeof(T), serviceLifetime));
+            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13CoreDataService), typeof(T), serviceLifetime));
+            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13DeepLinkingDataService), typeof(T), serviceLifetime));
+            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
+            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13AssignmentGradeDataService), typeof(T), serviceLifetime));
 
             return builder;
         }

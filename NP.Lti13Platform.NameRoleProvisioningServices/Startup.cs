@@ -42,7 +42,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             configure ??= (x) => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
+            builder.Services.AddTransient<ILti13NameRoleProvisioningService, NameRoleProvisioningService>();
             return builder;
         }
 
@@ -104,7 +104,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             config = configure?.Invoke(config) ?? config;
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
+                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
                 {
                     const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
                     const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";

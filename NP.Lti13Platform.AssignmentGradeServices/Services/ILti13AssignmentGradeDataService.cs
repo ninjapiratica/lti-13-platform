@@ -2,7 +2,7 @@
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
-    public interface IAssignmentGradeDataService
+    public interface ILti13AssignmentGradeDataService
     {
         Task<LineItem?> GetLineItemAsync(string lineItemId, CancellationToken cancellationToken = default);
         Task DeleteLineItemAsync(string lineItemId, CancellationToken cancellationToken = default);

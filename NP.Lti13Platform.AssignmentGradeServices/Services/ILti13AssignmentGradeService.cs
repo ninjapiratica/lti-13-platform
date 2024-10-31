@@ -2,7 +2,7 @@
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
-    public interface IAssignmentGradeService
+    public interface ILti13AssignmentGradeService
     {
         Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
     }

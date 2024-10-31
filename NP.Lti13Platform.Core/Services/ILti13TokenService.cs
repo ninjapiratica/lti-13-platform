@@ -2,7 +2,7 @@
 
 namespace NP.Lti13Platform.Core.Services
 {
-    public interface ITokenService
+    public interface ILti13TokenService
     {
         Task<Lti13PlatformTokenConfig> GetTokenConfigAsync(string clientId, CancellationToken cancellationToken = default);
     }

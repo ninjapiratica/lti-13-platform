@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
         public IDictionary<string, string>? Custom { get; set; }
     }
 
-    public class CustomPopulator(ICoreDataService dataService) : Populator<ICustomMessage>
+    public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICustomMessage>
     {
         private static readonly IEnumerable<string> LineItemAttemptGradeVariables = [
             Lti13ResourceLinkVariables.AvailableUserStartDateTime,

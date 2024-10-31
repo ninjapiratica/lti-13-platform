@@ -6,7 +6,7 @@ using NP.Lti13Platform.DeepLinking;
 
 namespace NP.Lti13Platform.WebExample.Controllers
 {
-    public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper service, ICoreDataService dataService) : Controller
+    public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper service, ILti13CoreDataService dataService) : Controller
     {
         public async Task<IResult> Index(CancellationToken cancellationToken)
         {

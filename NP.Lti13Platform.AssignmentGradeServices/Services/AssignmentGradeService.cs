@@ -4,7 +4,7 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
-    internal class AssignmentGradeService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : IAssignmentGradeService
+    internal class AssignmentGradeService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13AssignmentGradeService
     {
         public async Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
         {

@@ -18,7 +18,7 @@ namespace NP.Lti13Platform.Core.Services
         Task<(string MessageType, string DeploymentId, string? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default);
     }
 
-    public class UrlServiceHelper(ITokenService tokenService) : IUrlServiceHelper
+    public class UrlServiceHelper(ILti13TokenService tokenService) : IUrlServiceHelper
     {
         public async Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default)
             => await GetUrlAsync(
