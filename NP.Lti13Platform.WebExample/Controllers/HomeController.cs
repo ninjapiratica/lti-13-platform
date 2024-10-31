@@ -23,7 +23,7 @@ namespace NP.Lti13Platform.WebExample.Controllers
 
             return Results.Ok(new
             {
-                deepLinkUrl = await service.GetDeepLinkInitiationUrlAsync(
+                deepLinkUrl = await service.GetDeepLinkInitiationUrlAync(
                     tool!,
                     deployment!.Id,
                     userId,
