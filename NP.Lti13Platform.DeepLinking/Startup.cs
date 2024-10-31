@@ -41,10 +41,10 @@ namespace NP.Lti13Platform.DeepLinking
             return builder;
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder app, Action<DeepLinkingEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder app, Func<DeepLinkingEndpointsConfig, DeepLinkingEndpointsConfig>? configure = null)
         {
-            var config = new DeepLinkingEndpointsConfig();
-            configure?.Invoke(config);
+            DeepLinkingEndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             _ = app.MapPost(config.DeepLinkingResponseUrl,
                async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkingService deepLinkingService, CancellationToken cancellationToken) =>

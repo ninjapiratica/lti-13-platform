@@ -53,6 +53,7 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 ```csharp
 app.UseLti13PlatformNameRoleProvisioningServices(config => {
     config.NamesAndRoleProvisioningServicesUrl = "/lti13/{deploymentId}/{contextId}/memberships"; // {deploymentId} and {contextId} are required
+    return config;
 });
 ```
 

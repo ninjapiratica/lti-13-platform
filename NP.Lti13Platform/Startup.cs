@@ -55,43 +55,16 @@ namespace NP.Lti13Platform
             return builder;
         }
 
-        public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Action<Lti13PlatformEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null)
         {
-            var endpointsConfig = new Lti13PlatformEndpointsConfig();
-            configure?.Invoke(endpointsConfig);
+            Lti13PlatformEndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             return app
-                .UseLti13PlatformCore(x =>
-                {
-                    if (endpointsConfig.Core != null)
-                    {
-                        x.JwksUrl = endpointsConfig.Core.JwksUrl;
-                        x.AuthorizationUrl = endpointsConfig.Core.AuthorizationUrl;
-                        x.TokenUrl = endpointsConfig.Core.TokenUrl;
-                    }
-                })
-                .UseLti13PlatformDeepLinking(x =>
-                {
-                    if (endpointsConfig.DeepLinking != null)
-                    {
-                        x.DeepLinkingResponseUrl = endpointsConfig.DeepLinking.DeepLinkingResponseUrl;
-                    }
-                })
-                .UseLti13PlatformNameRoleProvisioningServices(x =>
-                {
-                    if (endpointsConfig.NameRoleProvisioningServices != null)
-                    {
-                        x.NamesAndRoleProvisioningServicesUrl = endpointsConfig.NameRoleProvisioningServices.NamesAndRoleProvisioningServicesUrl;
-                    }
-                })
-                .UseLti13PlatformAssignmentGradeServices(x =>
-                {
-                    if (endpointsConfig.AssignmentGradeServices != null)
-                    {
-                        x.LineItemUrl = endpointsConfig.AssignmentGradeServices.LineItemUrl;
-                        x.LineItemsUrl = endpointsConfig.AssignmentGradeServices.LineItemsUrl;
-                    }
-                });
+                .UseLti13PlatformCore(x => config.Core ?? x)
+                .UseLti13PlatformDeepLinking(x => config.DeepLinking ?? x)
+                .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices ?? x)
+                .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices ?? x);
         }
     }
 

@@ -60,6 +60,7 @@ app.UseLti13PlatformCore(config => {
     config.AuthorizationUrl = "/lti13/authorization";
     config.JwksUrl = "/lti13/jwks";
     config.TokenUrl = "/lti13/token";
+    return config;
 });
 ```
 

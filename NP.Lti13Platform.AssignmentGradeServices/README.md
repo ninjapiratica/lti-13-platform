@@ -55,6 +55,7 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 app.UseLti13PlatformAssignmentGradeServices(config => {
     config.LineItemsUrl = "/lti13/{deploymentId}/{contextId}/lineItems"; // {deploymentId} and {contextId} are required
     config.LineItemUrl = "/lti13/{deploymentId}/{contextId}/lineItems/{lineItemId}"; // {deploymentId}, {contextId}, and {lineItemId} are required
+    return config;
 });
 ```
 

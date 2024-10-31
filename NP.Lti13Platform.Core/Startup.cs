@@ -81,12 +81,12 @@ namespace NP.Lti13Platform.Core
             return builder;
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = null)
         {
             Lti13PlatformBuilder.CreateTypes();
 
-            var config = new Lti13PlatformCoreEndpointsConfig();
-            configure?.Invoke(config);
+            Lti13PlatformCoreEndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             if (routeBuilder is IApplicationBuilder appBuilder)
             {

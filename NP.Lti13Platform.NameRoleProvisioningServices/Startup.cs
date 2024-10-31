@@ -96,12 +96,12 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             }
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder routeBuilder, Action<EndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder routeBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
         {
             CreateTypes();
 
-            var config = new EndpointsConfig();
-            configure?.Invoke(config);
+            EndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
                 async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, INameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>

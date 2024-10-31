@@ -35,10 +35,10 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             return builder;
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder app, Action<ServiceEndpointsConfig>? configure = null)
+        public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder app, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
         {
-            var config = new ServiceEndpointsConfig();
-            configure?.Invoke(config);
+            ServiceEndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             app.MapGet(config.LineItemsUrl,
                 async (IHttpContextAccessor httpContextAccessor, ICoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>

@@ -54,6 +54,7 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 ```csharp
 app.UseLti13PlatformDeepLinking(config => {
     config.DeepLinkingResponseUrl = "/lti13/deeplinking/{contextId?}"; // {contextId?} is required
+    return config;
 });
 ```
 
