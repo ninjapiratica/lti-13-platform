@@ -44,18 +44,18 @@ namespace NP.Lti13Platform
             config = configure?.Invoke(config) ?? config;
 
             return app
-                .UseLti13PlatformCore(x => config.Core ?? x)
-                .UseLti13PlatformDeepLinking(x => config.DeepLinking ?? x)
-                .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices ?? x)
-                .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices ?? x);
+                .UseLti13PlatformCore(x => config.Core)
+                .UseLti13PlatformDeepLinking(x => config.DeepLinking)
+                .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices)
+                .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices);
         }
     }
 
     public class Lti13PlatformEndpointsConfig
     {
-        public Lti13PlatformCoreEndpointsConfig? Core { get; set; }
-        public DeepLinkingEndpointsConfig? DeepLinking { get; set; }
-        public EndpointsConfig? NameRoleProvisioningServices { get; set; }
-        public ServiceEndpointsConfig? AssignmentGradeServices { get; set; }
+        public Lti13PlatformCoreEndpointsConfig Core { get; set; } = new();
+        public DeepLinkingEndpointsConfig DeepLinking { get; set; } = new();
+        public EndpointsConfig NameRoleProvisioningServices { get; set; } = new();
+        public ServiceEndpointsConfig AssignmentGradeServices { get; set; } = new();
     }
 }
