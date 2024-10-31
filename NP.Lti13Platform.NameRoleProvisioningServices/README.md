@@ -24,8 +24,7 @@ public class DataService: ILti13NameRoleProvisioningDataService
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddLti13PlatformNameRoleProvisioningServices()
-    .WithDefaultNameRoleProvisioningService();
+    .AddLti13PlatformNameRoleProvisioningServices();
 
 builder.Services.AddTransient<ILti13NameRoleProvisioningDataService, DataService>();
 ```
@@ -61,14 +60,27 @@ app.UseLti13PlatformNameRoleProvisioningServices(config => {
 
 The `ILti13NameRoleProvisioningService` interface is used to get the config for the name and role provisioning service. The config is used to tell the tools how to request the members of a context.
 
-There is a default implementation of the `ILti13NameRoleProvisioningConfigService` interface that uses a configuration set up on app start. When calling the `WithDefaultNameRoleProvisioningService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `ILti13NameRoleProvisioningConfigService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
+There is a default implementation of the `ILti13NameRoleProvisioningConfigService` interface that uses a configuration set up on app start.
+It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
+The configuration path for the service is `Lti13Platform:NameRoleProvisioningServices`.
+The Default implementation can be overridden by adding a new implementation of the `ILti13NameRoleProvisioningConfigService` interface.
+This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
-```csharp
-builder.Services
-    .AddLti13PlatformCore()
-    .AddLti13PlatformNameRoleProvisioningServices()
-    .WithDefaultNameRoleProvisioningService(x => { x.ServiceAddress = new Uri("https://<mysite>") });
+```json
+{
+    "Lti13Platform": {
+        "NameRoleProvisioningServices": {
+            "ServiceAddress": "https://<mysite>"
+        }
+    }
+}
 ```
+
+## Configuration
+
+`ServiceAddress`
+
+The base url used to tell tools where the service is located.
 
 ## Member Message
 

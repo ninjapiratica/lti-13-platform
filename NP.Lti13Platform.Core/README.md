@@ -25,12 +25,7 @@ public class DataService: ILti13CoreDataService
 
 ```csharp
 builder.Services
-    .AddLti13PlatformCore()
-    .WithDefaultPlatformService()
-    .WithDefaultTokenService(x =>
-    {
-        x.Issuer = "https://<mysite>";
-    });
+    .AddLti13PlatformCore();
 
 builder.Services.AddTransient<ILti13CoreDataService, DataService>();
 ```
@@ -68,28 +63,43 @@ app.UseLti13PlatformCore(config => {
 
 The `ILti13PlatformService` interface is used to get the platform details to give to the tools.
 
-There is a default implementation of the `ILti13PlatformService` interface that uses a configuration set up on app start. When calling the `WithDefaultPlatformService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ILti13PlatformService` interface and not including the Default.
+There is a default implementation of the `ILti13PlatformService` interface that uses a configuration set up on app start.
+It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
+The configuration path for the service is `Lti13Platform:Platform`.
+The Default implementation can be overridden by adding a new implementation of the `ILti13PlatformService` interface.
 
-```csharp
-builder.Services
-    .AddLti13PlatformCore()
-    .WithDefaultPlatformService(x => { /* Set platform data */ });
+```json
+{
+    "Lti13Platform": {
+        "Platform": {
+            "Guid": "server-id",
+            ...
+        }
+    }
+}
 ```
 
 ### ILti13TokenConfigService
 
 The `ILti13TokenConfigService` interface is used to get the token details for the tools.
 
-There is a default implementation of the `ILti13TokenConfigService` interface that uses a configuration set up on app start. When calling the `WithDefaultTokenService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ILti13TokenConfigService` interface and not including the Default.
+There is a default implementation of the `ILti13TokenConfigService` interface that uses a configuration set up on app start.
+It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
+The configuration path for the service is `Lti13Platform:Token`.
+The Default implementation can be overridden by adding a new implementation of the `ILti13TokenConfigService` interface.
 
-```csharp
-builder.Services
-    .AddLti13PlatformCore()
-    .WithDefaultTokenService(x =>
-    {
-        x.Issuer = "https://<mysite>"; // This is required to be set when using the default token service.
-    });
+```json
+{
+    "Lti13Platform": {
+        "Token": {
+            "Issuer": "https://<mysite>",
+            ...
+        }
+    }
+}
 ```
+
+***Important***: The `Issuer` is required for the default token service to load.
 
 ## Configuration
 
@@ -147,7 +157,7 @@ The configuration for handling of tokens between the platform and the tools.
 
 `Issuer`
 
-A case-sensitive URL using the HTTPS scheme that contains: scheme, host; and, optionally, port number, and path components; and, no query or fragment components. The issuer identifies the platform to the tools.
+A case-sensitive URL using the HTTPS scheme that contains: scheme, host; and, optionally, port number, and path components; and, no query or fragment components. The issuer identifies the platform to the tools. An issuer is required.
 
 ***
 

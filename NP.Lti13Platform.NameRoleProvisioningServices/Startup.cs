@@ -34,15 +34,10 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
             builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
-            return builder;
-        }
 
-        public static Lti13PlatformBuilder WithDefaultNameRoleProvisioningService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
-        {
-            configure ??= (x) => { };
+            builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:NameRoleProvisioningServices");
+            builder.Services.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
 
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
             return builder;
         }
 

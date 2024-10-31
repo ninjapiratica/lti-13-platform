@@ -27,7 +27,7 @@ public class DataService: IDataService
 
 ```csharp
 builder.Services
-    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
+    .AddLti13Platform()
     .WithDataService<DataService>();
 ```
 
@@ -45,8 +45,8 @@ The `IDataService` interface is a combination of all data services required for 
 
 ```diff
 builder.Services
-+    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; });
--    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
++    .AddLti13Platform();
+-    .AddLti13Platform()
 -    .WithDataService<DataService>();
 
 + builder.Services.AddTransient<ICoreDataService, CustomCoreDataService>();
@@ -59,12 +59,11 @@ All of the internal services are transient and therefore the data services may b
 
 ## Defaults
 
-Many of the specs have default implementations that use a static configuration on startup. The defaults are set in the `AddLti13PlatformWithDefaults` method. If you can't configure the services at startup you can use the non-default extension method and add your own implementation of the services.
+Many of the specs have default implementations that use a static configuration on startup. If you can't configure the services at startup you can add your own implementation of the services.
 
 ```diff
 builder.Services
--    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
-+    .AddLti13Platform()
+    .AddLti13Platform()
     .WithDataService<DataService>();
 
 + builder.Services.AddTransient<ITokenService, TokenService>();

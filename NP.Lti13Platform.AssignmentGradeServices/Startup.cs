@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.AssignmentGradeServices.Configs;
@@ -23,15 +24,9 @@ namespace NP.Lti13Platform.AssignmentGradeServices
         {
             builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
-            return builder;
-        }
+            builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:AssignmentGradeServices");
+            builder.Services.TryAddSingleton<ILti13AssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
 
-        public static Lti13PlatformBuilder WithDefaultAssignmentGradeService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
-        {
-            configure ??= (x) => { };
-
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13AssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
             return builder;
         }
 

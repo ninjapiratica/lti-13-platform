@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
@@ -62,22 +62,14 @@ namespace NP.Lti13Platform.Core
 
             builder.Services.AddHttpContextAccessor();
 
-            return builder;
-        }
+            builder.Services.AddOptions<Platform>().BindConfiguration("Lti13Platform:Platform");
+            builder.Services.TryAddSingleton<ILti13PlatformService, DefaultPlatformService>();
 
-        public static Lti13PlatformBuilder WithDefaultPlatformService(this Lti13PlatformBuilder builder, Action<Platform>? configure = null)
-        {
-            configure ??= x => { };
+            builder.Services.AddOptions<Lti13PlatformTokenConfig>()
+                .BindConfiguration("Lti13Platform:Token")
+                .Validate(x => !string.IsNullOrWhiteSpace(x.Issuer), "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
+            builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
 
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13PlatformService, DefaultPlatformService>();
-            return builder;
-        }
-
-        public static Lti13PlatformBuilder WithDefaultTokenService(this Lti13PlatformBuilder builder, Action<Lti13PlatformTokenConfig> configure)
-        {
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13TokenConfigService, DefaultTokenConfigService>();
             return builder;
         }
 

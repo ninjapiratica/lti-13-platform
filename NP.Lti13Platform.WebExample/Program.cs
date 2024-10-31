@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
+using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.WebExample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,11 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://mytest.com"; })
+    .AddLti13Platform()
     .WithLti13DataService<DataService>();
 
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
+
+builder.Services.Configure<DeepLinkingConfig>(x =>
+{
+    x.AddDefaultContentItemMapping();
+});
 
 var app = builder.Build();
 

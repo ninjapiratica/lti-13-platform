@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -29,15 +30,9 @@ namespace NP.Lti13Platform.DeepLinking
                 .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
                 .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
-            return builder;
-        }
+            builder.Services.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
+            builder.Services.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
 
-        public static Lti13PlatformBuilder WithDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<DeepLinkingConfig>? configure = null)
-        {
-            configure ??= x => { };
-
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
             return builder;
         }
 

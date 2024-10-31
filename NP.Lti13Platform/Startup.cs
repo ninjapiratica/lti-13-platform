@@ -6,7 +6,6 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Configs;
-using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
 using NP.Lti13Platform.DeepLinking.Configs;
@@ -26,22 +25,6 @@ namespace NP.Lti13Platform
                 .AddLti13PlatformDeepLinking()
                 .AddLti13PlatformNameRoleProvisioningServices()
                 .AddLti13PlatformAssignmentGradeServices();
-        }
-
-        public static Lti13PlatformBuilder AddLti13PlatformWithDefaults(
-            this IServiceCollection services,
-            Action<Lti13PlatformTokenConfig> configureToken,
-            Action<Platform>? configurePlatform = null,
-            Action<DeepLinkingConfig>? configureDeepLinking = null,
-            Action<AssignmentGradeServices.Configs.ServicesConfig>? configureAssignmentGradeService = null,
-            Action<NameRoleProvisioningServices.Configs.ServicesConfig>? configureNameRoleProvisioningService = null)
-        {
-            return services.AddLti13Platform()
-                .WithDefaultTokenService(configureToken)
-                .WithDefaultPlatformService(configurePlatform)
-                .WithDefaultDeepLinkingService(configureDeepLinking)
-                .WithDefaultAssignmentGradeService(configureAssignmentGradeService)
-                .WithDefaultNameRoleProvisioningService(configureNameRoleProvisioningService);
         }
 
         public static Lti13PlatformBuilder WithLti13DataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
