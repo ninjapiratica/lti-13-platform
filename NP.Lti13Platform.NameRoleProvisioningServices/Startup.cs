@@ -37,7 +37,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultNameRoleProvisioningService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
+        public static Lti13PlatformBuilder WithDefaultNameRoleProvisioningService(this Lti13PlatformBuilder builder, Action<ServicesConfig>? configure = null)
         {
             configure ??= (x) => { };
 

@@ -41,7 +41,7 @@ namespace NP.Lti13Platform
                 .AddDefaultPlatformService(configurePlatform)
                 .AddDefaultDeepLinkingService(configureDeepLinking)
                 .AddDefaultAssignmentGradeService(configureAssignmentGradeService)
-                .AddDefaultNameRoleProvisioningService(configureNameRoleProvisioningService);
+                .WithDefaultNameRoleProvisioningService(configureNameRoleProvisioningService);
         }
 
         public static Lti13PlatformBuilder WithDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)

@@ -25,7 +25,7 @@ public class DataService: INameRoleProvisioningDataService
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformNameRoleProvisioningServices()
-    .AddDefaultNameRoleProvisioningService();
+    .WithDefaultNameRoleProvisioningService();
 
 builder.Services.AddTransient<INameRoleProvisioningDataService, DataService>();
 ```
@@ -60,13 +60,13 @@ app.UseLti13PlatformNameRoleProvisioningServices(config => {
 
 The `INameRoleProvisioningService` interface is used to get the config for the name and role provisioning service. The config is used to tell the tools how to request the members of a context.
 
-There is a default implementation of the `INameRoleProvisioningService` interface that uses a configuration set up on app start. When calling the `AddDefaultNameRoleProvisioningService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
+There is a default implementation of the `INameRoleProvisioningService` interface that uses a configuration set up on app start. When calling the `WithDefaultNameRoleProvisioningService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformNameRoleProvisioningServices()
-    .AddDefaultNameRoleProvisioningService(x => { x.ServiceAddress = new Uri("https://<mysite>") });
+    .WithDefaultNameRoleProvisioningService(x => { x.ServiceAddress = new Uri("https://<mysite>") });
 ```
 
 ## Member Message
@@ -77,6 +77,6 @@ The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformNameRoleProvisioningServices()
-    .AddDefaultNameRoleProvisioningService()
+    .WithDefaultNameRoleProvisioningService()
     .ExtendNameRoleProvisioningMessage<IMessage, MessagePopulator>("<message_type>");
 ```
