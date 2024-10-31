@@ -37,7 +37,7 @@ namespace NP.Lti13Platform.DeepLinking
             configure ??= x => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<IDepLinkingService, DeepLinkingService>();
+            builder.Services.AddTransient<IDeepLinkingService, DeepLinkingService>();
             return builder;
         }
 
@@ -46,8 +46,8 @@ namespace NP.Lti13Platform.DeepLinking
             var config = new DeepLinkingEndpointsConfig();
             configure?.Invoke(config);
 
-            app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDepLinkingService deepLinkingService, CancellationToken cancellationToken) =>
+            _ = app.MapPost(config.DeepLinkingResponseUrl,
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkingService deepLinkingService, CancellationToken cancellationToken) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -115,6 +115,16 @@ namespace NP.Lti13Platform.DeepLinking
 
                    var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
 
+                   List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
+                        .Select((x, ix) =>
+                        {
+                            var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
+                            var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
+
+                            return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);
+                        })
+                        .ToList();
+
                    var response = new DeepLinkResponse
                    {
                        Data = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/data")?.Value,
@@ -122,13 +132,7 @@ namespace NP.Lti13Platform.DeepLinking
                        Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
                        ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
                        ErrorLog = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog")?.Value,
-                       ContentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
-                           .Select((x, ix) =>
-                           {
-                               var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
-                               return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
-                           })
-                           .ToList()
+                       ContentItems = contentItems.Select(ci => ci.ContentItem),
                    };
 
                    if (!string.IsNullOrWhiteSpace(response.Log))
@@ -143,25 +147,25 @@ namespace NP.Lti13Platform.DeepLinking
 
                    if (deepLinkingConfig.AutoCreate == true)
                    {
-                       var saveTasks = response.ContentItems.Select(async ci =>
+                       var saveTasks = contentItems.Select(async ci =>
                        {
-                           var id = await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci);
+                           var id = await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci.ContentItem);
 
-                           if (ci is LtiResourceLinkContentItem rlci && deepLinkingConfig.AcceptLineItem == true && rlci.LineItem != null && contextId != null)
+                           if (deepLinkingConfig.AcceptLineItem == true && contextId != null && ci.LtiResourceLink?.LineItem != null)
                            {
                                await deepLinkingDataService.SaveLineItemAsync(new LineItem
                                {
                                    Id = string.Empty,
                                    DeploymentId = deployment.Id,
                                    ContextId = contextId,
-                                   Label = rlci.LineItem!.Label ?? rlci.Title ?? rlci.Type,
-                                   ScoreMaximum = rlci.LineItem.ScoreMaximum,
-                                   GradesReleased = rlci.LineItem.GradesReleased,
-                                   Tag = rlci.LineItem.Tag,
-                                   ResourceId = rlci.LineItem.ResourceId,
+                                   Label = ci.LtiResourceLink.LineItem!.Label ?? ci.LtiResourceLink.Title ?? ci.LtiResourceLink.Type,
+                                   ScoreMaximum = ci.LtiResourceLink.LineItem.ScoreMaximum,
+                                   GradesReleased = ci.LtiResourceLink.LineItem.GradesReleased,
+                                   Tag = ci.LtiResourceLink.LineItem.Tag,
+                                   ResourceId = ci.LtiResourceLink.LineItem.ResourceId,
                                    ResourceLinkId = id,
-                                   StartDateTime = rlci.Submission?.StartDateTime?.UtcDateTime,
-                                   EndDateTime = rlci.Submission?.EndDateTime?.UtcDateTime
+                                   StartDateTime = ci.LtiResourceLink.Submission?.StartDateTime?.UtcDateTime,
+                                   EndDateTime = ci.LtiResourceLink.Submission?.EndDateTime?.UtcDateTime
                                });
                            }
                        });
@@ -169,7 +173,7 @@ namespace NP.Lti13Platform.DeepLinking
                        await Task.WhenAll(saveTasks);
                    }
 
-                   return await deepLinkingService.HandleResponseAsync(response, cancellationToken);
+                   return await deepLinkingService.HandleResponseAsync(tool.ClientId, deployment.Id, contextId, response, cancellationToken);
                })
                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                .DisableAntiforgery();

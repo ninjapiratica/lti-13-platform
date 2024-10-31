@@ -446,6 +446,15 @@ namespace NP.Lti13Platform.Core
 
     internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 
-    /// <param name="DocumentTarget"> <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values. </param>
-    public record LaunchPresentationOverride(string? DocumentTarget, double? Height, double? Width, string? ReturnUrl, string? Locale);
+    public record LaunchPresentationOverride
+    {
+        /// <summary>
+        /// <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values.
+        /// </summary>
+        public string? DocumentTarget { get; set; }
+        public double? Height { get; set; }
+        public double? Width { get; set; }
+        public string? ReturnUrl { get; set; }
+        public string? Locale { get; set; }
+    }
 }

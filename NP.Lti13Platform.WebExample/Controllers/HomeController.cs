@@ -23,9 +23,31 @@ namespace NP.Lti13Platform.WebExample.Controllers
 
             return Results.Ok(new
             {
-                deepLinkUrl = await service.GetDeepLinkInitiationUrlAsync(tool!, deployment!.Id, userId, false, null, context!.Id, new DeepLinkSettingsOverride(null, null, null, null, null, null, null, "TiTlE", "TEXT", "data"), cancellationToken: cancellationToken),
+                deepLinkUrl = await service.GetDeepLinkInitiationUrlAsync(
+                    tool!,
+                    deployment!.Id,
+                    userId,
+                    false,
+                    null,
+                    context!.Id,
+                    new DeepLinkSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
+                    cancellationToken: cancellationToken),
                 resourceLinkUrls = DataService.ResourceLinks
-                    .Select(async resourceLink => await service.GetResourceLinkInitiationUrlAsync(tool!, deployment!.Id, context!.Id, resourceLink, userId, false, launchPresentation: new LaunchPresentationOverride(documentTarget, height, width, "", locale), cancellationToken: cancellationToken))
+                    .Select(async resourceLink => await service.GetResourceLinkInitiationUrlAsync(
+                        tool!,
+                        deployment!.Id,
+                        context!.Id,
+                        resourceLink,
+                        userId,
+                        false,
+                        launchPresentation: new LaunchPresentationOverride
+                        {
+                            DocumentTarget = documentTarget,
+                            Height = height,
+                            Width = width,
+                            Locale = locale
+                        },
+                        cancellationToken: cancellationToken))
                     .Select(t => t.Result)
             });
         }
