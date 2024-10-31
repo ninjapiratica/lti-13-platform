@@ -27,7 +27,7 @@ public class DataService: ICoreDataService
 builder.Services
     .AddLti13PlatformCore()
     .WithDefaultPlatformService()
-    .AddDefaultTokenService(x =>
+    .WithDefaultTokenService(x =>
     {
         x.Issuer = "https://<mysite>";
     });
@@ -79,12 +79,12 @@ builder.Services
 
 The `ITokenService` interface is used to get the token details for the tools.
 
-There is a default implementation of the `ITokenService` interface that uses a configuration set up on app start. When calling the `AddDefaultTokenService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ITokenService` interface and not including the Default.
+There is a default implementation of the `ITokenService` interface that uses a configuration set up on app start. When calling the `WithDefaultTokenService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ITokenService` interface and not including the Default.
 
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddDefaultTokenService(x =>
+    .WithDefaultTokenService(x =>
     {
         x.Issuer = "https://<mysite>"; // This is required to be set when using the default token service.
     });

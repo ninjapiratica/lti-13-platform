@@ -74,7 +74,7 @@ namespace NP.Lti13Platform.Core
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultTokenService(this Lti13PlatformBuilder builder, Action<Lti13PlatformTokenConfig> configure)
+        public static Lti13PlatformBuilder WithDefaultTokenService(this Lti13PlatformBuilder builder, Action<Lti13PlatformTokenConfig> configure)
         {
             builder.Services.Configure(configure);
             builder.Services.AddTransient<ITokenService, TokenService>();

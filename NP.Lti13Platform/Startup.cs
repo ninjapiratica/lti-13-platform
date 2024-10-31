@@ -37,7 +37,7 @@ namespace NP.Lti13Platform
             Action<NameRoleProvisioningServices.Configs.ServicesConfig>? configureNameRoleProvisioningService = null)
         {
             return services.AddLti13Platform()
-                .AddDefaultTokenService(configureToken)
+                .WithDefaultTokenService(configureToken)
                 .WithDefaultPlatformService(configurePlatform)
                 .WithDefaultDeepLinkingService(configureDeepLinking)
                 .AddDefaultAssignmentGradeService(configureAssignmentGradeService)
