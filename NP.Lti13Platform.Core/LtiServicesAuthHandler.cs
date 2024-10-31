@@ -9,7 +9,7 @@ using System.Text.Encodings.Web;
 
 namespace NP.Lti13Platform.Core
 {
-    public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13TokenService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+    public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
         : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
         public const string SchemeName = "NP.Lti13Platform.Services";

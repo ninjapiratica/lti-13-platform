@@ -11,10 +11,10 @@ The IMS [Deep Linking](https://www.imsglobal.org/spec/lti-dl/v2p0) spec defines 
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `IDeepLinkingDataService` interface:
+2. Add an implementation of the `ILti13DeepLinkingDataService` interface:
 
 ```csharp
-public class DataService: IDeepLinkingDataService
+public class DataService: ILti13DeepLinkingDataService
 {
     ...
 }
@@ -28,7 +28,7 @@ builder.Services
     .AddLti13PlatformDeepLinking()
     .WithDefaultDeepLinkingService();
 
-builder.Services.AddTransient<IDeepLinkingDataService, DataService>();
+builder.Services.AddTransient<ILti13DeepLinkingDataService, DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -37,11 +37,11 @@ builder.Services.AddTransient<IDeepLinkingDataService, DataService>();
 app.UseLti13PlatformDeepLinking();
 ```
 
-## IDeepLinkingDataService
+## ILti13DeepLinkingDataService
 
-There is no default `IDeepLinkingDataService` implementation to allow each project to store the data how they see fit.
+There is no default `ILti13DeepLinkingDataService` implementation to allow each project to store the data how they see fit.
 
-The `IDeepLinkingDataService` interface is used to manage the persistance of resource links and other content items.
+The `ILti13DeepLinkingDataService` interface is used to manage the persistance of resource links and other content items.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
@@ -58,11 +58,11 @@ app.UseLti13PlatformDeepLinking(config => {
 });
 ```
 
-### IDeepLinkingService
+### ILti13DeepLinkingConfigService
 
-The `IDeepLinkingService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
+The `ILti13DeepLinkingConfigService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
 
-There is a default implementation of the `IDeepLinkingService` interface that uses a configuration set up on app start. When calling the `WithDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `IDeepLinkingService` interface and not including the Default.
+There is a default implementation of the `ILti13DeepLinkingConfigService` interface that uses a configuration set up on app start. When calling the `WithDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `ILti13DeepLinkingConfigService` interface and not including the Default.
 
 ```csharp
 builder.Services

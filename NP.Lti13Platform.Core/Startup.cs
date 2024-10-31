@@ -70,14 +70,14 @@ namespace NP.Lti13Platform.Core
             configure ??= x => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13PlatformService, PlatformService>();
+            builder.Services.AddTransient<ILti13PlatformService, DefaultPlatformService>();
             return builder;
         }
 
         public static Lti13PlatformBuilder WithDefaultTokenService(this Lti13PlatformBuilder builder, Action<Lti13PlatformTokenConfig> configure)
         {
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13TokenService, TokenService>();
+            builder.Services.AddTransient<ILti13TokenConfigService, DefaultTokenConfigService>();
             return builder;
         }
 
@@ -119,7 +119,7 @@ namespace NP.Lti13Platform.Core
                 });
 
             routeBuilder.Map(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenService tokenService, ILti13CoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
                 {
                     const string OPENID = "openid";
                     const string ID_TOKEN = "id_token";
@@ -321,7 +321,7 @@ namespace NP.Lti13Platform.Core
                 .DisableAntiforgery();
 
             routeBuilder.MapPost(config.TokenUrl,
-                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenService tokenService, CancellationToken cancellationToken) =>
+                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
                 {
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                     const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";

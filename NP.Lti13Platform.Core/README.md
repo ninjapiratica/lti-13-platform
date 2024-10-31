@@ -12,10 +12,10 @@ The IMS [Lti Core](https://www.imsglobal.org/spec/lti/v1p3/) spec defines a way 
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `ICoreDataService` interface:
+2. Add an implementation of the `ILti13CoreDataService` interface:
 
 ```csharp
-public class DataService: ICoreDataService
+public class DataService: ILti13CoreDataService
 {
     ...
 }
@@ -32,7 +32,7 @@ builder.Services
         x.Issuer = "https://<mysite>";
     });
 
-builder.Services.AddTransient<ICoreDataService, DataService>();
+builder.Services.AddTransient<ILti13CoreDataService, DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -41,11 +41,11 @@ builder.Services.AddTransient<ICoreDataService, DataService>();
 app.UseLti13PlatformCore();
 ```
 
-## ICoreDataService
+## ILti13CoreDataService
 
-There is no default `ICoreDataService` implementation to allow each project to store the data how they see fit.
+There is no default `ILti13CoreDataService` implementation to allow each project to store the data how they see fit.
 
-The `ICoreDataService` interface is used to manage the persistance of most of the data involved in LTI communication.
+The `ILti13CoreDataService` interface is used to manage the persistance of most of the data involved in LTI communication.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
@@ -64,11 +64,11 @@ app.UseLti13PlatformCore(config => {
 });
 ```
 
-### IPlatformService
+### ILti13PlatformService
 
-The `IPlatformService` interface is used to get the platform details to give to the tools.
+The `ILti13PlatformService` interface is used to get the platform details to give to the tools.
 
-There is a default implementation of the `IPlatformService` interface that uses a configuration set up on app start. When calling the `WithDefaultPlatformService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `IPlatformService` interface and not including the Default.
+There is a default implementation of the `ILti13PlatformService` interface that uses a configuration set up on app start. When calling the `WithDefaultPlatformService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ILti13PlatformService` interface and not including the Default.
 
 ```csharp
 builder.Services
@@ -76,11 +76,11 @@ builder.Services
     .WithDefaultPlatformService(x => { /* Set platform data */ });
 ```
 
-### ITokenService
+### ILti13TokenConfigService
 
-The `ITokenService` interface is used to get the token details for the tools.
+The `ILti13TokenConfigService` interface is used to get the token details for the tools.
 
-There is a default implementation of the `ITokenService` interface that uses a configuration set up on app start. When calling the `WithDefaultTokenService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ITokenService` interface and not including the Default.
+There is a default implementation of the `ILti13TokenConfigService` interface that uses a configuration set up on app start. When calling the `WithDefaultTokenService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `ILti13TokenConfigService` interface and not including the Default.
 
 ```csharp
 builder.Services

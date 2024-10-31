@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using NP.Lti13Platform.AssignmentGradeServices.Configs;
+using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 
-namespace NP.Lti13Platform.AssignmentGradeServices.Services
+namespace NP.Lti13Platform.NameRoleProvisioningServices.Services
 {
-    internal class AssignmentGradeService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13AssignmentGradeService
+    internal class DefaultNameRoleProvisioningConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13NameRoleProvisioningConfigService
     {
         public async Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
         {

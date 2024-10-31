@@ -10,10 +10,10 @@ The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `INameRoleProvisioningDataService` interface:
+2. Add an implementation of the `ILti13NameRoleProvisioningDataService` interface:
 
 ```csharp
-public class DataService: INameRoleProvisioningDataService
+public class DataService: ILti13NameRoleProvisioningDataService
 {
     ...
 }
@@ -27,7 +27,7 @@ builder.Services
     .AddLti13PlatformNameRoleProvisioningServices()
     .WithDefaultNameRoleProvisioningService();
 
-builder.Services.AddTransient<INameRoleProvisioningDataService, DataService>();
+builder.Services.AddTransient<ILti13NameRoleProvisioningDataService, DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -36,11 +36,11 @@ builder.Services.AddTransient<INameRoleProvisioningDataService, DataService>();
 app.UseLti13PlatformNameRoleProvisioningServices();
 ```
 
-## INameRoleProvisioningDataService
+## ILti13NameRoleProvisioningDataService
 
-There is no default `INameRoleProvisioningDataService` implementation to allow each project to store the data how they see fit.
+There is no default `ILti13NameRoleProvisioningDataService` implementation to allow each project to store the data how they see fit.
 
-The `INameRoleProvisioningDataService` interface is used to get the persisted members of a context filtered by multiple parameters.
+The `ILti13NameRoleProvisioningDataService` interface is used to get the persisted members of a context filtered by multiple parameters.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
@@ -57,11 +57,11 @@ app.UseLti13PlatformNameRoleProvisioningServices(config => {
 });
 ```
 
-### INameRoleProvisioningService
+### ILti13NameRoleProvisioningConfigService
 
-The `INameRoleProvisioningService` interface is used to get the config for the name and role provisioning service. The config is used to tell the tools how to request the members of a context.
+The `ILti13NameRoleProvisioningService` interface is used to get the config for the name and role provisioning service. The config is used to tell the tools how to request the members of a context.
 
-There is a default implementation of the `INameRoleProvisioningService` interface that uses a configuration set up on app start. When calling the `WithDefaultNameRoleProvisioningService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
+There is a default implementation of the `ILti13NameRoleProvisioningConfigService` interface that uses a configuration set up on app start. When calling the `WithDefaultNameRoleProvisioningService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceEndpoint is configured. The Default implementation can be overridden by adding a new implementation of the `ILti13NameRoleProvisioningConfigService` interface and not including the Default. This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
 ```csharp
 builder.Services

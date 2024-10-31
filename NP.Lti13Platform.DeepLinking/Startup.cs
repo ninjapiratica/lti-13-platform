@@ -37,7 +37,7 @@ namespace NP.Lti13Platform.DeepLinking
             configure ??= x => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13DeepLinkingService, DeepLinkingService>();
+            builder.Services.AddTransient<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
             return builder;
         }
 
@@ -47,7 +47,7 @@ namespace NP.Lti13Platform.DeepLinking
             config = configure?.Invoke(config) ?? config;
 
             _ = app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingService deepLinkingService, CancellationToken cancellationToken) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, CancellationToken cancellationToken) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";

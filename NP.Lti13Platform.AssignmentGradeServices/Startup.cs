@@ -31,7 +31,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             configure ??= (x) => { };
 
             builder.Services.Configure(configure);
-            builder.Services.AddTransient<ILti13AssignmentGradeService, AssignmentGradeService>();
+            builder.Services.AddTransient<ILti13AssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
             return builder;
         }
 
