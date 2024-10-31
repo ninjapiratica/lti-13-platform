@@ -65,7 +65,7 @@ namespace NP.Lti13Platform.Core
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultPlatformService(this Lti13PlatformBuilder builder, Action<Platform>? configure = null)
+        public static Lti13PlatformBuilder WithDefaultPlatformService(this Lti13PlatformBuilder builder, Action<Platform>? configure = null)
         {
             configure ??= x => { };
 

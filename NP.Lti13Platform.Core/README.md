@@ -26,7 +26,7 @@ public class DataService: ICoreDataService
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddDefaultPlatformService()
+    .WithDefaultPlatformService()
     .AddDefaultTokenService(x =>
     {
         x.Issuer = "https://<mysite>";
@@ -67,12 +67,12 @@ app.UseLti13PlatformCore(config => {
 
 The `IPlatformService` interface is used to get the platform details to give to the tools.
 
-There is a default implementation of the `IPlatformService` interface that uses a configuration set up on app start. When calling the `AddDefaultPlatformService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `IPlatformService` interface and not including the Default.
+There is a default implementation of the `IPlatformService` interface that uses a configuration set up on app start. When calling the `WithDefaultPlatformService` method, the configuration can be setup at that time. The Default implementation can be overridden by adding a new implementation of the `IPlatformService` interface and not including the Default.
 
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddDefaultPlatformService(x => { /* Set platform data */ });
+    .WithDefaultPlatformService(x => { /* Set platform data */ });
 ```
 
 ### ITokenService
