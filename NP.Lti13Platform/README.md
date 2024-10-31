@@ -28,7 +28,7 @@ public class DataService: IDataService
 ```csharp
 builder.Services
     .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
-    .AddDataService<DataService>();
+    .WithDataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -47,7 +47,7 @@ The `IDataService` interface is a combination of all data services required for 
 builder.Services
 +    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; });
 -    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
--    .AddDataService<DataService>();
+-    .WithDataService<DataService>();
 
 + builder.Services.AddTransient<ICoreDataService, CustomCoreDataService>();
 + builder.Services.AddTransient<IDeepLinkingDataService, CustomDeepLinkingDataService>();
@@ -65,7 +65,7 @@ Many of the specs have default implementations that use a static configuration o
 builder.Services
 -    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
 +    .AddLti13Platform()
-    .AddDataService<DataService>();
+    .WithDataService<DataService>();
 
 + builder.Services.AddTransient<ITokenService, TokenService>();
 + builder.Services.AddTransient<IPlatformService, PlatformService>();

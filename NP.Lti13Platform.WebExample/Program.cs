@@ -9,7 +9,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services
     .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://mytest.com"; })
-    .AddDataService<DataService>();
+    .WithDataService<DataService>();
 
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();

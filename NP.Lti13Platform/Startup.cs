@@ -44,7 +44,7 @@ namespace NP.Lti13Platform
                 .AddDefaultNameRoleProvisioningService(configureNameRoleProvisioningService);
         }
 
-        public static Lti13PlatformBuilder AddDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        public static Lti13PlatformBuilder WithDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
             where T : IDataService
         {
             builder.Services.TryAdd(new ServiceDescriptor(typeof(ICoreDataService), typeof(T), serviceLifetime));
