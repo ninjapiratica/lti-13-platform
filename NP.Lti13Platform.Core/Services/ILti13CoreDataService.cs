@@ -3,7 +3,7 @@ using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.Core.Services
 {
-    public interface ICoreDataService
+    public interface ILti13CoreDataService
     {
         Task<Tool?> GetToolAsync(string clientId, CancellationToken cancellationToken = default);
         Task<Deployment?> GetDeploymentAsync(string deploymentId, CancellationToken cancellationToken = default);

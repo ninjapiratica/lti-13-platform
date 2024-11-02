@@ -27,8 +27,8 @@ public class DataService: IDataService
 
 ```csharp
 builder.Services
-    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
-    .AddDataService<DataService>();
+    .AddLti13Platform()
+    .WithLti13DataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -45,31 +45,28 @@ The `IDataService` interface is a combination of all data services required for 
 
 ```diff
 builder.Services
-+    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; });
--    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
--    .AddDataService<DataService>();
-
-+ builder.Services.AddTransient<ICoreDataService, CustomCoreDataService>();
-+ builder.Services.AddTransient<IDeepLinkingDataService, CustomDeepLinkingDataService>();
-+ builder.Services.AddTransient<INameRoleProvisioningDataService, CustomNameRoleProvisioningDataService>();
-+ builder.Services.AddTransient<IAssignmentGradeDataService, CustomAssignmentGradeDataService>();
+    .AddLti13Platform()
+-    .WithLti13DataService<DataService>();
++    .WithLti13CoreDataService<CoreDataService>()
++    .WithLti13DeepLinkingDataService<DeepLinkingDataService>()
++    .WithLti13AssignmentGradeDataService<AssignmentGradeDataService>()
++    .WithLti13NameRoleProvisioningDataService<NameRoleProvisioningDataService>();
 ```
 
 All of the internal services are transient and therefore the data services may be added at any scope (Transient, Scoped, Singleton).
 
 ## Defaults
 
-Many of the specs have default implementations that use a static configuration on startup. The defaults are set in the `AddLti13PlatformWithDefaults` method. If you can't configure the services at startup you can use the non-default extension method and add your own implementation of the services.
+Many of the specs have default implementations that use a static configuration on startup. If you can't configure the services at startup you can add your own implementation of the services.
 
 ```diff
 builder.Services
--    .AddLti13PlatformWithDefaults(x => { x.Issuer = "https://<site>.com"; })
-+    .AddLti13Platform()
-    .AddDataService<DataService>();
-
-+ builder.Services.AddTransient<ITokenService, TokenService>();
-+ builder.Services.AddTransient<IPlatformService, PlatformService>();
-+ builder.Services.AddTransient<IDeepLinkingService, TokenService>();
-+ builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
-+ builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
+    .AddLti13Platform()
+    .WithLti13DataService<DataService>()
++    .WithLti13TokenConfigService<TokenService>()
++    .WithLti13PlatformService<PlatformService>()
++    .WithLti13DeepLinkingConfigService<DeepLinkingConfigService>()
++    .WithLti13DeepLinkingHandler<DeepLinkingHandler>()
++	 .WithLti13AssignmentGradeConfigService<AssignmentGradeConfigService>()
++    .WithLti13NameRoleProvisioningConfigService<NameRoleProvisioningConfigService>();
 ```

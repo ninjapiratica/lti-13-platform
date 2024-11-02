@@ -5,5 +5,5 @@ using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 
 namespace NP.Lti13Platform
 {
-    public interface IDataService : ICoreDataService, IDeepLinkingDataService, INameRoleProvisioningDataService, IAssignmentGradeDataService { }
+    public interface ILti13DataService : ILti13CoreDataService, ILti13DeepLinkingDataService, ILti13NameRoleProvisioningDataService, ILti13AssignmentGradeDataService { }
 }

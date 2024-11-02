@@ -33,7 +33,7 @@ namespace NP.Lti13Platform.Core.Populators
         }
     }
 
-    public class PlatformPopulator(IPlatformService platformService) : Populator<IPlatformMessage>
+    public class PlatformPopulator(ILti13PlatformService platformService) : Populator<IPlatformMessage>
     {
         public override async Task PopulateAsync(IPlatformMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
         {

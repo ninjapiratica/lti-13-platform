@@ -2,7 +2,7 @@
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices.Services
 {
-    public interface INameRoleProvisioningService
+    public interface ILti13NameRoleProvisioningConfigService
     {
         Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
     }

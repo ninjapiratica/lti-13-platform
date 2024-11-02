@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
@@ -62,31 +62,41 @@ namespace NP.Lti13Platform.Core
 
             builder.Services.AddHttpContextAccessor();
 
+            builder.Services.AddOptions<Platform>().BindConfiguration("Lti13Platform:Platform");
+            builder.Services.TryAddSingleton<ILti13PlatformService, DefaultPlatformService>();
+
+            builder.Services.AddOptions<Lti13PlatformTokenConfig>()
+                .BindConfiguration("Lti13Platform:Token")
+                .Validate(x => !string.IsNullOrWhiteSpace(x.Issuer), "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
+            builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
+
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultPlatformService(this Lti13PlatformBuilder builder, Action<Platform>? configure = null)
+        public static Lti13PlatformBuilder WithLti13CoreDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13CoreDataService
         {
-            configure ??= x => { };
-
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<IPlatformService, PlatformService>();
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13CoreDataService), typeof(T), serviceLifetime));
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultTokenService(this Lti13PlatformBuilder builder, Action<Lti13PlatformTokenConfig> configure)
+        public static Lti13PlatformBuilder WithLti13PlatformService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13PlatformService
         {
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<ITokenService, TokenService>();
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13PlatformService), typeof(T), serviceLifetime));
             return builder;
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Action<Lti13PlatformCoreEndpointsConfig>? configure = null)
+        public static Lti13PlatformBuilder WithLti13TokenConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13TokenConfigService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13TokenConfigService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = null)
         {
             Lti13PlatformBuilder.CreateTypes();
 
-            var config = new Lti13PlatformCoreEndpointsConfig();
-            configure?.Invoke(config);
+            Lti13PlatformCoreEndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             if (routeBuilder is IApplicationBuilder appBuilder)
             {
@@ -102,7 +112,7 @@ namespace NP.Lti13Platform.Core
             }
 
             routeBuilder.MapGet(config.JwksUrl,
-                async (ICoreDataService dataService, CancellationToken cancellationToken) =>
+                async (ILti13CoreDataService dataService, CancellationToken cancellationToken) =>
                 {
                     var keys = await dataService.GetPublicKeysAsync(cancellationToken);
                     var keySet = new JsonWebKeySet();
@@ -119,7 +129,7 @@ namespace NP.Lti13Platform.Core
                 });
 
             routeBuilder.Map(config.AuthorizationUrl,
-                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ITokenService tokenService, ICoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
+                async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
                 {
                     const string OPENID = "openid";
                     const string ID_TOKEN = "id_token";
@@ -321,7 +331,7 @@ namespace NP.Lti13Platform.Core
                 .DisableAntiforgery();
 
             routeBuilder.MapPost(config.TokenUrl,
-                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ICoreDataService dataService, ITokenService tokenService, CancellationToken cancellationToken) =>
+                async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
                 {
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                     const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";

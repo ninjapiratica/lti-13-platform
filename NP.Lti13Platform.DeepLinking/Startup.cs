@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -29,25 +30,38 @@ namespace NP.Lti13Platform.DeepLinking
                 .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
                 .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
+            builder.Services.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
+            builder.Services.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
+            builder.Services.TryAddSingleton<ILti13DeepLinkingHandler, DefaultDeepLinkingHandler>();
+
             return builder;
         }
 
-        public static Lti13PlatformBuilder AddDefaultDeepLinkingService(this Lti13PlatformBuilder builder, Action<DeepLinkingConfig>? configure = null)
+        public static Lti13PlatformBuilder WithLti13DeepLinkingDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingDataService
         {
-            configure ??= x => { };
-
-            builder.Services.Configure(configure);
-            builder.Services.AddTransient<IDeepLinkingService, DeepLinkingService>();
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingDataService), typeof(T), serviceLifetime));
             return builder;
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder app, Action<DeepLinkingEndpointsConfig>? configure = null)
+        public static Lti13PlatformBuilder WithLti13DeepLinkingConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingConfigService
         {
-            var config = new DeepLinkingEndpointsConfig();
-            configure?.Invoke(config);
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingConfigService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static Lti13PlatformBuilder WithLti13DeepLinkingHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingHandler
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingHandler), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder app, Func<DeepLinkingEndpointsConfig, DeepLinkingEndpointsConfig>? configure = null)
+        {
+            DeepLinkingEndpointsConfig config = new();
+            config = configure?.Invoke(config) ?? config;
 
             _ = app.MapPost(config.DeepLinkingResponseUrl,
-               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ITokenService tokenService, ICoreDataService coreDataService, IDeepLinkingDataService deepLinkingDataService, IDeepLinkingService deepLinkingService, CancellationToken cancellationToken) =>
+               async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                    const string INVALID_CLIENT = "invalid_client";
@@ -173,7 +187,7 @@ namespace NP.Lti13Platform.DeepLinking
                        await Task.WhenAll(saveTasks);
                    }
 
-                   return await deepLinkingService.HandleResponseAsync(tool.ClientId, deployment.Id, contextId, response, cancellationToken);
+                   return await deepLinkingHandler.HandleResponseAsync(tool.ClientId, deployment.Id, contextId, response, cancellationToken);
                })
                .WithName(RouteNames.DEEP_LINKING_RESPONSE)
                .DisableAntiforgery();

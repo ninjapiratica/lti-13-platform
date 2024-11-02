@@ -11,10 +11,10 @@ The IMS [Deep Linking](https://www.imsglobal.org/spec/lti-dl/v2p0) spec defines 
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `IDeepLinkingDataService` interface:
+2. Add an implementation of the `ILti13DeepLinkingDataService` interface:
 
 ```csharp
-public class DataService: IDeepLinkingDataService
+public class DataService: ILti13DeepLinkingDataService
 {
     ...
 }
@@ -26,9 +26,7 @@ public class DataService: IDeepLinkingDataService
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformDeepLinking()
-    .AddDefaultDeepLinkingService();
-
-builder.Services.AddTransient<IDeepLinkingDataService, DataService>();
+    .WithLti13DeepLinkingDataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -37,11 +35,11 @@ builder.Services.AddTransient<IDeepLinkingDataService, DataService>();
 app.UseLti13PlatformDeepLinking();
 ```
 
-## IDeepLinkingDataService
+## ILti13DeepLinkingDataService
 
-There is no default `IDeepLinkingDataService` implementation to allow each project to store the data how they see fit.
+There is no default `ILti13DeepLinkingDataService` implementation to allow each project to store the data how they see fit.
 
-The `IDeepLinkingDataService` interface is used to manage the persistance of resource links and other content items.
+The `ILti13DeepLinkingDataService` interface is used to manage the persistance of resource links and other content items.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
@@ -54,25 +52,58 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 ```csharp
 app.UseLti13PlatformDeepLinking(config => {
     config.DeepLinkingResponseUrl = "/lti13/deeplinking/{contextId?}"; // {contextId?} is required
+    return config;
 });
 ```
 
-### IDeepLinkingService
+### ILti13DeepLinkingHandler
 
-The `IDeepLinkingService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
+The `ILti13DeepLinkingHandler` interface is used to handle the response from the tool.
 
-There is a default implementation of the `IDeepLinkingService` interface that uses a configuration set up on app start. When calling the `AddDefaultDeepLinkingService` method, the configuration can be setup at that time. A fallback to the current request scheme and host will be used if no ServiceAddress is configured. The Default implementation can be overridden by adding a new implementation of the `IDeepLinkingService` interface and not including the Default.
+***Recommended***:
+The default handling of the response is to return a placeholder page. It is strongly recommended to use the Default for development only.
 
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
     .AddLti13PlatformDeepLinking()
-    .AddDefaultDeepLinkingService(x => { /* Update config as needed */ });
+    .WithLti13DeepLinkingHandler<Handler>();
 ```
 
-***Recommended***:
+### ILti13DeepLinkingConfigService
 
-Then default handling of the response is to return it as an 200 OK response with the response body being a JSON representation of the content items returned from the tool. It is strongly recommended to use the Default for development only.
+The `ILti13DeepLinkingConfigService` interface is used to get the config for the deep linking service. The config is used to control how deep link requests are made and how the response will be handled.
+
+There is a default implementation of the `ILti13DeepLinkingConfigService` interface that uses a configuration set up on app start.
+It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
+The configuration path for the service is `Lti13Platform:DeepLinking`.
+A fallback to the current request scheme and host will be used if no ServiceAddress is configured.
+
+Examples
+
+```json
+{
+    "Lti13Platform": {
+        "DeepLinking": {
+            "ServiceAddress": "https://<mysite>",
+            ...
+        }
+    }
+}
+```
+
+```csharp
+builder.Services.Configure<ServicesConfig>(x => { });
+```
+
+The Default implementation can be overridden by adding a new implementation of the `ILti13DeepLinkingConfigService` interface.
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore()
+    .AddLti13PlatformDeepLinking()
+    .WithLti13DeepLinkingDataService<DataService>();
+```
 
 ## Configuration
 
@@ -127,11 +158,9 @@ The web address where the deep linking responses will be handled. If not set, th
 A dictionary of type configurations to be used when deserialzing the content items. If not set, the content items will be deserialized as `Dictionary<string, JsonElement>`{:csharp} objects. A convenience method to add the known content items to this dictionary is provided.
 
 ```csharp
-builder.Services
-    .AddLti13PlatformCore()
-    .AddLti13PlatformDeepLinking()
-    .AddDefaultDeepLinkingService(x => 
-    {
-        x.AddDefaultContentItemMapping();
-    });
+builder.Services.Configure<DeepLinkingConfig>(x =>
+{
+    x.AddDefaultContentItemMapping();
+});
 ```
+

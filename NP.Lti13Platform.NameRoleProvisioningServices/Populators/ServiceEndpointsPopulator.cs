@@ -21,7 +21,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
         }
     }
 
-    public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, INameRoleProvisioningService nameRoleProvisioningService) : Populator<IServiceEndpoints>
+    public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ILti13NameRoleProvisioningConfigService nameRoleProvisioningService) : Populator<IServiceEndpoints>
     {
         public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
         {
