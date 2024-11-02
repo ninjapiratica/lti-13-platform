@@ -6,8 +6,6 @@ namespace NP.Lti13Platform.DeepLinking.Services
 {
     internal class DefaultDeepLinkingConfigService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13DeepLinkingConfigService
     {
-        public Task<IResult> HandleResponseAsync(string clientId, string deploymentId, string? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default) => Task.FromResult(Results.Ok(response));
-
         public async Task<DeepLinkingConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
         {
             var deepLinkingConfig = config.CurrentValue;

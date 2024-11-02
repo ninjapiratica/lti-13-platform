@@ -25,9 +25,8 @@ public class DataService: ILti13DeepLinkingDataService
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddLti13PlatformDeepLinking();
-
-builder.Services.AddTransient<ILti13DeepLinkingDataService, DataService>();
+    .AddLti13PlatformDeepLinking()
+    .WithLti13DeepLinkingDataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -57,15 +56,30 @@ app.UseLti13PlatformDeepLinking(config => {
 });
 ```
 
+### ILti13DeepLinkingHandler
+
+The `ILti13DeepLinkingHandler` interface is used to handle the response from the tool.
+
+***Recommended***:
+The default handling of the response is to return a placeholder page. It is strongly recommended to use the Default for development only.
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore()
+    .AddLti13PlatformDeepLinking()
+    .WithLti13DeepLinkingHandler<Handler>();
+```
+
 ### ILti13DeepLinkingConfigService
 
-The `ILti13DeepLinkingConfigService` interface is used to get the config for the deep linking service as well as handle the response from the tool. The config is used to control how deep link requests are made and how the response will be handled.
+The `ILti13DeepLinkingConfigService` interface is used to get the config for the deep linking service. The config is used to control how deep link requests are made and how the response will be handled.
 
 There is a default implementation of the `ILti13DeepLinkingConfigService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:DeepLinking`.
 A fallback to the current request scheme and host will be used if no ServiceAddress is configured.
-The Default implementation can be overridden by adding a new implementation of the `ILti13DeepLinkingConfigService` interface.
+
+Examples
 
 ```json
 {
@@ -78,9 +92,18 @@ The Default implementation can be overridden by adding a new implementation of t
 }
 ```
 
-***Recommended***:
+```csharp
+builder.Services.Configure<ServicesConfig>(x => { });
+```
 
-Then default handling of the response is to return it as an 200 OK response with the response body being a JSON representation of the content items returned from the tool. It is strongly recommended to use the Default for development only.
+The Default implementation can be overridden by adding a new implementation of the `ILti13DeepLinkingConfigService` interface.
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore()
+    .AddLti13PlatformDeepLinking()
+    .WithLti13DeepLinkingDataService<DataService>();
+```
 
 ## Configuration
 
@@ -140,3 +163,4 @@ builder.Services.Configure<DeepLinkingConfig>(x =>
     x.AddDefaultContentItemMapping();
 });
 ```
+

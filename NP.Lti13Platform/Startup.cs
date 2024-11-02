@@ -1,18 +1,13 @@
 ﻿using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform.AssignmentGradeServices;
 using NP.Lti13Platform.AssignmentGradeServices.Configs;
-using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Configs;
-using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
 using NP.Lti13Platform.DeepLinking.Configs;
-using NP.Lti13Platform.DeepLinking.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
-using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 
 namespace NP.Lti13Platform
 {
@@ -30,10 +25,10 @@ namespace NP.Lti13Platform
         public static Lti13PlatformBuilder WithLti13DataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
             where T : ILti13DataService
         {
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13CoreDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13DeepLinkingDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
-            builder.Services.TryAdd(new ServiceDescriptor(typeof(ILti13AssignmentGradeDataService), typeof(T), serviceLifetime));
+            builder.WithLti13CoreDataService<T>(serviceLifetime)
+                .WithLti13DeepLinkingDataService<T>(serviceLifetime)
+                .WithLti13NameRoleProvisioningDataService<T>(serviceLifetime)
+                .WithLti13AssignmentGradeDataService<T>(serviceLifetime);
 
             return builder;
         }

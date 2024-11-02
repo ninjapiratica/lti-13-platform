@@ -73,6 +73,24 @@ namespace NP.Lti13Platform.Core
             return builder;
         }
 
+        public static Lti13PlatformBuilder WithLti13CoreDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13CoreDataService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13CoreDataService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static Lti13PlatformBuilder WithLti13PlatformService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13PlatformService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13PlatformService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static Lti13PlatformBuilder WithLti13TokenConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13TokenConfigService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13TokenConfigService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
         public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder routeBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = null)
         {
             Lti13PlatformBuilder.CreateTypes();

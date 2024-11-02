@@ -30,6 +30,18 @@ namespace NP.Lti13Platform.AssignmentGradeServices
             return builder;
         }
 
+        public static Lti13PlatformBuilder WithLti13AssignmentGradeDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13AssignmentGradeDataService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeDataService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static Lti13PlatformBuilder WithLti13AssignmentGradeConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13AssignmentGradeConfigService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeConfigService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
         public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder app, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
         {
             ServiceEndpointsConfig config = new();

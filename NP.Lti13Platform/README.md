@@ -28,7 +28,7 @@ public class DataService: IDataService
 ```csharp
 builder.Services
     .AddLti13Platform()
-    .WithDataService<DataService>();
+    .WithLti13DataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -45,14 +45,12 @@ The `IDataService` interface is a combination of all data services required for 
 
 ```diff
 builder.Services
-+    .AddLti13Platform();
--    .AddLti13Platform()
--    .WithDataService<DataService>();
-
-+ builder.Services.AddTransient<ICoreDataService, CustomCoreDataService>();
-+ builder.Services.AddTransient<IDeepLinkingDataService, CustomDeepLinkingDataService>();
-+ builder.Services.AddTransient<INameRoleProvisioningDataService, CustomNameRoleProvisioningDataService>();
-+ builder.Services.AddTransient<IAssignmentGradeDataService, CustomAssignmentGradeDataService>();
+    .AddLti13Platform()
+-    .WithLti13DataService<DataService>();
++    .WithLti13CoreDataService<CoreDataService>()
++    .WithLti13DeepLinkingDataService<DeepLinkingDataService>()
++    .WithLti13AssignmentGradeDataService<AssignmentGradeDataService>()
++    .WithLti13NameRoleProvisioningDataService<NameRoleProvisioningDataService>();
 ```
 
 All of the internal services are transient and therefore the data services may be added at any scope (Transient, Scoped, Singleton).
@@ -64,11 +62,11 @@ Many of the specs have default implementations that use a static configuration o
 ```diff
 builder.Services
     .AddLti13Platform()
-    .WithDataService<DataService>();
-
-+ builder.Services.AddTransient<ITokenService, TokenService>();
-+ builder.Services.AddTransient<IPlatformService, PlatformService>();
-+ builder.Services.AddTransient<IDeepLinkingService, TokenService>();
-+ builder.Services.AddTransient<IAssignmentGradeService, AssignmentGradeService>();
-+ builder.Services.AddTransient<INameRoleProvisioningService, NameRoleProvisioningService>();
+    .WithLti13DataService<DataService>()
++    .WithLti13TokenConfigService<TokenService>()
++    .WithLti13PlatformService<PlatformService>()
++    .WithLti13DeepLinkingConfigService<DeepLinkingConfigService>()
++    .WithLti13DeepLinkingHandler<DeepLinkingHandler>()
++	 .WithLti13AssignmentGradeConfigService<AssignmentGradeConfigService>()
++    .WithLti13NameRoleProvisioningConfigService<NameRoleProvisioningConfigService>();
 ```

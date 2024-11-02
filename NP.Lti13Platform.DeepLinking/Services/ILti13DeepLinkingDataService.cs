@@ -5,13 +5,6 @@ namespace NP.Lti13Platform.DeepLinking.Services
 {
     public interface ILti13DeepLinkingDataService
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="deploymentId"></param>
-        /// <param name="contextId"></param>
-        /// <param name="contentItem"></param>
-        /// <returns>The id of the content item.</returns>
         Task<string> SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem, CancellationToken cancellationToken = default);
 
         Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);

@@ -25,9 +25,8 @@ public class DataService: ILti13AssignmentGradeDataService
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddLti13PlatformAssignmentGradeServices();
-
-builder.Services.AddTransient<ILti13AssignmentGradeDataService, DataService>();
+    .AddLti13PlatformAssignmentGradeServices()
+    .WithLti13AssignmentGradeDataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -65,9 +64,8 @@ The `ILti13AssignmentGradeConfigService` interface is used to get the config for
 There is a default implementation of the `ILti13AssignmentGradeConfigService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:AssignmentGradeServices`.
-The Default implementation can be overridden by adding a new implementation of the `ILti13AssignmentGradeConfigService` interface.
-This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
+Examples:
 ```json
 {
     "Lti13Platform": {
@@ -76,6 +74,19 @@ This may be useful if the service URL is dynamic or needs to be determined at ru
         }
     }
 }
+```
+
+```csharp
+builder.Services.Configure<ServicesConfig>(x => { });
+```
+
+The Default implementation can be overridden by adding a new implementation of the `ILti13AssignmentGradeConfigService` interface.
+This may be useful if the service URL is dynamic or needs to be determined at runtime.
+
+```csharp
+builder.AddLti13PlatformCore()
+    .AddLti13PlatformAssignmentGradeServices()
+    .WithLti13AssignmentGradeConfigService<ConfigService>();
 ```
 
 ## Configuration

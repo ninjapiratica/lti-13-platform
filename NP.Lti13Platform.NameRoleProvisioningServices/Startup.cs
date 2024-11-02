@@ -40,6 +40,18 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             return builder;
         }
 
+        public static Lti13PlatformBuilder WithLti13NameRoleProvisioningDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningDataService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
+        public static Lti13PlatformBuilder WithLti13NameRoleProvisioningConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningConfigService
+        {
+            builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningConfigService), typeof(T), serviceLifetime));
+            return builder;
+        }
+
         public static Lti13PlatformBuilder ExtendNameRoleProvisioningMessage<T, U>(this Lti13PlatformBuilder builder, string messageType)
             where T : class
             where U : Populator<T>

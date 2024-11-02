@@ -24,9 +24,8 @@ public class DataService: ILti13NameRoleProvisioningDataService
 ```csharp
 builder.Services
     .AddLti13PlatformCore()
-    .AddLti13PlatformNameRoleProvisioningServices();
-
-builder.Services.AddTransient<ILti13NameRoleProvisioningDataService, DataService>();
+    .AddLti13PlatformNameRoleProvisioningServices()
+    .WithLti13NameRoleProvisioningDataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -63,8 +62,8 @@ The `ILti13NameRoleProvisioningService` interface is used to get the config for 
 There is a default implementation of the `ILti13NameRoleProvisioningConfigService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:NameRoleProvisioningServices`.
-The Default implementation can be overridden by adding a new implementation of the `ILti13NameRoleProvisioningConfigService` interface.
-This may be useful if the service URL is dynamic or needs to be determined at runtime.
+
+Examples:
 
 ```json
 {
@@ -74,6 +73,20 @@ This may be useful if the service URL is dynamic or needs to be determined at ru
         }
     }
 }
+```
+
+```csharp
+builder.Services.Configure<ServicesConfig>(x => { });
+```
+
+The Default implementation can be overridden by adding a new implementation of the `ILti13NameRoleProvisioningConfigService` interface.
+This may be useful if the service URL is dynamic or needs to be determined at runtime.
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore()
+    .AddLti13PlatformNameRoleProvisioningServices()
+    .WithLti13NameRoleProvisioningConfigService<ConfigService>();
 ```
 
 ## Configuration

@@ -25,9 +25,8 @@ public class DataService: ILti13CoreDataService
 
 ```csharp
 builder.Services
-    .AddLti13PlatformCore();
-
-builder.Services.AddTransient<ILti13CoreDataService, DataService>();
+    .AddLti13PlatformCore()
+    .WithLti13CoreDataService<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -66,7 +65,8 @@ The `ILti13PlatformService` interface is used to get the platform details to giv
 There is a default implementation of the `ILti13PlatformService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:Platform`.
-The Default implementation can be overridden by adding a new implementation of the `ILti13PlatformService` interface.
+
+Examples:
 
 ```json
 {
@@ -79,6 +79,17 @@ The Default implementation can be overridden by adding a new implementation of t
 }
 ```
 
+```csharp
+builder.Services.Configure<Platform>(x => { x.Guid = "server-id"; ... });
+```
+
+The Default implementation can be overridden by adding a new implementation of the `ILti13PlatformService` interface.
+
+```csharp
+builder.AddLti13PlatformCore()
+	.WithLti13PlatformService<CustomPlatformService>();
+```
+
 ### ILti13TokenConfigService
 
 The `ILti13TokenConfigService` interface is used to get the token details for the tools.
@@ -86,7 +97,8 @@ The `ILti13TokenConfigService` interface is used to get the token details for th
 There is a default implementation of the `ILti13TokenConfigService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:Token`.
-The Default implementation can be overridden by adding a new implementation of the `ILti13TokenConfigService` interface.
+
+Examples
 
 ```json
 {
@@ -97,6 +109,17 @@ The Default implementation can be overridden by adding a new implementation of t
         }
     }
 }
+```
+
+```csharp
+builder.Services.Configure<Lti13PlatformTokenConfig>(x => { x.Issuer = "https://<mysite>"; ... });
+```
+
+The Default implementation can be overridden by adding a new implementation of the `ILti13TokenConfigService` interface.
+
+```csharp
+builder.AddLti13PlatformCore()
+	.WithLti13TokenConfigService<CustomTokenConfigService>();
 ```
 
 ***Important***: The `Issuer` is required for the default token service to load.
