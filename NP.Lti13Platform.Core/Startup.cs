@@ -271,7 +271,7 @@ namespace NP.Lti13Platform.Core
                             Country = userPermissions.AddressCountry ? user.Address.Country : null,
                             Formatted = userPermissions.AddressFormatted ? user.Address.Formatted : null,
                             Locality = userPermissions.AddressLocality ? user.Address.Locality : null,
-                            PostalCode =        userPermissions.AddressPostalCode ? user.Address.PostalCode : null,
+                            PostalCode = userPermissions.AddressPostalCode ? user.Address.PostalCode : null,
                             Region = userPermissions.AddressRegion ? user.Address.Region : null,
                             StreetAddress = userPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
                         };
