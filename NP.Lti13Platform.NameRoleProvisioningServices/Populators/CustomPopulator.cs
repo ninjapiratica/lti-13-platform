@@ -57,23 +57,25 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
                 attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id, cancellationToken);
             }
 
+            var customPermissions = await dataService.GetCustomPermissions(scope.Deployment.Id, cancellationToken);
+
             var dictionaryValues = customDictionary.ToList();
             foreach (var kvp in dictionaryValues)
             {
                 var value = kvp.Value switch
                 {
-                    Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId => scope.UserScope.User.Id,
-                    Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage => scope.UserScope.User.ImageUrl,
-                    Lti13UserVariables.Username when scope.Tool.CustomPermissions.UserUsername => scope.UserScope.User.Username,
-                    Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg => string.Join(',', scope.UserScope.User.Orgs),
-                    Lti13UserVariables.ScopeMentor when scope.Tool.CustomPermissions.UserScopeMentor => string.Join(',', mentoredUserIds),
-                    Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster => string.Join(',', scope.UserScope.User.OneRosterGrades),
+                    Lti13UserVariables.Id when customPermissions.UserId => scope.UserScope.User.Id,
+                    Lti13UserVariables.Image when customPermissions.UserImage => scope.UserScope.User.ImageUrl,
+                    Lti13UserVariables.Username when customPermissions.UserUsername => scope.UserScope.User.Username,
+                    Lti13UserVariables.Org when customPermissions.UserOrg => string.Join(',', scope.UserScope.User.Orgs),
+                    Lti13UserVariables.ScopeMentor when customPermissions.UserScopeMentor => string.Join(',', mentoredUserIds),
+                    Lti13UserVariables.GradeLevelsOneRoster when customPermissions.UserGradeLevelsOneRoster => string.Join(',', scope.UserScope.User.OneRosterGrades),
 
-                    Lti13ResourceLinkVariables.AvailableUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.AvailableUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionUserStartDateTime => attempt?.SubmisstionStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionUserEndDateTime => attempt?.SubmissionEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when scope.Tool.CustomPermissions.ResourceLinkLineItemUserReleaseDateTime => grade?.ReleaseDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableUserStartDateTime when customPermissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableUserEndDateTime when customPermissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionUserStartDateTime when customPermissions.ResourceLinkSubmissionUserStartDateTime => attempt?.SubmisstionStartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionUserEndDateTime when customPermissions.ResourceLinkSubmissionUserEndDateTime => attempt?.SubmissionEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when customPermissions.ResourceLinkLineItemUserReleaseDateTime => grade?.ReleaseDateTime?.ToString("O"),
                     _ => null
                 };
 
