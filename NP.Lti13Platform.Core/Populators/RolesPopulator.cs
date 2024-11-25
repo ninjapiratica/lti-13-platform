@@ -26,7 +26,7 @@ namespace NP.Lti13Platform.Core.Populators
 
                     if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
                     {
-                        obj.RoleScopeMentor = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
+                        obj.RoleScopeMentor = membership.MentoredUserIds;
                     }
                 }
             }

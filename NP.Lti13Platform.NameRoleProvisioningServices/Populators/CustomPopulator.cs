@@ -37,7 +37,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
+                    mentoredUserIds = membership.MentoredUserIds;
                 }
             }
 

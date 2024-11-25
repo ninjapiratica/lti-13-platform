@@ -9,6 +9,8 @@
         public required MembershipStatus Status { get; set; }
 
         public required IEnumerable<string> Roles { get; set; }
+
+        public required IEnumerable<string> MentoredUserIds { get; set; }
     }
 
     public enum MembershipStatus

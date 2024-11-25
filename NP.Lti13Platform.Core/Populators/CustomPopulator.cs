@@ -43,7 +43,7 @@ namespace NP.Lti13Platform.Core.Populators
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
+                    mentoredUserIds = membership.MentoredUserIds;
                 }
             }
 
@@ -53,7 +53,7 @@ namespace NP.Lti13Platform.Core.Populators
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
+                    actualUserMentoredUserIds = membership.MentoredUserIds;
                 }
             }
 

@@ -141,7 +141,6 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     }
 
                     var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
-                    var usersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), cancellationToken: cancellationToken);
 
                     var links = new Collection<string>();
 
@@ -154,15 +153,14 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     httpContext.Response.Headers.Link = new StringValues([.. links]);
 
-                    var currentUsers = membersResponse.Items.Join(usersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = true });
+                    var currentUsers = membersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: true));
 
                     if (since.HasValue)
                     {
                         var asOfDate = new DateTime(since.GetValueOrDefault());
                         var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
-                        var oldUsersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), asOfDate, cancellationToken);
 
-                        var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
+                        var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
 
                         currentUsers = oldUsers
                             .Concat(currentUsers)
