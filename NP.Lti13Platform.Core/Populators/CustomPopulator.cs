@@ -43,7 +43,7 @@ namespace NP.Lti13Platform.Core.Populators
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    mentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
+                    mentoredUserIds = membership.MentoredUserIds;
                 }
             }
 
@@ -53,7 +53,7 @@ namespace NP.Lti13Platform.Core.Populators
                 var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
                 if (membership != null && membership.Roles.Contains(Lti13ContextRoles.Mentor))
                 {
-                    actualUserMentoredUserIds = await dataService.GetMentoredUserIdsAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
+                    actualUserMentoredUserIds = membership.MentoredUserIds;
                 }
             }
 
@@ -73,56 +73,58 @@ namespace NP.Lti13Platform.Core.Populators
                 attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id, cancellationToken);
             }
 
+            var customPermissions = await dataService.GetCustomPermissions(scope.Deployment.Id, cancellationToken);
+
             foreach (var kvp in customDictionary.Where(kvp => kvp.Value.StartsWith('$')))
             {
                 // TODO: LIS variables
                 customDictionary[kvp.Key] = kvp.Value switch
                 {
-                    Lti13UserVariables.Id when scope.Tool.CustomPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id,
-                    Lti13UserVariables.Image when scope.Tool.CustomPermissions.UserImage && !scope.UserScope.IsAnonymous => scope.UserScope.User.ImageUrl,
-                    Lti13UserVariables.Username when scope.Tool.CustomPermissions.UserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.User.Username,
-                    Lti13UserVariables.Org when scope.Tool.CustomPermissions.UserOrg && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.Orgs),
-                    Lti13UserVariables.ScopeMentor when scope.Tool.CustomPermissions.UserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', mentoredUserIds),
-                    Lti13UserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.UserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.OneRosterGrades),
+                    Lti13UserVariables.Id when customPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id,
+                    Lti13UserVariables.Image when customPermissions.UserImage && !scope.UserScope.IsAnonymous => scope.UserScope.User.ImageUrl,
+                    Lti13UserVariables.Username when customPermissions.UserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.User.Username,
+                    Lti13UserVariables.Org when customPermissions.UserOrg && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.Orgs),
+                    Lti13UserVariables.ScopeMentor when customPermissions.UserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', mentoredUserIds),
+                    Lti13UserVariables.GradeLevelsOneRoster when customPermissions.UserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.OneRosterGrades),
 
-                    Lti13ActualUserVariables.Id when scope.Tool.CustomPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id,
-                    Lti13ActualUserVariables.Image when scope.Tool.CustomPermissions.ActualUserImage && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.ImageUrl,
-                    Lti13ActualUserVariables.Username when scope.Tool.CustomPermissions.ActualUserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Username,
-                    Lti13ActualUserVariables.Org when scope.Tool.CustomPermissions.ActualUserOrg && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.Orgs) : string.Empty,
-                    Lti13ActualUserVariables.ScopeMentor when scope.Tool.CustomPermissions.ActualUserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', actualUserMentoredUserIds),
-                    Lti13ActualUserVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.ActualUserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.OneRosterGrades) : string.Empty,
+                    Lti13ActualUserVariables.Id when customPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id,
+                    Lti13ActualUserVariables.Image when customPermissions.ActualUserImage && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.ImageUrl,
+                    Lti13ActualUserVariables.Username when customPermissions.ActualUserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Username,
+                    Lti13ActualUserVariables.Org when customPermissions.ActualUserOrg && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.Orgs) : string.Empty,
+                    Lti13ActualUserVariables.ScopeMentor when customPermissions.ActualUserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', actualUserMentoredUserIds),
+                    Lti13ActualUserVariables.GradeLevelsOneRoster when customPermissions.ActualUserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.OneRosterGrades) : string.Empty,
 
-                    Lti13ContextVariables.Id when scope.Tool.CustomPermissions.ContextId => scope.Context?.Id,
-                    Lti13ContextVariables.Org when scope.Tool.CustomPermissions.ContextOrg => scope.Context != null ? string.Join(',', scope.Context.Orgs) : string.Empty,
-                    Lti13ContextVariables.Type when scope.Tool.CustomPermissions.ContextType => scope.Context != null ? string.Join(',', scope.Context.Types) : string.Empty,
-                    Lti13ContextVariables.Label when scope.Tool.CustomPermissions.ContextLabel => scope.Context?.Label,
-                    Lti13ContextVariables.Title when scope.Tool.CustomPermissions.ContextTitle => scope.Context?.Title,
-                    Lti13ContextVariables.SourcedId when scope.Tool.CustomPermissions.ContextSourcedId => scope.Context?.SourcedId,
-                    Lti13ContextVariables.IdHistory when scope.Tool.CustomPermissions.ContextIdHistory => scope.Context != null ? string.Join(',', scope.Context.ClonedIdHistory) : string.Empty,
-                    Lti13ContextVariables.GradeLevelsOneRoster when scope.Tool.CustomPermissions.ContextGradeLevelsOneRoster => scope.Context != null ? string.Join(',', scope.Context.OneRosterGrades) : string.Empty,
+                    Lti13ContextVariables.Id when customPermissions.ContextId => scope.Context?.Id,
+                    Lti13ContextVariables.Org when customPermissions.ContextOrg => scope.Context != null ? string.Join(',', scope.Context.Orgs) : string.Empty,
+                    Lti13ContextVariables.Type when customPermissions.ContextType => scope.Context != null ? string.Join(',', scope.Context.Types) : string.Empty,
+                    Lti13ContextVariables.Label when customPermissions.ContextLabel => scope.Context?.Label,
+                    Lti13ContextVariables.Title when customPermissions.ContextTitle => scope.Context?.Title,
+                    Lti13ContextVariables.SourcedId when customPermissions.ContextSourcedId => scope.Context?.SourcedId,
+                    Lti13ContextVariables.IdHistory when customPermissions.ContextIdHistory => scope.Context != null ? string.Join(',', scope.Context.ClonedIdHistory) : string.Empty,
+                    Lti13ContextVariables.GradeLevelsOneRoster when customPermissions.ContextGradeLevelsOneRoster => scope.Context != null ? string.Join(',', scope.Context.OneRosterGrades) : string.Empty,
 
-                    Lti13ResourceLinkVariables.Id when scope.Tool.CustomPermissions.ResourceLinkId => scope.ResourceLink?.Id,
-                    Lti13ResourceLinkVariables.Title when scope.Tool.CustomPermissions.ResourceLinkTitle => scope.ResourceLink?.Title,
-                    Lti13ResourceLinkVariables.Description when scope.Tool.CustomPermissions.ResourceLinkDescription => scope.ResourceLink?.Text,
-                    Lti13ResourceLinkVariables.AvailableStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableStartDateTime => scope.ResourceLink?.AvailableStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.AvailableUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.AvailableEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableEndDateTime => scope.ResourceLink?.AvailableEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.AvailableUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionStartDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionStartDateTime => scope.ResourceLink?.SubmissionStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionUserStartDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionUserStartDateTime => attempt?.SubmisstionStartDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionEndDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionEndDateTime => scope.ResourceLink?.SubmissionEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.SubmissionUserEndDateTime when scope.Tool.CustomPermissions.ResourceLinkSubmissionUserEndDateTime => attempt?.SubmissionEndDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.LineItemReleaseDateTime when scope.Tool.CustomPermissions.ResourceLinkLineItemReleaseDateTime => lineItem?.GradesReleasedDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when scope.Tool.CustomPermissions.ResourceLinkLineItemUserReleaseDateTime => grade?.ReleaseDateTime?.ToString("O"),
-                    Lti13ResourceLinkVariables.IdHistory when scope.Tool.CustomPermissions.ResourceLinkIdHistory => scope.ResourceLink?.ClonedIdHistory != null ? string.Join(',', scope.ResourceLink.ClonedIdHistory) : string.Empty,
+                    Lti13ResourceLinkVariables.Id when customPermissions.ResourceLinkId => scope.ResourceLink?.Id,
+                    Lti13ResourceLinkVariables.Title when customPermissions.ResourceLinkTitle => scope.ResourceLink?.Title,
+                    Lti13ResourceLinkVariables.Description when customPermissions.ResourceLinkDescription => scope.ResourceLink?.Text,
+                    Lti13ResourceLinkVariables.AvailableStartDateTime when customPermissions.ResourceLinkAvailableStartDateTime => scope.ResourceLink?.AvailableStartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableUserStartDateTime when customPermissions.ResourceLinkAvailableUserStartDateTime => attempt?.AvailableStartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableEndDateTime when customPermissions.ResourceLinkAvailableEndDateTime => scope.ResourceLink?.AvailableEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.AvailableUserEndDateTime when customPermissions.ResourceLinkAvailableUserEndDateTime => attempt?.AvailableEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionStartDateTime when customPermissions.ResourceLinkSubmissionStartDateTime => scope.ResourceLink?.SubmissionStartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionUserStartDateTime when customPermissions.ResourceLinkSubmissionUserStartDateTime => attempt?.SubmisstionStartDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionEndDateTime when customPermissions.ResourceLinkSubmissionEndDateTime => scope.ResourceLink?.SubmissionEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.SubmissionUserEndDateTime when customPermissions.ResourceLinkSubmissionUserEndDateTime => attempt?.SubmissionEndDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.LineItemReleaseDateTime when customPermissions.ResourceLinkLineItemReleaseDateTime => lineItem?.GradesReleasedDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.LineItemUserReleaseDateTime when customPermissions.ResourceLinkLineItemUserReleaseDateTime => grade?.ReleaseDateTime?.ToString("O"),
+                    Lti13ResourceLinkVariables.IdHistory when customPermissions.ResourceLinkIdHistory => scope.ResourceLink?.ClonedIdHistory != null ? string.Join(',', scope.ResourceLink.ClonedIdHistory) : string.Empty,
 
-                    Lti13ToolPlatformVariables.ProductFamilyCode when scope.Tool.CustomPermissions.ToolPlatformProductFamilyCode => platform?.ProductFamilyCode,
-                    Lti13ToolPlatformVariables.Version when scope.Tool.CustomPermissions.ToolPlatformProductVersion => platform?.Version,
-                    Lti13ToolPlatformVariables.InstanceGuid when scope.Tool.CustomPermissions.ToolPlatformProductInstanceGuid => platform?.Guid,
-                    Lti13ToolPlatformVariables.InstanceName when scope.Tool.CustomPermissions.ToolPlatformProductInstanceName => platform?.Name,
-                    Lti13ToolPlatformVariables.InstanceDescription when scope.Tool.CustomPermissions.ToolPlatformProductInstanceDescription => platform?.Description,
-                    Lti13ToolPlatformVariables.InstanceUrl when scope.Tool.CustomPermissions.ToolPlatformProductInstanceUrl => platform?.Url,
-                    Lti13ToolPlatformVariables.InstanceContactEmail when scope.Tool.CustomPermissions.ToolPlatformProductInstanceContactEmail => platform?.ContactEmail,
+                    Lti13ToolPlatformVariables.ProductFamilyCode when customPermissions.ToolPlatformProductFamilyCode => platform?.ProductFamilyCode,
+                    Lti13ToolPlatformVariables.Version when customPermissions.ToolPlatformProductVersion => platform?.Version,
+                    Lti13ToolPlatformVariables.InstanceGuid when customPermissions.ToolPlatformProductInstanceGuid => platform?.Guid,
+                    Lti13ToolPlatformVariables.InstanceName when customPermissions.ToolPlatformProductInstanceName => platform?.Name,
+                    Lti13ToolPlatformVariables.InstanceDescription when customPermissions.ToolPlatformProductInstanceDescription => platform?.Description,
+                    Lti13ToolPlatformVariables.InstanceUrl when customPermissions.ToolPlatformProductInstanceUrl => platform?.Url,
+                    Lti13ToolPlatformVariables.InstanceContactEmail when customPermissions.ToolPlatformProductInstanceContactEmail => platform?.ContactEmail,
                     _ => kvp.Value
                 } ?? string.Empty;
             }

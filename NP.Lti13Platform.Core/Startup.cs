@@ -262,36 +262,38 @@ namespace NP.Lti13Platform.Core
 
                     if (!isAnonymous)
                     {
+                        var userPermissions = await dataService.GetUserPermissionsAsync(deployment.Id, user.Id, cancellationToken);
+
                         ltiMessage.Subject = user.Id;
 
-                        ltiMessage.Address = user.Address == null || !tool.UserPermissions.Address ? null : new AddressClaim
+                        ltiMessage.Address = user.Address == null || !userPermissions.Address ? null : new AddressClaim
                         {
-                            Country = tool.UserPermissions.AddressCountry ? user.Address.Country : null,
-                            Formatted = tool.UserPermissions.AddressFormatted ? user.Address.Formatted : null,
-                            Locality = tool.UserPermissions.AddressLocality ? user.Address.Locality : null,
-                            PostalCode = tool.UserPermissions.AddressPostalCode ? user.Address.PostalCode : null,
-                            Region = tool.UserPermissions.AddressRegion ? user.Address.Region : null,
-                            StreetAddress = tool.UserPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
+                            Country = userPermissions.AddressCountry ? user.Address.Country : null,
+                            Formatted = userPermissions.AddressFormatted ? user.Address.Formatted : null,
+                            Locality = userPermissions.AddressLocality ? user.Address.Locality : null,
+                            PostalCode = userPermissions.AddressPostalCode ? user.Address.PostalCode : null,
+                            Region = userPermissions.AddressRegion ? user.Address.Region : null,
+                            StreetAddress = userPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
                         };
 
-                        ltiMessage.Birthdate = tool.UserPermissions.Birthdate ? user.Birthdate : null;
-                        ltiMessage.Email = tool.UserPermissions.Email ? user.Email : null;
-                        ltiMessage.EmailVerified = tool.UserPermissions.EmailVerified ? user.EmailVerified : null;
-                        ltiMessage.FamilyName = tool.UserPermissions.FamilyName ? user.FamilyName : null;
-                        ltiMessage.Gender = tool.UserPermissions.Gender ? user.Gender : null;
-                        ltiMessage.GivenName = tool.UserPermissions.GivenName ? user.GivenName : null;
-                        ltiMessage.Locale = tool.UserPermissions.Locale ? user.Locale : null;
-                        ltiMessage.MiddleName = tool.UserPermissions.MiddleName ? user.MiddleName : null;
-                        ltiMessage.Name = tool.UserPermissions.Name ? user.Name : null;
-                        ltiMessage.Nickname = tool.UserPermissions.Nickname ? user.Nickname : null;
-                        ltiMessage.PhoneNumber = tool.UserPermissions.PhoneNumber ? user.PhoneNumber : null;
-                        ltiMessage.PhoneNumberVerified = tool.UserPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
-                        ltiMessage.Picture = tool.UserPermissions.Picture ? user.Picture : null;
-                        ltiMessage.PreferredUsername = tool.UserPermissions.PreferredUsername ? user.PreferredUsername : null;
-                        ltiMessage.Profile = tool.UserPermissions.Profile ? user.Profile : null;
-                        ltiMessage.UpdatedAt = tool.UserPermissions.UpdatedAt ? user.UpdatedAt : null;
-                        ltiMessage.Website = tool.UserPermissions.Website ? user.Website : null;
-                        ltiMessage.TimeZone = tool.UserPermissions.TimeZone ? user.TimeZone : null;
+                        ltiMessage.Birthdate = userPermissions.Birthdate ? user.Birthdate : null;
+                        ltiMessage.Email = userPermissions.Email ? user.Email : null;
+                        ltiMessage.EmailVerified = userPermissions.EmailVerified ? user.EmailVerified : null;
+                        ltiMessage.FamilyName = userPermissions.FamilyName ? user.FamilyName : null;
+                        ltiMessage.Gender = userPermissions.Gender ? user.Gender : null;
+                        ltiMessage.GivenName = userPermissions.GivenName ? user.GivenName : null;
+                        ltiMessage.Locale = userPermissions.Locale ? user.Locale : null;
+                        ltiMessage.MiddleName = userPermissions.MiddleName ? user.MiddleName : null;
+                        ltiMessage.Name = userPermissions.Name ? user.Name : null;
+                        ltiMessage.Nickname = userPermissions.Nickname ? user.Nickname : null;
+                        ltiMessage.PhoneNumber = userPermissions.PhoneNumber ? user.PhoneNumber : null;
+                        ltiMessage.PhoneNumberVerified = userPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
+                        ltiMessage.Picture = userPermissions.Picture ? user.Picture : null;
+                        ltiMessage.PreferredUsername = userPermissions.PreferredUsername ? user.PreferredUsername : null;
+                        ltiMessage.Profile = userPermissions.Profile ? user.Profile : null;
+                        ltiMessage.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
+                        ltiMessage.Website = userPermissions.Website ? user.Website : null;
+                        ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
                     }
 
                     var scope = new MessageScope(

@@ -141,7 +141,6 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     }
 
                     var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
-                    var usersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), cancellationToken: cancellationToken);
 
                     var links = new Collection<string>();
 
@@ -154,15 +153,14 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     httpContext.Response.Headers.Link = new StringValues([.. links]);
 
-                    var currentUsers = membersResponse.Items.Join(usersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = true });
+                    var currentUsers = membersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: true));
 
                     if (since.HasValue)
                     {
                         var asOfDate = new DateTime(since.GetValueOrDefault());
                         var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
-                        var oldUsersResponse = await nrpsDataService.GetUsersAsync(membersResponse.Items.Select(m => m.UserId), asOfDate, cancellationToken);
 
-                        var oldUsers = oldMembersResponse.Items.Join(oldUsersResponse, x => x.UserId, x => x.Id, (m, u) => new { Membership = m, User = u, IsCurrent = false });
+                        var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
 
                         currentUsers = oldUsers
                             .Concat(currentUsers)
@@ -216,6 +214,12 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                         }
                     }
 
+                    var usersWithRoles = currentUsers.Where(u => u.Membership.Roles.Any());
+
+                    var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deployment.Id, usersWithRoles.Select(u => u.User.Id), cancellationToken);
+
+                    var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, p.UserPermissions, u.IsCurrent));
+
                     return Results.Json(new
                     {
                         id = httpContext.Request.GetDisplayUrl(),
@@ -225,17 +229,17 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             label = context.Label,
                             title = context.Title
                         },
-                        members = currentUsers.Where(u => u.Membership.Roles.Any()).Select(x =>
+                        members = users.Select(x =>
                         {
                             return new
                             {
                                 user_id = x.User.Id,
                                 roles = x.Membership.Roles,
-                                name = tool.UserPermissions.Name ? x.User.Name : null,
-                                given_name = tool.UserPermissions.GivenName ? x.User.GivenName : null,
-                                family_name = tool.UserPermissions.FamilyName ? x.User.FamilyName : null,
-                                email = tool.UserPermissions.Email ? x.User.Email : null,
-                                picture = tool.UserPermissions.Picture ? x.User.Picture : null,
+                                name = x.UserPermissions.Name ? x.User.Name : null,
+                                given_name = x.UserPermissions.GivenName ? x.User.GivenName : null,
+                                family_name = x.UserPermissions.FamilyName ? x.User.FamilyName : null,
+                                email = x.UserPermissions.Email ? x.User.Email : null,
+                                picture = x.UserPermissions.Picture ? x.User.Picture : null,
                                 status = x.Membership.Status switch
                                 {
                                     MembershipStatus.Active when x.IsCurrent => ACTIVE,

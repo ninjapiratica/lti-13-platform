@@ -10,7 +10,6 @@ namespace NP.Lti13Platform.Core.Services
         Task<Context?> GetContextAsync(string contextId, CancellationToken cancellationToken = default);
         Task<User?> GetUserAsync(string userId, CancellationToken cancellationToken = default);
         Task<Membership?> GetMembershipAsync(string contextId, string userId, CancellationToken cancellationToken = default);
-        Task<IEnumerable<string>> GetMentoredUserIdsAsync(string contextId, string userId, CancellationToken cancellationToken = default);
         Task<ResourceLink?> GetResourceLinkAsync(string resourceLinkId, CancellationToken cancellationToken = default);
 
         Task<PartialList<LineItem>> GetLineItemsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? resourceId = null, string? resourceLinkId = null, string? tag = null, CancellationToken cancellationToken = default);
@@ -24,5 +23,7 @@ namespace NP.Lti13Platform.Core.Services
 
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(CancellationToken cancellationToken = default);
         Task<SecurityKey> GetPrivateKeyAsync(CancellationToken cancellationToken = default);
+        Task<CustomPermissions> GetCustomPermissions(string deploymentId, CancellationToken cancellationToken = default);
+        Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string userId, CancellationToken cancellationToken = default);
     }
 }
