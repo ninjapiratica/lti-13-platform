@@ -1,7 +1,6 @@
-﻿namespace NP.Lti13Platform.Core.Constants
+﻿namespace NP.Lti13Platform.Core.Constants;
+
+internal static class RouteNames
 {
-    internal static class RouteNames
-    {
-        public const string TOKEN = "TOKEN";
-    }
+    public static readonly string TOKEN = "TOKEN";
 }

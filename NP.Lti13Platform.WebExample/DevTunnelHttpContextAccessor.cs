@@ -1,43 +1,42 @@
-﻿namespace NP.Lti13Platform.WebExample
+﻿namespace NP.Lti13Platform.WebExample;
+
+// Copied from HttpContextAccessor (with VS_TUNNEL_URL modification)
+public class DevTunnelHttpContextAccessor : IHttpContextAccessor
 {
-    // Copied from HttpContextAccessor (with VS_TUNNEL_URL modification)
-    public class DevTunnelHttpContextAccessor : IHttpContextAccessor
+    private static readonly AsyncLocal<HttpContextHolder> _httpContextCurrent = new();
+
+    public HttpContext? HttpContext
     {
-        private static readonly AsyncLocal<HttpContextHolder> _httpContextCurrent = new();
-
-        public HttpContext? HttpContext
+        get
         {
-            get
+            return _httpContextCurrent.Value?.Context;
+        }
+        set
+        {
+            var holder = _httpContextCurrent.Value;
+            if (holder != null)
             {
-                return _httpContextCurrent.Value?.Context;
+                // Clear current HttpContext trapped in the AsyncLocals, as its done.
+                holder.Context = null;
             }
-            set
+
+            if (value != null)
             {
-                var holder = _httpContextCurrent.Value;
-                if (holder != null)
+                var devTunnel = Environment.GetEnvironmentVariable("VS_TUNNEL_URL");
+                if (!string.IsNullOrWhiteSpace(devTunnel))
                 {
-                    // Clear current HttpContext trapped in the AsyncLocals, as its done.
-                    holder.Context = null;
+                    value.Request.Host = new HostString(new Uri(devTunnel).Host);
                 }
 
-                if (value != null)
-                {
-                    var devTunnel = Environment.GetEnvironmentVariable("VS_TUNNEL_URL");
-                    if (!string.IsNullOrWhiteSpace(devTunnel))
-                    {
-                        value.Request.Host = new HostString(new Uri(devTunnel).Host);
-                    }
-
-                    // Use an object indirection to hold the HttpContext in the AsyncLocal,
-                    // so it can be cleared in all ExecutionContexts when its cleared.
-                    _httpContextCurrent.Value = new HttpContextHolder { Context = value };
-                }
+                // Use an object indirection to hold the HttpContext in the AsyncLocal,
+                // so it can be cleared in all ExecutionContexts when its cleared.
+                _httpContextCurrent.Value = new HttpContextHolder { Context = value };
             }
         }
+    }
 
-        private sealed class HttpContextHolder
-        {
-            public HttpContext? Context;
-        }
+    private sealed class HttpContextHolder
+    {
+        public HttpContext? Context;
     }
 }

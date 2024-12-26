@@ -64,23 +64,11 @@ namespace NP.Lti13Platform.DeepLinking
                async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
                {
                    const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
-                   const string INVALID_CLIENT = "invalid_client";
                    const string INVALID_REQUEST = "invalid_request";
-                   const string JWT_REQUIRED = "JWT is required";
-                   const string DEPLOYMENT_ID_REQUIRED = "deployment_id is required";
-                   const string CLIENT_ID_REQUIRED = "client_id is required";
-                   const string DEPLOYMENT_ID_INVALID = "deployment_id is invalid";
-                   const string MESSAGE_TYPE_INVALID = "message_type is invalid";
-                   const string VERSION_INVALID = "version is invalid";
-                   const string UNKNOWN = "unknown";
-                   const string TYPE = "type";
-                   const string VERSION = "1.3.0";
-                   const string LTI_DEEP_LINKING_RESPONSE = "LtiDeepLinkingResponse";
-                   const string DEPLOYMENT_ID_CLAIM = "https://purl.imsglobal.org/spec/lti/claim/deployment_id";
 
                    if (string.IsNullOrWhiteSpace(request.Jwt))
                    {
-                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = JWT_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "JWT is required", Error_Uri = DEEP_LINKING_SPEC });
                    }
 
                    var jwt = new JsonWebToken(request.Jwt);
@@ -89,18 +77,18 @@ namespace NP.Lti13Platform.DeepLinking
                    var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                    if (tool?.Jwks == null)
                    {
-                       return Results.NotFound(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                       return Results.NotFound(new { Error = "invalid_client", Error_Description = "client_id is required", Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   if (!jwt.TryGetClaim(DEPLOYMENT_ID_CLAIM, out var deploymentIdClaim))
+                   if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
                    {
-                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_REQUIRED, Error_Uri = DEEP_LINKING_SPEC });
+                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "deployment_id is required", Error_Uri = DEEP_LINKING_SPEC });
                    }
 
                    var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value, cancellationToken);
                    if (deployment == null || deployment.ToolId != tool.Id)
                    {
-                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_ID_INVALID, Error_Uri = DEEP_LINKING_SPEC });
+                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "deployment_id is invalid", Error_Uri = DEEP_LINKING_SPEC });
                    }
 
                    var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
@@ -117,14 +105,14 @@ namespace NP.Lti13Platform.DeepLinking
                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = validatedToken.Exception.Message, Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != LTI_DEEP_LINKING_RESPONSE)
+                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != "LtiDeepLinkingResponse")
                    {
-                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = MESSAGE_TYPE_INVALID, Error_Uri = DEEP_LINKING_SPEC });
+                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "message_type is invalid", Error_Uri = DEEP_LINKING_SPEC });
                    }
 
-                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != VERSION)
+                   if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != "1.3.0")
                    {
-                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = VERSION_INVALID, Error_Uri = DEEP_LINKING_SPEC });
+                       return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "version is invalid", Error_Uri = DEEP_LINKING_SPEC });
                    }
 
                    var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
@@ -132,7 +120,7 @@ namespace NP.Lti13Platform.DeepLinking
                    List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
                         .Select((x, ix) =>
                         {
-                            var type = JsonDocument.Parse(x.Value).RootElement.GetProperty(TYPE).GetString() ?? UNKNOWN;
+                            var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
                             var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
 
                             return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);

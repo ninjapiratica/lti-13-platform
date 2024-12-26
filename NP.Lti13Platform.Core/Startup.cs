@@ -131,90 +131,72 @@ namespace NP.Lti13Platform.Core
             routeBuilder.Map(config.AuthorizationUrl,
                 async ([AsParameters] AuthenticationRequest queryString, [FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
                 {
-                    const string OPENID = "openid";
-                    const string ID_TOKEN = "id_token";
-                    const string FORM_POST = "form_post";
-                    const string NONE = "none";
-                    const string INVALID_SCOPE = "invalid_scope";
                     const string INVALID_REQUEST = "invalid_request";
                     const string INVALID_CLIENT = "invalid_client";
-                    const string INVALID_GRANT = "invalid_grant";
                     const string UNAUTHORIZED_CLIENT = "unauthorized_client";
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request";
-                    const string LTI_SPEC_URI = "https://www.imsglobal.org/spec/lti/v1p3/#lti_message_hint-login-parameter";
-                    const string SCOPE_REQUIRED = "scope must be 'openid'.";
-                    const string RESPONSE_TYPE_REQUIRED = "response_type must be 'id_token'.";
-                    const string RESPONSE_MODE_REQUIRED = "response_mode must be 'form_post'.";
-                    const string PROMPT_REQUIRED = "prompt must be 'none'.";
-                    const string NONCE_REQUIRED = "nonce is required.";
-                    const string CLIENT_ID_REQUIRED = "client_id is required.";
-                    const string UNKNOWN_CLIENT_ID = "client_id is unknown";
-                    const string UNKNOWN_REDIRECT_URI = "redirect_uri is unknown";
-                    const string LTI_MESSAGE_HINT_INVALID = "lti_message_hint is invalid";
-                    const string LOGIN_HINT_REQUIRED = "login_hint is required";
                     const string USER_CLIENT_MISMATCH = "client is not authorized for user";
-                    const string DEPLOYMENT_CLIENT_MISMATCH = "deployment is not for client";
 
                     var request = form ?? queryString;
 
                     /* https://datatracker.ietf.org/doc/html/rfc6749#section-5.2 */
                     /* https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request */
 
-                    if (request.Scope != OPENID)
+                    if (request.Scope != "openid")
                     {
                         return Results.BadRequest(new
                         {
-                            Error = INVALID_SCOPE,
-                            Error_Description = SCOPE_REQUIRED,
+                            Error = "invalid_scope",
+                            Error_Description = "scope must be 'openid'.",
                             Error_Uri = AUTH_SPEC_URI
                         });
                     }
 
-                    if (request.Response_Type != ID_TOKEN)
+                    if (request.Response_Type != "id_token")
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = RESPONSE_TYPE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "response_type must be 'id_token'.", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (request.Response_Mode != FORM_POST)
+                    if (request.Response_Mode != "form_post")
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = RESPONSE_MODE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "response_mode must be 'form_post'.", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (request.Prompt != NONE)
+                    if (request.Prompt != "none")
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = PROMPT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "prompt must be 'none'.", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Nonce))
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = NONCE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "nonce is required.", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Login_Hint))
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LOGIN_HINT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "login_hint is required", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Client_Id))
                     {
-                        return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = CLIENT_ID_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = "client_id is required.", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     var tool = await dataService.GetToolAsync(request.Client_Id, cancellationToken);
 
                     if (tool == null)
                     {
-                        return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = UNKNOWN_CLIENT_ID, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_CLIENT, Error_Description = "client_id is unknown", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
                     {
-                        return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = UNKNOWN_REDIRECT_URI, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = "invalid_grant", Error_Description = "redirect_uri is unknown", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint))
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = LTI_MESSAGE_HINT_INVALID, Error_Uri = LTI_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "lti_message_hint is invalid", Error_Uri = "https://www.imsglobal.org/spec/lti/v1p3/#lti_message_hint-login-parameter" });
                     }
 
                     var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint, cancellationToken);
@@ -222,7 +204,7 @@ namespace NP.Lti13Platform.Core
                     var deployment = await dataService.GetDeploymentAsync(deploymentId, cancellationToken);
                     if (deployment?.ToolId != tool.Id)
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = DEPLOYMENT_CLIENT_MISMATCH, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "deployment is not for client", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     var (userId, actualUserId, isAnonymous) = await urlServiceHelper.ParseLoginHintAsync(request.Login_Hint, cancellationToken);
@@ -305,7 +287,7 @@ namespace NP.Lti13Platform.Core
                         messageHintString);
 
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
-                    foreach (var service in services)
+                    foreach (var service in services) // TODO: await in list
                     {
                         await service.PopulateAsync(ltiMessage, scope, cancellationToken);
                     }
@@ -338,33 +320,26 @@ namespace NP.Lti13Platform.Core
                     const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                     const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";
                     const string TOKEN_SPEC_URI = "https://www.imsglobal.org/spec/lti/v1p3/#token-endpoint-claim-and-services";
-                    const string UNSUPPORTED_GRANT_TYPE = "unsupported_grant_type";
                     const string INVALID_GRANT = "invalid_grant";
-                    const string CLIENT_CREDENTIALS = "client_credentials";
-                    const string GRANT_REQUIRED = "grant_type must be 'client_credentials'";
-                    const string CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
-                    const string CLIENT_ASSERTION_TYPE_REQUIRED = "client_assertion_type must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'";
                     const string INVALID_SCOPE = "invalid_scope";
                     const string SCOPE_REQUIRED = "scope must be a valid value";
                     const string CLIENT_ASSERTION_INVALID = "client_assertion must be a valid jwt";
                     const string INVALID_REQUEST = "invalid_request";
-                    const string JTI_REUSE = "jti has already been used and is not expired";
-                    const string BODY_MISSING = "request body is missing";
 
                     var httpContext = httpContextAccessor.HttpContext!;
                     if (request == null)
                     {
-                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = BODY_MISSING, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "request body is missing", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (request.Grant_Type != CLIENT_CREDENTIALS)
+                    if (request.Grant_Type != "client_credentials")
                     {
-                        return Results.BadRequest(new { Error = UNSUPPORTED_GRANT_TYPE, Error_Description = GRANT_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = "unsupported_grant_type", Error_Description = "grant_type must be 'client_credentials'", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    if (request.Client_Assertion_Type != CLIENT_ASSERTION_TYPE)
+                    if (request.Client_Assertion_Type != "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
                     {
-                        return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_TYPE_REQUIRED, Error_Uri = AUTH_SPEC_URI });
+                        return Results.BadRequest(new { Error = INVALID_GRANT, Error_Description = "client_assertion_type must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'", Error_Uri = AUTH_SPEC_URI });
                     }
 
                     if (string.IsNullOrWhiteSpace(request.Scope))
@@ -415,13 +390,13 @@ namespace NP.Lti13Platform.Core
                     }
                     else
                     {
-                        var serviceToken = await dataService.GetServiceTokenRequestAsync(tool.Id, validatedToken.SecurityToken.Id, cancellationToken);
+                        var serviceToken = await dataService.GetServiceTokenAsync(tool.Id, validatedToken.SecurityToken.Id, cancellationToken);
                         if (serviceToken?.Expiration > DateTime.UtcNow)
                         {
-                            return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = JTI_REUSE, Error_Uri = AUTH_SPEC_URI });
+                            return Results.BadRequest(new { Error = INVALID_REQUEST, Error_Description = "jti has already been used and is not expired", Error_Uri = AUTH_SPEC_URI });
                         }
 
-                        await dataService.SaveServiceTokenRequestAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
+                        await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                     }
 
                     var privateKey = await dataService.GetPrivateKeyAsync(cancellationToken);
