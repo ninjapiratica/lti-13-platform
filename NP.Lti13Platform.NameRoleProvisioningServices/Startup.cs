@@ -112,13 +112,6 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
             routeBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
                 async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
                 {
-                    const string RESOURCE_LINK_UNAVAILABLE = "resource link unavailable";
-                    const string RESOURCE_LINK_UNAVAILABLE_DESCRIPTION = "resource link does not exist in the context";
-                    const string RESOURCE_LINK_UNAVAILABLE_URI = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction";
-                    const string ACTIVE = "Active";
-                    const string INACTIVE = "Inactive";
-                    const string DELETED = "Deleted";
-
                     var httpContext = httpContextAccessor.HttpContext!;
 
                     var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
@@ -137,7 +130,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                     var deployment = await coreDataService.GetDeploymentAsync(deploymentId, cancellationToken);
                     if (deployment?.ToolId != tool.Id)
                     {
-                        return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
+                        return Results.NotFound();
                     }
 
                     var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
@@ -177,12 +170,12 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                         var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
                         if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
                         {
-                            return Results.BadRequest(new { Error = RESOURCE_LINK_UNAVAILABLE, Error_Description = RESOURCE_LINK_UNAVAILABLE_DESCRIPTION, Error_Uri = RESOURCE_LINK_UNAVAILABLE_URI });
+                            return Results.BadRequest(new { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
                         }
 
                         var messageTypes = LtiMessageTypes.ToDictionary(mt => mt.Key, mt => serviceProvider.GetKeyedServices<Populator>(mt.Key));
 
-                        foreach (var currentUser in currentUsers)
+                        foreach (var currentUser in currentUsers) // TODO: await in list
                         {
                             ICollection<NameRoleProvisioningMessage> userMessages = [];
                             messages.Add(currentUser.User.Id, userMessages);
@@ -195,7 +188,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                                 resourceLink,
                                 MessageHint: null);
 
-                            foreach (var messageType in messageTypes)
+                            foreach (var messageType in messageTypes) // TODO: await in list
                             {
                                 var message = serviceProvider.GetKeyedService<NameRoleProvisioningMessage>(messageType.Key);
 
@@ -203,7 +196,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                                 {
                                     message.MessageType = messageType.Key.Name;
 
-                                    foreach (var populator in messageType.Value)
+                                    foreach (var populator in messageType.Value) // TODO: await in list
                                     {
                                         await populator.PopulateAsync(message, scope, cancellationToken);
                                     }
@@ -218,7 +211,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
 
                     var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deployment.Id, usersWithRoles.Select(u => u.User.Id), cancellationToken);
 
-                    var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, p.UserPermissions, u.IsCurrent));
+                    var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, UserPermissions: p, u.IsCurrent));
 
                     return Results.Json(new
                     {
@@ -242,9 +235,9 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                                 picture = x.UserPermissions.Picture ? x.User.Picture : null,
                                 status = x.Membership.Status switch
                                 {
-                                    MembershipStatus.Active when x.IsCurrent => ACTIVE,
-                                    MembershipStatus.Inactive when x.IsCurrent => INACTIVE,
-                                    _ => DELETED
+                                    MembershipStatus.Active when x.IsCurrent => "Active",
+                                    MembershipStatus.Inactive when x.IsCurrent => "Inactive",
+                                    _ => "Deleted"
                                 },
                                 message = messages.TryGetValue(x.User.Id, out var message) ? message : null
                             };

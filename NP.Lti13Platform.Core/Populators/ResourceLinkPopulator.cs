@@ -37,8 +37,7 @@ namespace NP.Lti13Platform.Core.Populators
         {
             if (scope.ResourceLink == null)
             {
-                const string PARAM_NAME = $"{nameof(scope)}.{nameof(scope.ResourceLink)}";
-                throw new ArgumentNullException(PARAM_NAME);
+                throw new ArgumentNullException($"{nameof(scope)}.{nameof(scope.ResourceLink)}");
             }
 
             obj.LtiVersion = "1.3.0";

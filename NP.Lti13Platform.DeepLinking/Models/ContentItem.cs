@@ -53,11 +53,11 @@ namespace NP.Lti13Platform.DeepLinking.Models
 
     public static class ContentItemType
     {
-        public const string Html = "html";
-        public const string Link = "link";
-        public const string LtiResourceLink = "ltiResourceLink";
-        public const string File = "file";
-        public const string Image = "image";
+        public static readonly string Html = "html";
+        public static readonly string Link = "link";
+        public static readonly string LtiResourceLink = "ltiResourceLink";
+        public static readonly string File = "file";
+        public static readonly string Image = "image";
     }
 
     [JsonDerivedType(typeof(LinkContentItem))]

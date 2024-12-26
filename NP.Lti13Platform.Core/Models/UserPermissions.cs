@@ -2,6 +2,8 @@
 {
     public class UserPermissions
     {
+        public required string UserId { get; set; }
+
         public bool Address { get; set; }
         public bool AddressCountry { get; set; }
         public bool AddressFormatted { get; set; }

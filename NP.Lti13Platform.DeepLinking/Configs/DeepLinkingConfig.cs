@@ -1,16 +1,14 @@
 ﻿using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.DeepLinking.Models;
+using System.Net.Mime;
 
 namespace NP.Lti13Platform.DeepLinking.Configs
 {
     public record DeepLinkingConfig
     {
-        private const string MEDIA_TYPE_IMAGE = "image/*";
-        private const string MEDIA_TYPE_TEXT_HTML = "text/html";
-
         public IEnumerable<string> AcceptPresentationDocumentTargets { get; set; } = [Lti13PresentationTargetDocuments.Embed, Lti13PresentationTargetDocuments.Iframe, Lti13PresentationTargetDocuments.Window];
         public IEnumerable<string> AcceptTypes { get; set; } = [Lti13DeepLinkingTypes.File, Lti13DeepLinkingTypes.Html, Lti13DeepLinkingTypes.Image, Lti13DeepLinkingTypes.Link, Lti13DeepLinkingTypes.LtiResourceLink];
-        public IEnumerable<string> AcceptMediaTypes { get; set; } = [MEDIA_TYPE_IMAGE, MEDIA_TYPE_TEXT_HTML];
+        public IEnumerable<string> AcceptMediaTypes { get; set; } = ["image/*", MediaTypeNames.Text.Html];
 
         /// <summary>
         /// Whether the platform in the context of that deep linking request supports or ignores line items included in LTI Resource Link items. False indicates line items will be ignored. True indicates the platform will create a line item when creating the resource link. If the field is not present, no assumption that can be made about the support of line items.

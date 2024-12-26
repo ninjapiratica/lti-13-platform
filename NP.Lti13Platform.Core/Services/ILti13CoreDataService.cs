@@ -18,8 +18,8 @@ namespace NP.Lti13Platform.Core.Services
 
         Task<Grade?> GetGradeAsync(string lineItemId, string userId, CancellationToken cancellationToken = default);
 
-        Task<ServiceToken?> GetServiceTokenRequestAsync(string toolId, string id, CancellationToken cancellationToken = default);
-        Task SaveServiceTokenRequestAsync(ServiceToken serviceToken, CancellationToken cancellationToken = default);
+        Task<ServiceToken?> GetServiceTokenAsync(string toolId, string id, CancellationToken cancellationToken = default);
+        Task SaveServiceTokenAsync(ServiceToken serviceToken, CancellationToken cancellationToken = default);
 
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(CancellationToken cancellationToken = default);
         Task<SecurityKey> GetPrivateKeyAsync(CancellationToken cancellationToken = default);

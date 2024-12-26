@@ -12,7 +12,7 @@ namespace NP.Lti13Platform.Core
     public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
         : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
-        public const string SchemeName = "NP.Lti13Platform.Services";
+        public static readonly string SchemeName = "NP.Lti13Platform.Services";
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {

@@ -215,12 +215,12 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenRequestAsync(string toolId, string serviceTokenId, CancellationToken cancellationToken)
+        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenAsync(string toolId, string serviceTokenId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ServiceTokens.FirstOrDefault(x => x.ToolId == toolId && x.Id == serviceTokenId));
         }
 
-        Task ILti13CoreDataService.SaveServiceTokenRequestAsync(ServiceToken serviceToken, CancellationToken cancellationToken)
+        Task ILti13CoreDataService.SaveServiceTokenAsync(ServiceToken serviceToken, CancellationToken cancellationToken)
         {
             var existing = ServiceTokens.SingleOrDefault(x => x.ToolId == serviceToken.ToolId && x.Id == serviceToken.Id);
             if (existing != null)
@@ -331,12 +331,12 @@ namespace NP.Lti13Platform.WebExample
 
         public Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string userId, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(new UserPermissions { FamilyName = true, Name = true, GivenName = true });
+            return Task.FromResult(new UserPermissions { UserId = userId, FamilyName = true, Name = true, GivenName = true });
         }
 
-        public Task<IEnumerable<(string UserId, UserPermissions UserPermissions)>> GetUserPermissionsAsync(string deploymentId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
+        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(string deploymentId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(userIds.Select(x => (x, new UserPermissions { FamilyName = true, Name = true, GivenName = true })));
+            return Task.FromResult(userIds.Select(x => new UserPermissions { UserId = x, FamilyName = true, Name = true, GivenName = true }));
         }
     }
 }
