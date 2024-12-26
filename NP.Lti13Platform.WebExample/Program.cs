@@ -282,8 +282,6 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(PartialList<(Membership, User)>.Empty);
         }
 
-
-
         Task<string> ILti13DeepLinkingDataService.SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem, CancellationToken cancellationToken)
         {
             var id = Guid.NewGuid().ToString();

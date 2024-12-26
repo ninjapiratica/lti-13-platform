@@ -1,44 +1,43 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Populators
+namespace NP.Lti13Platform.Core.Populators;
+
+public interface IContextMessage
 {
-    public interface IContextMessage
+    [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/context")]
+    public MessageContext? Context { get; set; }
+
+    public class MessageContext
     {
-        [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/context")]
-        public MessageContext? Context { get; set; }
+        [JsonPropertyName("id")]
+        public required string Id { get; set; }
 
-        public class MessageContext
-        {
-            [JsonPropertyName("id")]
-            public required string Id { get; set; }
+        [JsonPropertyName("label")]
+        public string? Label { get; set; }
 
-            [JsonPropertyName("label")]
-            public string? Label { get; set; }
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
 
-            [JsonPropertyName("title")]
-            public string? Title { get; set; }
-
-            [JsonPropertyName("type")]
-            public IEnumerable<string> Types { get; set; } = [];
-        }
+        [JsonPropertyName("type")]
+        public IEnumerable<string> Types { get; set; } = [];
     }
+}
 
-    public class ContextPopulator() : Populator<IContextMessage>
+public class ContextPopulator() : Populator<IContextMessage>
+{
+    public override async Task PopulateAsync(IContextMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
     {
-        public override async Task PopulateAsync(IContextMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
+        if (scope.Context != null)
         {
-            if (scope.Context != null)
+            obj.Context = new IContextMessage.MessageContext
             {
-                obj.Context = new IContextMessage.MessageContext
-                {
-                    Id = scope.Context.Id,
-                    Label = scope.Context.Label,
-                    Title = scope.Context.Title,
-                    Types = scope.Context.Types.ToArray()
-                };
-            }
-
-            await Task.CompletedTask;
+                Id = scope.Context.Id,
+                Label = scope.Context.Label,
+                Title = scope.Context.Title,
+                Types = scope.Context.Types.ToArray()
+            };
         }
+
+        await Task.CompletedTask;
     }
 }
