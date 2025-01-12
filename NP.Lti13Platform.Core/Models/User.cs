@@ -42,8 +42,6 @@ public class User
 
     public Address? Address { get; set; }
 
-    public string? ImageUrl { get; set; }
-
     public string? Username { get; set; }
 
     public IEnumerable<string> Orgs { get; set; } = [];
