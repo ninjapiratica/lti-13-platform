@@ -6,13 +6,13 @@ public class Tool
 
     public required string ClientId { get; set; }
 
-    public required string OidcInitiationUrl { get; set; }
+    public required Uri OidcInitiationUrl { get; set; }
 
-    public required string DeepLinkUrl { get; set; }
+    public required Uri DeepLinkUrl { get; set; }
 
-    public required string LaunchUrl { get; set; }
+    public required Uri LaunchUrl { get; set; }
 
-    public IEnumerable<string> RedirectUrls => new[] { DeepLinkUrl, LaunchUrl }.Where(x => x != null).Select(x => x!);
+    public IEnumerable<Uri> RedirectUrls => [DeepLinkUrl, LaunchUrl];
 
     public Jwks? Jwks { get; set; }
 

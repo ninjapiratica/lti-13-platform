@@ -9,7 +9,7 @@ namespace NP.Lti13Platform.Core.Services;
 public interface IUrlServiceHelper
 {
     Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default);
-    Task<Uri> GetUrlAsync(string messageType, Tool tool, string deploymentId, string targetLinkUri, string userId, bool isAnonymous, string? actualUserId = null, string? contextId = null, string? resourceLinkId = null, string? messageHint = null, CancellationToken cancellationToken = default);
+    Task<Uri> GetUrlAsync(string messageType, Tool tool, string deploymentId, Uri targetLinkUri, string userId, bool isAnonymous, string? actualUserId = null, string? contextId = null, string? resourceLinkId = null, string? messageHint = null, CancellationToken cancellationToken = default);
 
     Task<string> GetLoginHintAsync(string userId, string? actualUserId, bool isAnonymous, CancellationToken cancellationToken = default);
     Task<(string UserId, string? ActualUserId, bool IsAnonymous)> ParseLoginHintAsync(string loginHint, CancellationToken cancellationToken = default);
@@ -25,7 +25,7 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
             Lti13MessageType.LtiResourceLinkRequest,
             tool,
             deploymentId,
-            string.IsNullOrWhiteSpace(resourceLink.Url) ? tool.LaunchUrl : resourceLink.Url,
+            resourceLink.Url ?? tool.LaunchUrl,
             userId,
             isAnonymous,
             actualUserId,
@@ -38,7 +38,7 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
         string messageType,
         Tool tool,
         string deploymentId,
-        string targetLinkUri,
+        Uri targetLinkUri,
         string userId,
         bool isAnonymous,
         string? actualUserId = null,
@@ -52,7 +52,7 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
         var query = HttpUtility.ParseQueryString(builder.Query);
         query.Add("iss", (await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken)).Issuer);
         query.Add("login_hint", await GetLoginHintAsync(userId, actualUserId, isAnonymous, cancellationToken));
-        query.Add("target_link_uri", targetLinkUri);
+        query.Add("target_link_uri", targetLinkUri.ToString());
         query.Add("client_id", tool.ClientId.ToString());
         query.Add("lti_message_hint", await GetLtiMessageHintAsync(messageType, deploymentId, contextId, resourceLinkId, messageHint, cancellationToken));
         query.Add("lti_deployment_id", deploymentId);

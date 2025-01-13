@@ -78,9 +78,9 @@ namespace NP.Lti13Platform.WebExample
             {
                 Id = "toolId",
                 ClientId = "clientId",
-                OidcInitiationUrl = "https://saltire.lti.app/tool",
-                LaunchUrl = "https://saltire.lti.app/tool",
-                DeepLinkUrl = "https://saltire.lti.app/tool",
+                OidcInitiationUrl = new Uri("https://saltire.lti.app/tool"),
+                LaunchUrl = new Uri("https://saltire.lti.app/tool"),
+                DeepLinkUrl = new Uri("https://saltire.lti.app/tool"),
                 Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
                 ServiceScopes =
                 [
@@ -301,7 +301,7 @@ namespace NP.Lti13Platform.WebExample
                     Custom = ci.Custom,
                     Text = ci.Text,
                     Title = ci.Title,
-                    Url = ci.Url
+                    Url = ci.Url == null ? null : new Uri(ci.Url)
                 });
             }
 
