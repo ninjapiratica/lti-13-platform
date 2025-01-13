@@ -73,26 +73,7 @@ public class User
     /// <summary>
     /// String from IANA Time Zone Database representing the user's time zone. For example, Europe/Paris or America/Los_Angeles.
     /// </summary>
-    public TimeZoneInfo? TimeZone
-    {
-        get => _timeZone;
-        set
-        {
-            if (value == null || value.HasIanaId)
-            {
-                _timeZone = value;
-            }
-            else if (TimeZoneInfo.TryConvertWindowsIdToIanaId(value.Id, out var ianaId))
-            {
-                _timeZone = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
-            }
-            else
-            {
-                throw new InvalidTimeZoneException("TimeZone must be an IANA time zone or convertible to an IANA time zone.");
-            }
-        }
-    }
-    private TimeZoneInfo? _timeZone;
+    public string? TimeZone { get; set; }
 
     /// <summary>
     /// User's locale, represented as a <see href="https://www.rfc-editor.org/rfc/rfc5646.txt">BCP47</see> language tag. This is typically a language code in lowercase and an country code in uppercase, separated by a dash. For example, en-US or fr-CA. As a compatibility note, some implementations have used an underscore as the separator rather than a dash, for example, en_US; MAY choose to accept this locale syntax as well.

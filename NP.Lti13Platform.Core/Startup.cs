@@ -275,7 +275,7 @@ namespace NP.Lti13Platform.Core
                         ltiMessage.Profile = userPermissions.Profile ? user.Profile?.ToString() : null;
                         ltiMessage.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
                         ltiMessage.Website = userPermissions.Website ? user.Website?.ToString() : null;
-                        ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone?.Id : null;
+                        ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
                     }
 
                     var scope = new MessageScope(
