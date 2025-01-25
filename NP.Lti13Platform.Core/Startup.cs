@@ -287,7 +287,7 @@ namespace NP.Lti13Platform.Core
                         messageHintString);
 
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
-                    foreach (var service in services) // TODO: await in list
+                    foreach (var service in services)
                     {
                         await service.PopulateAsync(ltiMessage, scope, cancellationToken);
                     }

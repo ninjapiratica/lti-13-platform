@@ -97,7 +97,7 @@ The base url used to tell tools where the service is located.
 
 ## Member Message
 
-The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section) spec defines a way to give tools access to the parts of LTI messages that are specific to members. This project includes the specifics for the core message and known properties defined within the spec. Additional message can be added by calling `ExtendNameRoleProvisioningMessage` on startup. This follows the same pattern as [Populators](../NP.Lti13Platform.Core/README.md#populators) from the core spec. These messages should only contain the user specific message properties of the given message. Multiple populators may be added for the same interface and multiple interfaces may be added for the same <message_type>.
+The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section) spec defines a way to give tools access to the parts of LTI messages that are specific to members. This project includes the specifics for the core message and known properties defined within the spec. Additional message can be added by calling `ExtendNameRoleProvisioningMessage` on startup. This follows the same pattern as [Populators](../NP.Lti13Platform.Core/README.md#populators) from the core spec. These messages should only contain the user specific message properties of the given message. Multiple populators may be added for the same interface and multiple interfaces may be added for the same <message_type>. Populators must be thread safe or have a Transient Dependency Injection strategy.
 
 ```csharp
 builder.Services

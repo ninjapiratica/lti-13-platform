@@ -164,7 +164,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
                     }
 
-                    var messages = new Dictionary<string, ICollection<NameRoleProvisioningMessage>>();
+                    var messages = new Dictionary<string, IEnumerable<NameRoleProvisioningMessage>>();
                     if (!string.IsNullOrWhiteSpace(rlid))
                     {
                         var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
@@ -173,38 +173,43 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices
                             return Results.BadRequest(new { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
                         }
 
-                        var messageTypes = LtiMessageTypes.ToDictionary(mt => mt.Key, mt => serviceProvider.GetKeyedServices<Populator>(mt.Key));
-
-                        foreach (var currentUser in currentUsers) // TODO: await in list
+                        IEnumerable<(MessageType MessageType, NameRoleProvisioningMessage Message, MessageScope Scope)> GetUserMessages(User user)
                         {
-                            ICollection<NameRoleProvisioningMessage> userMessages = [];
-                            messages.Add(currentUser.User.Id, userMessages);
-
                             var scope = new MessageScope(
-                                new UserScope(currentUser.User, ActualUser: null, IsAnonymous: false),
+                                new UserScope(user, ActualUser: null, IsAnonymous: false),
                                 tool,
                                 deployment,
                                 context,
                                 resourceLink,
                                 MessageHint: null);
 
-                            foreach (var messageType in messageTypes) // TODO: await in list
+                            foreach (var messageType in LtiMessageTypes)
                             {
                                 var message = serviceProvider.GetKeyedService<NameRoleProvisioningMessage>(messageType.Key);
 
                                 if (message != null)
                                 {
                                     message.MessageType = messageType.Key.Name;
-
-                                    foreach (var populator in messageType.Value) // TODO: await in list
-                                    {
-                                        await populator.PopulateAsync(message, scope, cancellationToken);
-                                    }
-
-                                    userMessages.Add(message);
+                                    yield return (messageType.Key, message, scope);
                                 }
                             }
                         }
+
+                        var userMessages = currentUsers.SelectMany(currentUser => GetUserMessages(currentUser.User));
+
+                        var tasks = userMessages.Select(async userMessage =>
+                        {
+                            var populators = serviceProvider.GetKeyedServices<Populator>(userMessage.MessageType.Name);
+
+                            foreach (var populator in populators)
+                            {
+                                await populator.PopulateAsync(userMessage.Message, userMessage.Scope, cancellationToken);
+                            }
+
+                            return (userMessage.Scope.UserScope.User.Id, userMessage.Message);
+                        });
+
+                        messages = (await Task.WhenAll(tasks)).GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.Select(y => y.Message));
                     }
 
                     var usersWithRoles = currentUsers.Where(u => u.Membership.Roles.Any());
