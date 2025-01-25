@@ -204,7 +204,7 @@ The expiration time of the access tokens handed out to the tools.
 
 The LTI specs allow for messages to be extended with custom data. This is handled by adding `Populators` in the setup of the platform. To extend the message, create an interface with the properties that will be used to extend the message, and create a `Populator<T>` to fill those properties when the request for that message is generated.
 
-Multiple populators can be added to the same interface. Multiple interfaces can be added to the same message type. The populator interface properties support the System.Text.Json attributes for serialization.
+Multiple populators can be added to the same interface. Multiple interfaces can be added to the same message type. The populator interface properties support the System.Text.Json attributes for serialization. Populators must be thread safe or have a Transient Dependency Injection strategy.
 
 ```csharp
 interface ICustomMessage

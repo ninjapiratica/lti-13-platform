@@ -270,11 +270,11 @@ namespace NP.Lti13Platform.Core
                         ltiMessage.Nickname = userPermissions.Nickname ? user.Nickname : null;
                         ltiMessage.PhoneNumber = userPermissions.PhoneNumber ? user.PhoneNumber : null;
                         ltiMessage.PhoneNumberVerified = userPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
-                        ltiMessage.Picture = userPermissions.Picture ? user.Picture : null;
+                        ltiMessage.Picture = userPermissions.Picture ? user.Picture?.ToString() : null;
                         ltiMessage.PreferredUsername = userPermissions.PreferredUsername ? user.PreferredUsername : null;
-                        ltiMessage.Profile = userPermissions.Profile ? user.Profile : null;
+                        ltiMessage.Profile = userPermissions.Profile ? user.Profile?.ToString() : null;
                         ltiMessage.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
-                        ltiMessage.Website = userPermissions.Website ? user.Website : null;
+                        ltiMessage.Website = userPermissions.Website ? user.Website?.ToString() : null;
                         ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
                     }
 
@@ -287,7 +287,7 @@ namespace NP.Lti13Platform.Core
                         messageHintString);
 
                     var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
-                    foreach (var service in services) // TODO: await in list
+                    foreach (var service in services)
                     {
                         await service.PopulateAsync(ltiMessage, scope, cancellationToken);
                     }
@@ -429,7 +429,7 @@ namespace NP.Lti13Platform.Core
         }
     }
 
-    internal record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, string? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
+    internal record AuthenticationRequest(string? Scope, string? Response_Type, string? Response_Mode, string? Prompt, string? Nonce, string? State, string? Client_Id, Uri? Redirect_Uri, string? Login_Hint, string? Lti_Message_Hint);
 
     internal record TokenRequest(string Grant_Type, string Client_Assertion_Type, string Client_Assertion, string Scope);
 

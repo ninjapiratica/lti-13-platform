@@ -43,7 +43,7 @@ public class ResourceLinkPopulator() : Populator<IResourceLinkMessage>
         obj.LtiVersion = "1.3.0";
         obj.DeploymentId = scope.Deployment.Id;
 
-        obj.TargetLinkUri = scope.ResourceLink.Url ?? scope.Tool.LaunchUrl;
+        obj.TargetLinkUri = (scope.ResourceLink.Url ?? scope.Tool.LaunchUrl).ToString();
         obj.ResourceLink = new IResourceLinkMessage.ResourceLinkMessage
         {
             Id = scope.ResourceLink.Id,

@@ -8,7 +8,7 @@ public class ResourceLink
 
     public required string ContextId { get; set; }
 
-    public string? Url { get; set; }
+    public Uri? Url { get; set; }
 
     public string? Title { get; set; }
 
