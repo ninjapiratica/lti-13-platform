@@ -52,7 +52,7 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 ```csharp
 app.UseLti13PlatformCore(config => {
     config.AuthorizationUrl = "/lti13/authorization";
-    config.JwksUrl = "/lti13/jwks";
+    config.JwksUrl = "/.well-known/jwks.json";
     config.TokenUrl = "/lti13/token";
     return config;
 });
