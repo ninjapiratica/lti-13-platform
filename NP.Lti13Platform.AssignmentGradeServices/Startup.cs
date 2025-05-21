@@ -9,6 +9,7 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
@@ -42,12 +43,14 @@ public static class Startup
         return builder;
     }
 
-    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder app, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
     {
+        const string OpenAPI_Tag = "LTI 1.3 Assignment and Grade Services";
+
         ServiceEndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
-        app.MapGet(config.LineItemsUrl,
+        endpointRouteBuilder.MapGet(config.LineItemsUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -110,9 +113,13 @@ public static class Startup
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
-            });
+            })
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Handles the deep linking response from the tool.")
+            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
 
-        app.MapPost(config.LineItemsUrl,
+        endpointRouteBuilder.MapPost(config.LineItemsUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -138,17 +145,17 @@ public static class Startup
 
                 if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
                 {
-                    return Results.BadRequest(new { Error = "Invalid Content-Type", Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Content-Type", Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item" });
                 }
 
                 if (string.IsNullOrWhiteSpace(request.Label))
                 {
-                    return Results.BadRequest(new { Error = "Invalid Label", Error_Description = "Label is reuired", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Label", Error_Description = "Label is reuired", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label" });
                 }
 
                 if (request.ScoreMaximum <= 0)
                 {
-                    return Results.BadRequest(new { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
                 }
 
                 if (!string.IsNullOrWhiteSpace(request.ResourceLinkId))
@@ -194,9 +201,13 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem);
             })
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+                .WithGroupName(OpenAPI.Group)
+                .WithTags(OpenAPI_Tag)
+                .WithSummary("Handles the deep linking response from the tool.")
+                .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items."); 
 
-        app.MapGet(config.LineItemUrl,
+        endpointRouteBuilder.MapGet(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -243,9 +254,13 @@ public static class Startup
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
-            });
+            })
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Handles the deep linking response from the tool.")
+            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
 
-        app.MapPut(config.LineItemUrl,
+        endpointRouteBuilder.MapPut(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -277,22 +292,22 @@ public static class Startup
 
                 if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
                 {
-                    return Results.BadRequest(new { Error = "Invalid Content-Type", Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Content-Type", Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item" });
                 }
 
                 if (string.IsNullOrWhiteSpace(request.Label))
                 {
-                    return Results.BadRequest(new { Error = "Invalid Label", Error_Description = "Label is reuired", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Label", Error_Description = "Label is reuired", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label" });
                 }
 
                 if (request.ScoreMaximum <= 0)
                 {
-                    return Results.BadRequest(new { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
                 }
 
                 if (!string.IsNullOrWhiteSpace(request.ResourceLinkId) && request.ResourceLinkId != lineItem.ResourceLinkId)
                 {
-                    return Results.BadRequest(new { Error = "Invalid ResourceLinkId", Error_Description = "ResourceLinkId may not change after creation", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item" });
+                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid ResourceLinkId", Error_Description = "ResourceLinkId may not change after creation", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item" });
                 }
 
                 lineItem.Label = request.Label;
@@ -324,9 +339,13 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem);
             })
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Handles the deep linking response from the tool.")
+            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
 
-        app.MapDelete(config.LineItemUrl,
+        endpointRouteBuilder.MapDelete(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -365,9 +384,13 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem);
             })
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Handles the deep linking response from the tool.")
+            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
 
-        app.MapGet($"{config.LineItemUrl}/results",
+        endpointRouteBuilder.MapGet($"{config.LineItemUrl}/results",
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -435,9 +458,13 @@ public static class Startup
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.ResultReadOnly);
-            });
+            })
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Handles the deep linking response from the tool.")
+            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
 
-        app.MapPost($"{config.LineItemUrl}/scores",
+        endpointRouteBuilder.MapPost($"{config.LineItemUrl}/scores",
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -551,9 +578,13 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.Score);
             })
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Handles the deep linking response from the tool.")
+            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
 
-        return app;
+        return endpointRouteBuilder;
     }
 }
 

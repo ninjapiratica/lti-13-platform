@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.WebExample;
 
@@ -14,6 +15,17 @@ builder.Services
 
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(x =>
+{
+    x.SwaggerDoc("v1", new() { Title = "LTI 1.3", Version = "v1" });
+
+    x.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        return true;
+    });
+});
 
 builder.Services.Configure<DeepLinkingConfig>(x =>
 {
@@ -38,6 +50,9 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.UseLti13Platform();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapControllerRoute(
     name: "default",

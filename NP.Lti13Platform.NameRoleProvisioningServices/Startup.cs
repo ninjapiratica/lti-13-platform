@@ -19,246 +19,281 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.NameRoleProvisioningServices
+namespace NP.Lti13Platform.NameRoleProvisioningServices;
+
+public static class Startup
 {
-    public static class Startup
+    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
+    private static readonly Dictionary<string, MessageType> MessageTypes = [];
+    private static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
+
+    public static Lti13PlatformBuilder AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformBuilder platformBuilder)
     {
-        private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
-        private static readonly Dictionary<string, MessageType> MessageTypes = [];
-        private static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
+        var builder = platformBuilder
+            .ExtendNameRoleProvisioningMessage<Populators.ICustomMessage, Populators.CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest);
 
-        public static Lti13PlatformBuilder AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformBuilder platformBuilder)
+        builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
+
+        builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:NameRoleProvisioningServices");
+        builder.Services.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
+
+        return builder;
+    }
+
+    public static Lti13PlatformBuilder WithLti13NameRoleProvisioningDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningDataService
+    {
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
+        return builder;
+    }
+
+    public static Lti13PlatformBuilder WithLti13NameRoleProvisioningConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningConfigService
+    {
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningConfigService), typeof(T), serviceLifetime));
+        return builder;
+    }
+
+    public static Lti13PlatformBuilder ExtendNameRoleProvisioningMessage<T, U>(this Lti13PlatformBuilder builder, string messageType)
+        where T : class
+        where U : Populator<T>
+    {
+        var tType = typeof(T);
+        List<Type> interfaceTypes = [tType, .. tType.GetInterfaces()];
+
+        foreach (var interfaceType in interfaceTypes)
         {
-            var builder = platformBuilder
-                .ExtendNameRoleProvisioningMessage<Populators.ICustomMessage, Populators.CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest);
-
-            builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
-
-            builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:NameRoleProvisioningServices");
-            builder.Services.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
-
-            return builder;
-        }
-
-        public static Lti13PlatformBuilder WithLti13NameRoleProvisioningDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningDataService
-        {
-            builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
-            return builder;
-        }
-
-        public static Lti13PlatformBuilder WithLti13NameRoleProvisioningConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningConfigService
-        {
-            builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningConfigService), typeof(T), serviceLifetime));
-            return builder;
-        }
-
-        public static Lti13PlatformBuilder ExtendNameRoleProvisioningMessage<T, U>(this Lti13PlatformBuilder builder, string messageType)
-            where T : class
-            where U : Populator<T>
-        {
-            var tType = typeof(T);
-            List<Type> interfaceTypes = [tType, .. tType.GetInterfaces()];
-
-            foreach (var interfaceType in interfaceTypes)
+            if (!interfaceType.IsInterface)
             {
-                if (!interfaceType.IsInterface)
-                {
-                    throw new Exception("T must be an interface");
-                }
-
-                if (interfaceType.GetMethods().Any(m => !m.IsSpecialName))
-                {
-                    throw new Exception("Interfaces may only have properties.");
-                }
+                throw new Exception("T must be an interface");
             }
 
-            if (!MessageTypes.TryGetValue(messageType, out var mt))
+            if (interfaceType.GetMethods().Any(m => !m.IsSpecialName))
             {
-                mt = new MessageType(messageType, []);
-                MessageTypes.Add(messageType, mt);
-
-                builder.Services.TryAddKeyedTransient(mt, (sp, obj) =>
-                {
-                    return Activator.CreateInstance(LtiMessageTypes[mt])!;
-                });
-            }
-
-            interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
-            builder.Services.AddKeyedTransient<Populator, U>(mt);
-
-            return builder;
-        }
-
-        private static void CreateTypes()
-        {
-            if (LtiMessageTypes.Count == 0)
-            {
-                foreach (var messageType in MessageTypes.Select(mt => mt.Value))
-                {
-                    var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(NameRoleProvisioningMessage));
-                    NameRoleProvisioningMessageTypeResolver.AddDerivedType(type);
-                    LtiMessageTypes.TryAdd(messageType, type);
-                }
+                throw new Exception("Interfaces may only have properties.");
             }
         }
 
-        public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder routeBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
+        if (!MessageTypes.TryGetValue(messageType, out var mt))
         {
-            CreateTypes();
+            mt = new MessageType(messageType, []);
+            MessageTypes.Add(messageType, mt);
 
-            EndpointsConfig config = new();
-            config = configure?.Invoke(config) ?? config;
+            builder.Services.TryAddKeyedTransient(mt, (sp, obj) =>
+            {
+                return Activator.CreateInstance(LtiMessageTypes[mt])!;
+            });
+        }
 
-            routeBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-                async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
-                {
-                    var httpContext = httpContextAccessor.HttpContext!;
+        interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
+        builder.Services.AddKeyedTransient<Populator, U>(mt);
 
-                    var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
-                    if (context == null)
-                    {
-                        return Results.NotFound();
-                    }
+        return builder;
+    }
 
-                    var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
-                    var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
-                    if (tool == null)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var deployment = await coreDataService.GetDeploymentAsync(deploymentId, cancellationToken);
-                    if (deployment?.ToolId != tool.Id)
-                    {
-                        return Results.NotFound();
-                    }
-
-                    var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
-
-                    var links = new Collection<string>();
-
-                    if (membersResponse.TotalItems > limit * (pageIndex + 1))
-                    {
-                        links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
-                    }
-
-                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
-
-                    httpContext.Response.Headers.Link = new StringValues([.. links]);
-
-                    var currentUsers = membersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: true));
-
-                    if (since.HasValue)
-                    {
-                        var asOfDate = new DateTime(since.GetValueOrDefault());
-                        var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
-
-                        var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
-
-                        currentUsers = oldUsers
-                            .Concat(currentUsers)
-                            .GroupBy(x => x.User.Id)
-                            .Where(x => x.Count() == 1 ||
-                                x.First().Membership.Status != x.Last().Membership.Status ||
-                                x.First().Membership.Roles.OrderBy(y => y).SequenceEqual(x.Last().Membership.Roles.OrderBy(y => y)))
-                            .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
-                    }
-
-                    var messages = new Dictionary<string, IEnumerable<NameRoleProvisioningMessage>>();
-                    if (!string.IsNullOrWhiteSpace(rlid))
-                    {
-                        var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
-                        if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
-                        {
-                            return Results.BadRequest(new { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
-                        }
-
-                        IEnumerable<(MessageType MessageType, NameRoleProvisioningMessage Message, MessageScope Scope)> GetUserMessages(User user)
-                        {
-                            var scope = new MessageScope(
-                                new UserScope(user, ActualUser: null, IsAnonymous: false),
-                                tool,
-                                deployment,
-                                context,
-                                resourceLink,
-                                MessageHint: null);
-
-                            foreach (var messageType in LtiMessageTypes)
-                            {
-                                var message = serviceProvider.GetKeyedService<NameRoleProvisioningMessage>(messageType.Key);
-
-                                if (message != null)
-                                {
-                                    message.MessageType = messageType.Key.Name;
-                                    yield return (messageType.Key, message, scope);
-                                }
-                            }
-                        }
-
-                        var userMessages = currentUsers.SelectMany(currentUser => GetUserMessages(currentUser.User));
-
-                        var tasks = userMessages.Select(async userMessage =>
-                        {
-                            var populators = serviceProvider.GetKeyedServices<Populator>(userMessage.MessageType.Name);
-
-                            foreach (var populator in populators)
-                            {
-                                await populator.PopulateAsync(userMessage.Message, userMessage.Scope, cancellationToken);
-                            }
-
-                            return (userMessage.Scope.UserScope.User.Id, userMessage.Message);
-                        });
-
-                        messages = (await Task.WhenAll(tasks)).GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.Select(y => y.Message));
-                    }
-
-                    var usersWithRoles = currentUsers.Where(u => u.Membership.Roles.Any());
-
-                    var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deployment.Id, usersWithRoles.Select(u => u.User.Id), cancellationToken);
-
-                    var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, UserPermissions: p, u.IsCurrent));
-
-                    return Results.Json(new
-                    {
-                        id = httpContext.Request.GetDisplayUrl(),
-                        context = new
-                        {
-                            id = context.Id,
-                            label = context.Label,
-                            title = context.Title
-                        },
-                        members = users.Select(x =>
-                        {
-                            return new
-                            {
-                                user_id = x.User.Id,
-                                roles = x.Membership.Roles,
-                                name = x.UserPermissions.Name ? x.User.Name : null,
-                                given_name = x.UserPermissions.GivenName ? x.User.GivenName : null,
-                                family_name = x.UserPermissions.FamilyName ? x.User.FamilyName : null,
-                                email = x.UserPermissions.Email ? x.User.Email : null,
-                                picture = x.UserPermissions.Picture ? x.User.Picture : null,
-                                status = x.Membership.Status switch
-                                {
-                                    MembershipStatus.Active when x.IsCurrent => "Active",
-                                    MembershipStatus.Inactive when x.IsCurrent => "Inactive",
-                                    _ => "Deleted"
-                                },
-                                message = messages.TryGetValue(x.User.Id, out var message) ? message : null
-                            };
-                        })
-                    }, JSON_SERIALIZER_OPTIONS, contentType: Lti13ContentTypes.MembershipContainer);
-                })
-                .WithName(RouteNames.GET_MEMBERSHIPS)
-                .RequireAuthorization(policy =>
-                {
-                    policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                    policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
-                });
-
-            return routeBuilder;
+    private static void CreateTypes()
+    {
+        if (LtiMessageTypes.Count == 0)
+        {
+            foreach (var messageType in MessageTypes.Select(mt => mt.Value))
+            {
+                var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(NameRoleProvisioningMessage));
+                NameRoleProvisioningMessageTypeResolver.AddDerivedType(type);
+                LtiMessageTypes.TryAdd(messageType, type);
+            }
         }
     }
 
-    internal record MessageType(string Name, HashSet<Type> Interfaces);
+    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
+    {
+        const string OpenAPI_Tag = "LTI 1.3 Name and Role Provisioning Services";
+
+        CreateTypes();
+
+        EndpointsConfig config = new();
+        config = configure?.Invoke(config) ?? config;
+
+        endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
+            {
+                var httpContext = httpContextAccessor.HttpContext!;
+
+                var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
+                if (context == null)
+                {
+                    return Results.NotFound();
+                }
+
+                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
+                if (tool == null)
+                {
+                    return Results.NotFound();
+                }
+
+                var deployment = await coreDataService.GetDeploymentAsync(deploymentId, cancellationToken);
+                if (deployment?.ToolId != tool.Id)
+                {
+                    return Results.NotFound();
+                }
+
+                var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
+
+                var links = new Collection<string>();
+
+                if (membersResponse.TotalItems > limit * (pageIndex + 1))
+                {
+                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
+                }
+
+                links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
+
+                httpContext.Response.Headers.Link = new StringValues([.. links]);
+
+                var currentUsers = membersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: true));
+
+                if (since.HasValue)
+                {
+                    var asOfDate = new DateTime(since.GetValueOrDefault());
+                    var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
+
+                    var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
+
+                    currentUsers = oldUsers
+                        .Concat(currentUsers)
+                        .GroupBy(x => x.User.Id)
+                        .Where(x => x.Count() == 1 ||
+                            x.First().Membership.Status != x.Last().Membership.Status ||
+                            x.First().Membership.Roles.OrderBy(y => y).SequenceEqual(x.Last().Membership.Roles.OrderBy(y => y)))
+                        .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
+                }
+
+                var messages = new Dictionary<string, IEnumerable<NameRoleProvisioningMessage>>();
+                if (!string.IsNullOrWhiteSpace(rlid))
+                {
+                    var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
+                    if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
+                    {
+                        return Results.BadRequest(new LtiBadRequest { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
+                    }
+
+                    IEnumerable<(MessageType MessageType, NameRoleProvisioningMessage Message, MessageScope Scope)> GetUserMessages(User user)
+                    {
+                        var scope = new MessageScope(
+                            new UserScope(user, ActualUser: null, IsAnonymous: false),
+                            tool,
+                            deployment,
+                            context,
+                            resourceLink,
+                            MessageHint: null);
+
+                        foreach (var messageType in LtiMessageTypes)
+                        {
+                            var message = serviceProvider.GetKeyedService<NameRoleProvisioningMessage>(messageType.Key);
+
+                            if (message != null)
+                            {
+                                message.MessageType = messageType.Key.Name;
+                                yield return (messageType.Key, message, scope);
+                            }
+                        }
+                    }
+
+                    var userMessages = currentUsers.SelectMany(currentUser => GetUserMessages(currentUser.User));
+
+                    var tasks = userMessages.Select(async userMessage =>
+                    {
+                        var populators = serviceProvider.GetKeyedServices<Populator>(userMessage.MessageType.Name);
+
+                        foreach (var populator in populators)
+                        {
+                            await populator.PopulateAsync(userMessage.Message, userMessage.Scope, cancellationToken);
+                        }
+
+                        return (userMessage.Scope.UserScope.User.Id, userMessage.Message);
+                    });
+
+                    messages = (await Task.WhenAll(tasks)).GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.Select(y => y.Message));
+                }
+
+                var usersWithRoles = currentUsers.Where(u => u.Membership.Roles.Any());
+
+                var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deployment.Id, usersWithRoles.Select(u => u.User.Id), cancellationToken);
+
+                var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, UserPermissions: p, u.IsCurrent));
+
+                return Results.Json(new MembershipContainer
+                {
+                    Id = httpContext.Request.GetDisplayUrl(),
+                    Context = new MembershipContext
+                    {
+                        Id = context.Id,
+                        Label = context.Label,
+                        Title = context.Title
+                    },
+                    Members = users.Select(x =>
+                    {
+                        return new MemberInfo
+                        {
+                            UserId = x.User.Id,
+                            Roles = x.Membership.Roles,
+                            Name = x.UserPermissions.Name ? x.User.Name : null,
+                            GivenName = x.UserPermissions.GivenName ? x.User.GivenName : null,
+                            FamilyName = x.UserPermissions.FamilyName ? x.User.FamilyName : null,
+                            Email = x.UserPermissions.Email ? x.User.Email : null,
+                            Picture = x.UserPermissions.Picture ? x.User.Picture : null,
+                            Status = x.Membership.Status switch
+                            {
+                                MembershipStatus.Active when x.IsCurrent => "Active",
+                                MembershipStatus.Inactive when x.IsCurrent => "Inactive",
+                                _ => "Deleted"
+                            },
+                            Message = messages.TryGetValue(x.User.Id, out var message) ? message : null
+                        };
+                    })
+                }, JSON_SERIALIZER_OPTIONS, contentType: Lti13ContentTypes.MembershipContainer);
+            })
+            .WithName(RouteNames.GET_MEMBERSHIPS)
+            .RequireAuthorization(policy =>
+            {
+                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
+            })
+            .WithGroupName(OpenAPI.Group)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Gets the memberships within a context.")
+            .WithDescription("Gets the memberships for a context. Can be filtered by role or resourceLinkId (rlid). It is a paginated request so page size and index may be provided. This endpoint can also be used to get changes in membership since a specified time. If rlid is provided, messages may be returned with the memberships.");
+
+        return endpointRouteBuilder;
+    }
+}
+
+internal record MessageType(string Name, HashSet<Type> Interfaces);
+
+internal record MembershipContainer
+{
+    public required string Id { get; set; }
+    public required MembershipContext Context { get; set; }
+    public required IEnumerable<MemberInfo> Members { get; set; }
+}
+
+internal record MembershipContext
+{
+    public required string Id { get; set; }
+    public string? Label { get; set; }
+    public string? Title { get; set; }
+}
+
+internal record MemberInfo
+{
+    [JsonPropertyName("user_id")]
+    public required string UserId { get; set; }
+    public required IEnumerable<string> Roles { get; set; }
+    public string? Name { get; set; }
+    [JsonPropertyName("given_name")]
+    public string? GivenName { get; set; }
+    [JsonPropertyName("family_name")]
+    public string? FamilyName { get; set; }
+    public string? Email { get; set; }
+    public Uri? Picture { get; set; }
+    public required string Status { get; set; }
+    public IEnumerable<NameRoleProvisioningMessage>? Message { get; set; }
 }
