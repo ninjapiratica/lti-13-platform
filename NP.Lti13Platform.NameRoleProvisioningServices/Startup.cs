@@ -257,6 +257,9 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
             })
+            .Produces<MembershipContainer>()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .WithGroupName(OpenAPI.Group)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the memberships within a context.")
