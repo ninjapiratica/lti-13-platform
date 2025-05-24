@@ -33,16 +33,16 @@ public static class Startup
         return builder;
     }
 
-    public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         Lti13PlatformEndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
         return app
-            .UseLti13PlatformCore(x => config.Core)
-            .UseLti13PlatformDeepLinking(x => config.DeepLinking)
-            .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices)
-            .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices);
+            .UseLti13PlatformCore(x => config.Core, openAPIGroupName)
+            .UseLti13PlatformDeepLinking(x => config.DeepLinking, openAPIGroupName)
+            .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices, openAPIGroupName)
+            .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices, openAPIGroupName);
     }
 }
 
