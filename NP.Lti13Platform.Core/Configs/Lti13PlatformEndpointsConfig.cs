@@ -11,8 +11,8 @@ public class Lti13PlatformCoreEndpointsConfig
     /// <summary>
     /// Endpoint for getting a set of public JWKs.
     /// </summary>
-    /// <value>Default: /lti13/.well-known/jwks.json</value>
-    public string JwksUrl { get; set; } = "/lti13/.well-known/jwks.json";
+    /// <value>Default: /lti13/jwks</value>
+    public string JwksUrl { get; set; } = "/lti13/jwks";
 
     /// <summary>
     /// Endpoint used to get auth tokens used for service calls.

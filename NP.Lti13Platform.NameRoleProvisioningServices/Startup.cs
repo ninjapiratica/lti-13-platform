@@ -102,7 +102,7 @@ public static class Startup
         }
     }
 
-    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         const string OpenAPI_Tag = "LTI 1.3 Name and Role Provisioning Services";
 
@@ -260,10 +260,10 @@ public static class Startup
             .Produces<MembershipContainer>()
             .Produces(StatusCodes.Status404NotFound)
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the memberships within a context.")
-            .WithDescription("Gets the memberships for a context. Can be filtered by role or resourceLinkId (rlid). It is a paginated request so page size and index may be provided. This endpoint can also be used to get changes in membership since a specified time. If rlid is provided, messages may be returned with the memberships.");
+            .WithDescription("Gets the memberships for a context. Can be filtered by role or resourceLinkId (rlid). It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers. This endpoint can also be used to get changes in membership since a specified time. If rlid is provided, messages may be returned with the memberships.");
 
         return endpointRouteBuilder;
     }

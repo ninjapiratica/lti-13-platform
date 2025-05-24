@@ -43,7 +43,7 @@ public static class Startup
         return builder;
     }
 
-    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         const string OpenAPI_Tag = "LTI 1.3 Assignment and Grade Services";
 
@@ -114,10 +114,10 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
             })
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Handles the deep linking response from the tool.")
-            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
+            .WithSummary("Gets the line items within a context.")
+            .WithDescription("Gets the line items within a context. Can be filtered by resource id, resource link id, or tag. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
 
         endpointRouteBuilder.MapPost(config.LineItemsUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request, CancellationToken cancellationToken) =>
@@ -202,10 +202,10 @@ public static class Startup
                 policy.RequireRole(ServiceScopes.LineItem);
             })
             .DisableAntiforgery()
-                .WithGroupName(OpenAPI.Group)
-                .WithTags(OpenAPI_Tag)
-                .WithSummary("Handles the deep linking response from the tool.")
-                .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items."); 
+            .WithGroupName(openAPIGroupName)
+            .WithTags(OpenAPI_Tag)
+            .WithSummary("Creates a line item within a context.")
+            .WithDescription("Creates a line item within a context."); 
 
         endpointRouteBuilder.MapGet(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
@@ -255,10 +255,10 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
             })
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Handles the deep linking response from the tool.")
-            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
+            .WithSummary("Gets a line item within a context.")
+            .WithDescription("Gets a line item within a context.");
 
         endpointRouteBuilder.MapPut(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
@@ -340,10 +340,10 @@ public static class Startup
                 policy.RequireRole(ServiceScopes.LineItem);
             })
             .DisableAntiforgery()
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Handles the deep linking response from the tool.")
-            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
+            .WithSummary("Updates a line item within a context.")
+            .WithDescription("Updates a line item within a context.");
 
         endpointRouteBuilder.MapDelete(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
@@ -385,10 +385,10 @@ public static class Startup
                 policy.RequireRole(ServiceScopes.LineItem);
             })
             .DisableAntiforgery()
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Handles the deep linking response from the tool.")
-            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
+            .WithSummary("Deletes a line item within a context.")
+            .WithDescription("Deletes a line item within a context.");
 
         endpointRouteBuilder.MapGet($"{config.LineItemUrl}/results",
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
@@ -459,10 +459,10 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.ResultReadOnly);
             })
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Handles the deep linking response from the tool.")
-            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
+            .WithSummary("Gets the results within a context and line item.")
+            .WithDescription("Gets the results within a context and line item. Can be filtered by user id. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
 
         endpointRouteBuilder.MapPost($"{config.LineItemUrl}/scores",
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
@@ -579,10 +579,10 @@ public static class Startup
                 policy.RequireRole(ServiceScopes.Score);
             })
             .DisableAntiforgery()
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Handles the deep linking response from the tool.")
-            .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items.");
+            .WithSummary("Creates or updates a score within a context.")
+            .WithDescription("Creates or updates a score within a context.");
 
         return endpointRouteBuilder;
     }

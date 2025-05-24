@@ -56,7 +56,7 @@ public static class Startup
         return builder;
     }
 
-    public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder endpointRouteBuilder, Func<DeepLinkingEndpointsConfig, DeepLinkingEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder endpointRouteBuilder, Func<DeepLinkingEndpointsConfig, DeepLinkingEndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         const string OpenAPI_Tag = "LTI 1.3 Deep Linking";
 
@@ -184,7 +184,7 @@ public static class Startup
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<LtiBadRequest>(StatusCodes.Status404NotFound)
-            .WithGroupName(OpenAPI.Group)
+            .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Handles the deep linking response from the tool.")
             .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items. Not all possible results are shown as the results will be determined by how it is handled.");

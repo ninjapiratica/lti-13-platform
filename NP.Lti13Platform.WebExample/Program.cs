@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.WebExample;
 
@@ -19,11 +18,12 @@ builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(x =>
 {
-    x.SwaggerDoc("v1", new() { Title = "LTI 1.3", Version = "v1" });
+    x.SwaggerDoc("v1", new() { Title = "Public API", Version = "v1" });
+    x.SwaggerDoc("v2", new() { Title = "LTI 1.3", Version = "v2" });
 
     x.DocInclusionPredicate((docName, apiDesc) =>
     {
-        return true;
+        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == "group_name");
     });
 });
 
@@ -49,14 +49,20 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13Platform();
+app.UseLti13Platform(openAPIGroupName: "group_name");
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Public API");
+    options.SwaggerEndpoint("/swagger/v2/swagger.json", "LTI 1.3 API");
+});
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapGet("", () => { });
 
 app.Run();
 
