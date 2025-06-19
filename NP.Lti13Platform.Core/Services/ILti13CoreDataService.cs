@@ -24,6 +24,6 @@ namespace NP.Lti13Platform.Core.Services
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(CancellationToken cancellationToken = default);
         Task<SecurityKey> GetPrivateKeyAsync(CancellationToken cancellationToken = default);
         Task<CustomPermissions> GetCustomPermissions(string deploymentId, string? contextId, string userId, string? actualUserId, CancellationToken cancellationToken = default);
-        Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string userId, CancellationToken cancellationToken = default);
+        Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string? contextId, string userId, CancellationToken cancellationToken = default);
     }
 }

@@ -381,7 +381,7 @@ public static class Startup
 
         if (!isAnonymous)
         {
-            var userPermissions = await dataService.GetUserPermissionsAsync(deployment.Id, user.Id, cancellationToken);
+            var userPermissions = await dataService.GetUserPermissionsAsync(deployment.Id, contextId, user.Id, cancellationToken);
 
             ltiMessage.Subject = user.Id;
 

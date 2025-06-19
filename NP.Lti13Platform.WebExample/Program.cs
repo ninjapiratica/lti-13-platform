@@ -348,12 +348,12 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(new CustomPermissions { UserId = true, UserUsername = true });
         }
 
-        public Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string userId, CancellationToken cancellationToken = default)
+        public Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string? contextId, string userId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new UserPermissions { UserId = userId, FamilyName = true, Name = true, GivenName = true });
         }
 
-        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(string deploymentId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
+        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(string deploymentId, string? contextId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(userIds.Select(x => new UserPermissions { UserId = x, FamilyName = true, Name = true, GivenName = true }));
         }
