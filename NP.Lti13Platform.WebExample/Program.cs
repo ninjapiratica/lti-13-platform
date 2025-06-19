@@ -178,7 +178,7 @@ namespace NP.Lti13Platform.WebExample
 
             return Task.FromResult(new PartialList<LineItem>
             {
-                Items = lineItems.Skip(pageIndex * limit).Take(limit).ToList(),
+                Items = [.. lineItems.Skip(pageIndex * limit).Take(limit)],
                 TotalItems = lineItems.Count
             });
         }
@@ -211,7 +211,7 @@ namespace NP.Lti13Platform.WebExample
 
             return Task.FromResult(new PartialList<Grade>
             {
-                Items = grades.Skip(pageIndex * limit).Take(limit).ToList(),
+                Items = [.. grades.Skip(pageIndex * limit).Take(limit)],
                 TotalItems = grades.Count
             });
         }
@@ -343,7 +343,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissions(string deploymentId, CancellationToken cancellationToken)
+        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissions(string deploymentId, string? contextId, string userId, string? actualUserId, CancellationToken cancellationToken)
         {
             return Task.FromResult(new CustomPermissions { UserId = true, UserUsername = true });
         }

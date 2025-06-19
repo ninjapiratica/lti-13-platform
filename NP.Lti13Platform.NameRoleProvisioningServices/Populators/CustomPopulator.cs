@@ -57,7 +57,7 @@ public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICus
             attempt = await dataService.GetAttemptAsync(scope.ResourceLink.Id, scope.UserScope.User.Id, cancellationToken);
         }
 
-        var customPermissions = await dataService.GetCustomPermissions(scope.Deployment.Id, cancellationToken);
+        var customPermissions = await dataService.GetCustomPermissions(scope.Deployment.Id, scope.Context?.Id, scope.UserScope.User.Id, scope.UserScope.ActualUser?.Id, cancellationToken);
 
         var dictionaryValues = customDictionary.ToList();
         foreach (var kvp in dictionaryValues)
