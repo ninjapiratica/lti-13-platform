@@ -4,31 +4,54 @@ using System.Net.Mime;
 
 namespace NP.Lti13Platform.DeepLinking.Configs
 {
+    /// <summary>
+    /// Represents the configuration for deep linking in the LTI 1.3 platform.
+    /// </summary>
     public record DeepLinkingConfig
     {
+        /// <summary>
+        /// Gets or sets the accepted presentation document targets.
+        /// </summary>
         public IEnumerable<string> AcceptPresentationDocumentTargets { get; set; } = [Lti13PresentationTargetDocuments.Embed, Lti13PresentationTargetDocuments.Iframe, Lti13PresentationTargetDocuments.Window];
+
+        /// <summary>
+        /// Gets or sets the accepted content item types.
+        /// </summary>
         public IEnumerable<string> AcceptTypes { get; set; } = [Lti13DeepLinkingTypes.File, Lti13DeepLinkingTypes.Html, Lti13DeepLinkingTypes.Image, Lti13DeepLinkingTypes.Link, Lti13DeepLinkingTypes.LtiResourceLink];
+
+        /// <summary>
+        /// Gets or sets the accepted media types.
+        /// </summary>
         public IEnumerable<string> AcceptMediaTypes { get; set; } = ["image/*", MediaTypeNames.Text.Html];
 
         /// <summary>
-        /// Whether the platform in the context of that deep linking request supports or ignores line items included in LTI Resource Link items. False indicates line items will be ignored. True indicates the platform will create a line item when creating the resource link. If the field is not present, no assumption that can be made about the support of line items.
+        /// Gets or sets a value indicating whether line items are accepted.
         /// </summary>
         public bool? AcceptLineItem { get; set; } = true;
 
         /// <summary>
-        /// Whether the platform allows multiple content items to be submitted in a single response.
+        /// Gets or sets a value indicating whether multiple content items are accepted.
         /// </summary>
         public bool? AcceptMultiple { get; set; } = true;
 
         /// <summary>
-        /// Whether any content items returned by the tool would be automatically persisted without any option for the user to cancel the operation.
+        /// Gets or sets a value indicating whether content items are automatically created.
         /// </summary>
         public bool? AutoCreate { get; set; } = true;
 
+        /// <summary>
+        /// Gets the mapping of content item types.
+        /// </summary>
         public IDictionary<(string? ToolId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
 
+        /// <summary>
+        /// Gets or sets the service address for deep linking.
+        /// </summary>
         public Uri ServiceAddress { get; set; } = DefaultUri;
 
+        /// <summary>
+        /// Adds default mappings for content item types.
+        /// </summary>
         public void AddDefaultContentItemMapping()
         {
             ContentItemTypes.Add((null, ContentItemType.File), typeof(FileContentItem));
@@ -38,6 +61,9 @@ namespace NP.Lti13Platform.DeepLinking.Configs
             ContentItemTypes.Add((null, ContentItemType.LtiResourceLink), typeof(LtiResourceLinkContentItem));
         }
 
+        /// <summary>
+        /// The default URI for the service.
+        /// </summary>
         internal readonly static Uri DefaultUri = new("x://x.x.x");
     }
 }

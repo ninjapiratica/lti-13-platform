@@ -216,7 +216,7 @@ public static class Startup
 
                 var usersWithRoles = currentUsers.Where(u => u.Membership.Roles.Any());
 
-                var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deployment.Id, usersWithRoles.Select(u => u.User.Id), cancellationToken);
+                var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deployment.Id, context.Id, usersWithRoles.Select(u => u.User.Id), cancellationToken);
 
                 var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, UserPermissions: p, u.IsCurrent));
 
