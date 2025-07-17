@@ -19,6 +19,11 @@ namespace NP.Lti13Platform;
 /// </remarks>
 public static class Startup
 {
+    /// <summary>
+    /// Adds LTI 1.3 platform services to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection to add the LTI 1.3 platform services to.</param>
+    /// <returns>A builder object that allows further configuration of the LTI 1.3 platform services.</returns>
     public static Lti13PlatformBuilder AddLti13Platform(this IServiceCollection services)
     {
         return services
@@ -28,6 +33,13 @@ public static class Startup
             .AddLti13PlatformAssignmentGradeServices();
     }
 
+    /// <summary>
+    /// Configures a custom implementation of the LTI 1.3 data service for all related services.
+    /// </summary>
+    /// <typeparam name="T">The type implementing the LTI 1.3 data service interfaces.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder to configure.</param>
+    /// <param name="serviceLifetime">The lifetime of the service to register.</param>
+    /// <returns>The configured LTI 1.3 platform builder.</returns>
     public static Lti13PlatformBuilder WithLti13DataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
         where T : ILti13DataService
     {
@@ -39,6 +51,13 @@ public static class Startup
         return builder;
     }
 
+    /// <summary>
+    /// Configures LTI 1.3 platform endpoints in the application's request processing pipeline.
+    /// </summary>
+    /// <param name="app">The endpoint route builder to configure the LTI 1.3 platform endpoints for.</param>
+    /// <param name="configure">An optional function to configure the LTI 1.3 platform endpoints.</param>
+    /// <param name="openAPIGroupName">The OpenAPI group name for the LTI 1.3 platform endpoints.</param>
+    /// <returns>The configured endpoint route builder.</returns>
     public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         Lti13PlatformEndpointsConfig config = new();

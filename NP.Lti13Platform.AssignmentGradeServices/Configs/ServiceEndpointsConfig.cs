@@ -1,5 +1,8 @@
 ﻿namespace NP.Lti13Platform.AssignmentGradeServices.Configs;
 
+/// <summary>
+/// Gets or sets the paths for line item services.
+/// </summary>
 public class ServiceEndpointsConfig
 {
     /// <summary>

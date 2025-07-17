@@ -4,17 +4,36 @@ using NP.Lti13Platform.Core.Services;
 
 namespace NP.Lti13Platform.Core.Populators;
 
+/// <summary>
+/// Defines the contract for a roles message in LTI 1.3.
+/// </summary>
 public interface IRolesMessage
 {
+    /// <summary>
+    /// Gets or sets the roles associated with the user.
+    /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/roles")]
     public IEnumerable<string> Roles { get; set; }
 
+    /// <summary>
+    /// Gets or sets the users being mentored by this user.
+    /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor")]
     public IEnumerable<string>? RoleScopeMentor { get; set; }
 }
 
+/// <summary>
+/// Populates a roles message with information from the message scope.
+/// </summary>
 public class RolesPopulator(ILti13CoreDataService dataService) : Populator<IRolesMessage>
 {
+    /// <summary>
+    /// Populates a roles message with information from the message scope.
+    /// </summary>
+    /// <param name="obj">The roles message to populate.</param>
+    /// <param name="scope">The message scope containing the context and user information.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public override async Task PopulateAsync(IRolesMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
     {
         if (scope.Context != null)
