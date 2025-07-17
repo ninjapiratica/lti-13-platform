@@ -131,10 +131,34 @@ public class ContentItemDictionary() : IDictionary<(string? ToolId, string Conte
 /// </summary>
 public static class ContentItemType
 {
+    /// <summary>
+    /// Represents an HTML content item type as defined by the IMS Global Deep Linking specification.
+    /// Used when content consists of HTML markup to be displayed directly.
+    /// </summary>
     public static readonly string Html = "html";
+
+    /// <summary>
+    /// Represents a link content item type as defined by the IMS Global Deep Linking specification.
+    /// Used when content is accessed through a URL link.
+    /// </summary>
     public static readonly string Link = "link";
+
+    /// <summary>
+    /// Represents an LTI Resource Link content item type as defined by the IMS Global Deep Linking specification.
+    /// Used for links that launch external tools using the LTI protocol.
+    /// </summary>
     public static readonly string LtiResourceLink = "ltiResourceLink";
+
+    /// <summary>
+    /// Represents a file content item type as defined by the IMS Global Deep Linking specification.
+    /// Used when content consists of a downloadable file.
+    /// </summary>
     public static readonly string File = "file";
+
+    /// <summary>
+    /// Represents an image content item type as defined by the IMS Global Deep Linking specification.
+    /// Used when content consists of an image to be displayed.
+    /// </summary>
     public static readonly string Image = "image";
 }
 
