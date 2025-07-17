@@ -9,7 +9,6 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
@@ -205,7 +204,7 @@ public static class Startup
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Creates a line item within a context.")
-            .WithDescription("Creates a line item within a context."); 
+            .WithDescription("Creates a line item within a context.");
 
         endpointRouteBuilder.MapGet(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>

@@ -78,19 +78,52 @@ namespace NP.Lti13Platform.WebExample
     using NP.Lti13Platform.NameRoleProvisioningServices.Services;
     using System.Security.Cryptography;
 
+    /// <summary>
+    /// A sample implementation of the <see cref="ILti13DataService"/> for demonstration purposes.
+    /// </summary>
     public class DataService : ILti13DataService
     {
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
+        /// <summary>
+        /// In-memory list of attempts.
+        /// </summary>
         public static readonly List<Attempt> Attempts = [];
+        /// <summary>
+        /// In-memory list of contexts.
+        /// </summary>
         public static readonly List<Context> Contexts = [];
+        /// <summary>
+        /// In-memory list of deployments.
+        /// </summary>
         public static readonly List<Deployment> Deployments = [];
+        /// <summary>
+        /// In-memory list of grades.
+        /// </summary>
         public static readonly List<Grade> Grades = [];
+        /// <summary>
+        /// In-memory list of line items.
+        /// </summary>
         public static readonly List<LineItem> LineItems = [];
+        /// <summary>
+        /// In-memory list of memberships.
+        /// </summary>
         public static readonly List<Membership> Memberships = [];
+        /// <summary>
+        /// In-memory list of resource links.
+        /// </summary>
         public static readonly List<ResourceLink> ResourceLinks = [];
+        /// <summary>
+        /// In-memory list of service tokens.
+        /// </summary>
         public static readonly List<ServiceToken> ServiceTokens = [];
+        /// <summary>
+        /// In-memory list of tools.
+        /// </summary>
         public static readonly List<Tool> Tools = [];
+        /// <summary>
+        /// In-memory list of users.
+        /// </summary>
         public static readonly List<User> Users = [];
 
         static DataService()
@@ -184,6 +217,12 @@ namespace NP.Lti13Platform.WebExample
         }
 
         // deeplinking && assignmentgradeservices
+        /// <summary>
+        /// Saves a line item.
+        /// </summary>
+        /// <param name="lineItem">The line item to save.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The ID of the saved line item.</returns>
         public Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default)
         {
             var existingLineItem = LineItems.SingleOrDefault(x => x.Id == lineItem.Id);
@@ -348,12 +387,28 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(new CustomPermissions { UserId = true, UserUsername = true });
         }
 
-        public Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string userId, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Gets the user permissions for a specific user.
+        /// </summary>
+        /// <param name="deploymentId">The deployment ID.</param>
+        /// <param name="contextId">The context ID.</param>
+        /// <param name="userId">The user ID.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The user's permissions.</returns>
+        public Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string? contextId, string userId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new UserPermissions { UserId = userId, FamilyName = true, Name = true, GivenName = true });
         }
 
-        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(string deploymentId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Gets the user permissions for multiple users.
+        /// </summary>
+        /// <param name="deploymentId">The deployment ID.</param>
+        /// <param name="contextId">The context ID.</param>
+        /// <param name="userIds">The user IDs.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A collection of user permissions.</returns>
+        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(string deploymentId, string? contextId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(userIds.Select(x => new UserPermissions { UserId = x, FamilyName = true, Name = true, GivenName = true }));
         }

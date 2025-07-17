@@ -9,11 +9,23 @@ using System.Text.Encodings.Web;
 
 namespace NP.Lti13Platform.Core;
 
+/// <summary>
+/// Authentication handler for LTI services.
+/// </summary>
+/// <param name="dataService">The LTI 1.3 core data service.</param>
+/// <param name="tokenService">The LTI 1.3 token config service.</param>
+/// <param name="options">The authentication scheme options.</param>
+/// <param name="logger">The logger factory.</param>
+/// <param name="encoder">The URL encoder.</param>
 public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
+    /// <summary>
+    /// The name of the authentication scheme.
+    /// </summary>
     public static readonly string SchemeName = "NP.Lti13Platform.Services";
 
+    /// <inheritdoc />
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var authHeaderParts = Context.Request.Headers.Authorization.ToString().Trim().Split(' ');

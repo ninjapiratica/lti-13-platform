@@ -6,12 +6,23 @@ using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.Core.Populators;
 
+/// <summary>
+/// Defines the contract for a message containing custom LTI claims.
+/// </summary>
 public interface ICustomMessage
 {
+    /// <summary>
+    /// Gets or sets the custom claims.
+    /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/custom")]
     public IDictionary<string, string>? Custom { get; set; }
 }
 
+/// <summary>
+/// Populates the <see cref="ICustomMessage"/> with custom claims.
+/// </summary>
+/// <param name="platformService">The platform service.</param>
+/// <param name="dataService">The core data service.</param>
 public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDataService dataService) : Populator<ICustomMessage>
 {
     private static readonly IEnumerable<string> LineItemAttemptGradeVariables = [
@@ -22,6 +33,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
         Lti13ResourceLinkVariables.LineItemReleaseDateTime,
         Lti13ResourceLinkVariables.LineItemUserReleaseDateTime];
 
+    /// <inheritdoc />
     public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
     {
         var customDictionary = scope.Tool.Custom.Merge(scope.Deployment.Custom).Merge(scope.ResourceLink?.Custom);

@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
@@ -120,15 +119,17 @@ public static class Startup
 
                 var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
 
-                List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
-                    .Select((x, ix) =>
-                    {
-                        var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
-                        var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
+                List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems =
+                    [
+                        .. validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
+                            .Select((x, ix) =>
+                            {
+                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
+                                var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
 
-                        return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);
-                    })
-                    .ToList();
+                                return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);
+                            })
+                    ];
 
                 var response = new DeepLinkResponse
                 {

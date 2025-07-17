@@ -5,6 +5,10 @@ namespace NP.Lti13Platform.Core
 {
     internal record MessageType(string Name, HashSet<Type> Interfaces);
 
+    /// <summary>
+    /// A builder for configuring LTI 1.3 platform services.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     public partial class Lti13PlatformBuilder(IServiceCollection services)
     {
         private static readonly HashSet<Type> GlobalInterfaces = [];
@@ -12,6 +16,13 @@ namespace NP.Lti13Platform.Core
         private static readonly Dictionary<string, MessageType> MessageTypes = [];
         private static readonly Dictionary<string, Type> LtiMessageTypes = [];
 
+        /// <summary>
+        /// Extends an existing LTI 1.3 message type with additional interfaces and a populator.
+        /// </summary>
+        /// <typeparam name="T">The type of the LTI message to extend.</typeparam>
+        /// <typeparam name="U">The type of the populator to use.</typeparam>
+        /// <param name="messageType">The message type to extend. If null, the extension applies to all message types.</param>
+        /// <returns>The <see cref="Lti13PlatformBuilder"/>.</returns>
         public Lti13PlatformBuilder ExtendLti13Message<T, U>(string? messageType = null)
             where T : class
             where U : Populator<T>
@@ -85,6 +96,9 @@ namespace NP.Lti13Platform.Core
             }
         }
 
+        /// <summary>
+        /// Gets the <see cref="IServiceCollection"/> where LTI 1.3 services are configured.
+        /// </summary>
         public IServiceCollection Services => services;
     }
 }
