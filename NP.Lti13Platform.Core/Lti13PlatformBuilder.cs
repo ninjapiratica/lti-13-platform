@@ -3,6 +3,10 @@ using NP.Lti13Platform.Core.Populators;
 
 namespace NP.Lti13Platform.Core
 {
+
+    /// <summary>
+    /// Represents a message type in the LTI 1.3 platform.
+    /// </summary>
     internal record MessageType(string Name, HashSet<Type> Interfaces);
 
     /// <summary>
@@ -55,7 +59,7 @@ namespace NP.Lti13Platform.Core
                     interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
 
                     services.AddKeyedTransient<Populator, U>(mt.Name);
-                };
+                }
             }
             else
             {
@@ -83,6 +87,9 @@ namespace NP.Lti13Platform.Core
             return this;
         }
 
+        /// <summary>
+        /// Creates types for LTI messages based on their message types and interfaces.
+        /// </summary>
         internal static void CreateTypes()
         {
             if (LtiMessageTypes.Count == 0)
