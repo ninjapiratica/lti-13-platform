@@ -21,12 +21,20 @@ using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices;
 
+/// <summary>
+/// Provides extension methods for configuring LTI 1.3 Name and Role Provisioning Services.
+/// </summary>
 public static class Startup
 {
     private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
     private static readonly Dictionary<string, MessageType> MessageTypes = [];
     private static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
 
+    /// <summary>
+    /// Adds LTI 1.3 Name and Role Provisioning Services to the platform.
+    /// </summary>
+    /// <param name="platformBuilder">The LTI 1.3 platform builder.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder AddLti13PlatformNameRoleProvisioningServices(this Lti13PlatformBuilder platformBuilder)
     {
         var builder = platformBuilder
@@ -40,18 +48,41 @@ public static class Startup
         return builder;
     }
 
+    /// <summary>
+    /// Configures a custom implementation of the Name and Role Provisioning Data Service.
+    /// </summary>
+    /// <typeparam name="T">The type implementing ILti13NameRoleProvisioningDataService.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder WithLti13NameRoleProvisioningDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningDataService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures a custom implementation of the Name and Role Provisioning Config Service.
+    /// </summary>
+    /// <typeparam name="T">The type implementing ILti13NameRoleProvisioningConfigService.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder WithLti13NameRoleProvisioningConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13NameRoleProvisioningConfigService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningConfigService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Extends Name and Role Provisioning message with a custom interface and populator.
+    /// </summary>
+    /// <typeparam name="T">The interface type that will be added to the message.</typeparam>
+    /// <typeparam name="U">The populator type that will populate the interface.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="messageType">The message type to extend.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
+    /// <exception cref="Exception">Thrown when T is not an interface or when it contains methods.</exception>
     public static Lti13PlatformBuilder ExtendNameRoleProvisioningMessage<T, U>(this Lti13PlatformBuilder builder, string messageType)
         where T : class
         where U : Populator<T>
@@ -102,6 +133,13 @@ public static class Startup
         }
     }
 
+    /// <summary>
+    /// Configures the endpoint for LTI 1.3 Name and Role Provisioning Services.
+    /// </summary>
+    /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
+    /// <param name="configure">Optional function to configure endpoints.</param>
+    /// <param name="openAPIGroupName">Optional group name for OpenAPI documentation.</param>
+    /// <returns>The endpoint route builder for further configuration.</returns>
     public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         const string OpenAPI_Tag = "LTI 1.3 Name and Role Provisioning Services";

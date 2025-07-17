@@ -1,7 +1,14 @@
 ﻿namespace NP.Lti13Platform.Core.Models;
 
+/// <summary>
+/// Represents a user in the LTI 1.3 platform with standard identity attributes.
+/// This class follows the OpenID Connect Core specification for user information.
+/// </summary>
 public class User
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for the user.
+    /// </summary>
     public required string Id { get; set; }
 
     /// <summary>
@@ -116,6 +123,9 @@ public class User
     public IEnumerable<string> OneRosterGrades { get; set; } = [];
 }
 
+/// <summary>
+/// Represents a physical address following the OpenID Connect Core specification.
+/// </summary>
 public class Address
 {
     /// <summary>

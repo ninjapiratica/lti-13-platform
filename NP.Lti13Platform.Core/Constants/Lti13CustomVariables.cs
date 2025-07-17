@@ -1,5 +1,9 @@
 ﻿namespace NP.Lti13Platform.Core.Constants;
 
+/// <summary>
+/// Defines constants for standard LTI 1.3 user variables used in message claims.
+/// These variables represent properties related to the user who initiated the LTI message.
+/// </summary>
 public static class Lti13UserVariables
 {
     /// <summary>
@@ -35,6 +39,11 @@ public static class Lti13UserVariables
     public const string GradeLevelsOneRoster = "$User.gradeLevels.oneRoster";
 }
 
+/// <summary>
+/// Defines constants for LTI 1.3 actual user variables used in message claims.
+/// These variables represent properties related to the actual user who initiated the LTI message
+/// when the initiating user is masquerading as or acting on behalf of another user.
+/// </summary>
 public static class Lti13ActualUserVariables
 {
     /// <summary>
@@ -70,6 +79,10 @@ public static class Lti13ActualUserVariables
     public const string GradeLevelsOneRoster = "$ActualUser.gradeLevels.oneRoster";
 }
 
+/// <summary>
+/// Defines constants for LTI 1.3 context variables used in message claims.
+/// These variables represent properties related to the context (course, classroom, etc.) in which the LTI message is sent.
+/// </summary>
 public static class Lti13ContextVariables
 {
     /// <summary>
@@ -117,6 +130,10 @@ public static class Lti13ContextVariables
     public const string GradeLevelsOneRoster = "$Context.gradeLevels.oneRoster";
 }
 
+/// <summary>
+/// Defines constants for LTI 1.3 resource link variables used in message claims.
+/// These variables represent properties related to the specific resource being accessed in the LTI message.
+/// </summary>
 public static class Lti13ResourceLinkVariables
 {
     /// <summary>
@@ -202,6 +219,10 @@ public static class Lti13ResourceLinkVariables
     public const string IdHistory = "$ResourceLink.id.history";
 }
 
+/// <summary>
+/// Defines constants for LTI 1.3 tool platform variables used in message claims.
+/// These variables represent properties related to the platform from which the LTI message originated.
+/// </summary>
 public static class Lti13ToolPlatformVariables
 {
     /// <summary>
@@ -240,6 +261,10 @@ public static class Lti13ToolPlatformVariables
     public const string InstanceContactEmail = "$ToolPlatformInstance.contactEmail";
 }
 
+/// <summary>
+/// Defines constants for LIS person variables used in message claims.
+/// These variables represent properties related to the person from the Learning Information Services (LIS) database.
+/// </summary>
 public static class LisPersonVariables
 {
     /// <summary>
@@ -378,6 +403,11 @@ public static class LisPersonVariables
     public const string Sms = "$Person.sms";
 }
 
+/// <summary>
+/// Defines constants for LIS actual person variables used in message claims.
+/// These variables represent properties related to the actual person from the Learning Information Services (LIS) database
+/// when a user is masquerading as or acting on behalf of another user.
+/// </summary>
 public static class LisActualPersonVariables
 {
     /// <summary>
@@ -516,6 +546,10 @@ public static class LisActualPersonVariables
     public const string Sms = "$ActualPerson.sms";
 }
 
+/// <summary>
+/// Defines constants for LIS course variables used in message claims.
+/// These variables represent properties related to courses from the Learning Information Services (LIS) database.
+/// </summary>
 public static class LisCourseVariables
 {
     /// <summary>
@@ -554,6 +588,10 @@ public static class LisCourseVariables
     public const string Credits = "$CourseTemplate.credits";
 }
 
+/// <summary>
+/// Defines constants for LIS course offering variables used in message claims.
+/// These variables represent properties related to course offerings from the Learning Information Services (LIS) database.
+/// </summary>
 public static class LisCourseOfferingVariables
 {
     /// <summary>
@@ -598,6 +636,10 @@ public static class LisCourseOfferingVariables
     public const string AcademicSession = "$CourseOffering.academicSession";
 }
 
+/// <summary>
+/// Defines constants for LIS course section variables used in message claims.
+/// These variables represent properties related to course sections from the Learning Information Services (LIS) database.
+/// </summary>
 public static class LisCourseSectionVariables
 {
     /// <summary>
@@ -682,6 +724,10 @@ public static class LisCourseSectionVariables
     public const string SourceSectionId = "$CourseSection.sourceSectionId";
 }
 
+/// <summary>
+/// Defines constants for LIS group variables used in message claims.
+/// These variables represent properties related to groups from the Learning Information Services (LIS) database.
+/// </summary>
 public static class LisGroupVariables
 {
     /// <summary>
@@ -750,6 +796,10 @@ public static class LisGroupVariables
     public const string ParentId = "$Group.parentId";
 }
 
+/// <summary>
+/// Defines constants for LIS membership variables used in message claims.
+/// These variables represent properties related to memberships from the Learning Information Services (LIS) database.
+/// </summary>
 public static class LisMembershipVariables
 {
     /// <summary>
@@ -794,6 +844,10 @@ public static class LisMembershipVariables
     public const string RoleScopeMentor = "$Membership.role.scope.mentor";
 }
 
+/// <summary>
+/// Defines constants for LIS message variables used in message claims.
+/// These variables represent properties related to the presentation of the message in the Learning Information Services (LIS) system.
+/// </summary>
 public static class LisMessageVariables
 {
     /// <summary>
