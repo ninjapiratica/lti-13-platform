@@ -13,73 +13,56 @@ public class Grade
     public required string LineItemId { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the user.
     /// The user to whom this grade applies. This should correspond to a user ID in the platform.
     /// </summary>
     public required string UserId { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the user who scored the grade.
     /// The user who created or last modified this grade (typically an instructor or grader).
     /// </summary>
     public string? ScoringUserId { get; set; }
 
     /// <summary>
-    /// Gets or sets the score of the grade.
-    /// The numeric score achieved by the student on the associated line item.
-    /// This may be scaled by resultMaximum to determine the final grade percentage.
+    /// The numeric score achieved by the student on the associated line item. This may be scaled by resultMaximum to determine the final grade percentage.
     /// </summary>
     public decimal? ResultScore { get; set; }
 
     /// <summary>
-    /// Gets or sets the maximum score of the grade.
-    /// The maximum possible score value for this result.
-    /// If not specified, the scoreMaximum from the line item should be used.
+    /// The maximum possible score value for this result. If not specified, the scoreMaximum from the line item should be used.
     /// </summary>
     public decimal? ResultMaximum { get; set; }
 
     /// <summary>
-    /// Gets or sets the comment associated with the grade.
     /// Optional instructor feedback or notes related to this grade.
     /// </summary>
     public string? Comment { get; set; }
 
     /// <summary>
-    /// Gets or sets the timestamp of the grade.
-    /// The date and time when this grade was created or last modified.
-    /// As specified by the ISO 8601 format in the LTI specification.
+    /// The date and time when this grade was created or last modified. As specified by the ISO 8601 format in the LTI specification.
     /// </summary>
     public DateTime Timestamp { get; set; }
 
     /// <summary>
-    /// Gets or sets the release date and time of the grade.
-    /// The date and time when this grade was or will be released to the student.
-    /// Can be used for scheduled grade releases.
+    /// The date and time when this grade was or will be released to the student. Can be used for scheduled grade releases.
     /// </summary>
     public DateTime? ReleaseDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the activity progress of the grade.
-    /// Indicates the status of the user's activity associated with this grade.
-    /// As defined in the LTI Assignment and Grade Services specification.
+    /// Indicates the status of the user's activity associated with this grade. As defined in the LTI Assignment and Grade Services specification.
     /// </summary>
     public ActivityProgress ActivityProgress { get; set; }
 
     /// <summary>
-    /// Gets or sets the grading progress of the grade.
-    /// Indicates the status of the grading process for this grade.
-    /// As defined in the LTI Assignment and Grade Services specification.
+    /// Indicates the status of the grading process for this grade. As defined in the LTI Assignment and Grade Services specification.
     /// </summary>
     public GradingProgress GradingProgress { get; set; }
 
     /// <summary>
-    /// Gets or sets the start date and time of the activity.
     /// When the user began working on the activity associated with this grade.
     /// </summary>
     public DateTime? StartedAt { get; set; }
 
     /// <summary>
-    /// Gets or sets the submission date and time of the activity.
     /// When the user submitted their work for the activity associated with this grade.
     /// </summary>
     public DateTime? SubmittedAt { get; set; }

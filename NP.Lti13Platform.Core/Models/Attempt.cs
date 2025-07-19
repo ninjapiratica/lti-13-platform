@@ -6,32 +6,32 @@
 public class Attempt
 {
     /// <summary>
-    /// Gets or sets the resource link ID.
+    /// The unique identifier of the resource link for which this attempt is made.
     /// </summary>
     public required string ResourceLinkId { get; set; }
 
     /// <summary>
-    /// Gets or sets the user ID.
+    /// The unique identifier of the user making the attempt.
     /// </summary>
     public required string UserId { get; set; }
 
     /// <summary>
-    /// Gets or sets the available start date and time.
+    /// Date and time when the attempt becomes available.
     /// </summary>
     public DateTime? AvailableStartDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the available end date and time.
+    /// Date and time when the attempt is no longer available.
     /// </summary>
     public DateTime? AvailableEndDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the submission start date and time.
+    /// Date and time when the user can start submitting for this attempt.
     /// </summary>
     public DateTime? SubmisstionStartDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the submission end date and time.
+    /// Date and time when the user can no longer submit for this attempt.
     /// </summary>
     public DateTime? SubmissionEndDateTime { get; set; }
 }

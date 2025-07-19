@@ -6,27 +6,27 @@
 public class Membership
 {
     /// <summary>
-    /// Gets or sets the context ID.
+    /// The unique identifier of the context in which the membership exists, as defined by the LTI 1.3 specification.
     /// </summary>
     public required string ContextId { get; set; }
 
     /// <summary>
-    /// Gets or sets the user ID.
+    /// The unique identifier of the user who is a member of the context, as defined by the LTI 1.3 specification.
     /// </summary>
     public required string UserId { get; set; }
 
     /// <summary>
-    /// Gets or sets the status of the membership.
+    /// The status of the membership (active or inactive) as defined by the LTI 1.3 specification.
     /// </summary>
     public required MembershipStatus Status { get; set; }
 
     /// <summary>
-    /// Gets or sets the roles of the member.
+    /// The roles assigned to the member in the context, as defined by the LTI 1.3 specification.
     /// </summary>
     public required IEnumerable<string> Roles { get; set; }
 
     /// <summary>
-    /// Gets or sets the IDs of the users mentored by this member.
+    /// The IDs of the users mentored by this user, as defined by the LTI 1.3 specification.
     /// </summary>
     public required IEnumerable<string> MentoredUserIds { get; set; }
 }
@@ -37,11 +37,11 @@ public class Membership
 public enum MembershipStatus
 {
     /// <summary>
-    /// The membership is active.
+    /// The membership is active as defined by the LTI 1.3 specification.
     /// </summary>
     Active,
     /// <summary>
-    /// The membership is inactive.
+    /// The membership is inactive as defined by the LTI 1.3 specification.
     /// </summary>
     Inactive
 }

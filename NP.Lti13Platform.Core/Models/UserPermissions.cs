@@ -6,108 +6,108 @@
 public class UserPermissions
 {
     /// <summary>
-    /// Gets or sets the user ID.
+    /// The unique identifier for the user whose permissions are being represented, as defined by the LTI 1.3 and OpenID Connect Core specifications.
     /// </summary>
     public required string UserId { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the address is accessible.
+    /// Indicates whether the address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Address { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the country part of the address is accessible.
+    /// Indicates whether the country part of the address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool AddressCountry { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the formatted address is accessible.
+    /// Indicates whether the formatted address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool AddressFormatted { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the locality part of the address is accessible.
+    /// Indicates whether the locality part of the address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool AddressLocality { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the postal code part of the address is accessible.
+    /// Indicates whether the postal code part of the address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool AddressPostalCode { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the region part of the address is accessible.
+    /// Indicates whether the region part of the address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool AddressRegion { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the street address part of the address is accessible.
+    /// Indicates whether the street address part of the address claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool AddressStreetAddress { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the birthdate is accessible.
+    /// Indicates whether the birthdate claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Birthdate { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the email is accessible.
+    /// Indicates whether the email claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Email { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the email verification status is accessible.
+    /// Indicates whether the email verification status claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool EmailVerified { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the family name is accessible.
+    /// Indicates whether the family name claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool FamilyName { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the gender is accessible.
+    /// Indicates whether the gender claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Gender { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the given name is accessible.
+    /// Indicates whether the given name claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool GivenName { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the locale is accessible.
+    /// Indicates whether the locale claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Locale { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the middle name is accessible.
+    /// Indicates whether the middle name claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool MiddleName { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the full name is accessible.
+    /// Indicates whether the full name claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Name { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the nickname is accessible.
+    /// Indicates whether the nickname claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Nickname { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the phone number is accessible.
+    /// Indicates whether the phone number claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool PhoneNumber { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the phone number verification status is accessible.
+    /// Indicates whether the phone number verification status claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool PhoneNumberVerified { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the picture is accessible.
+    /// Indicates whether the picture claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Picture { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the preferred username is accessible.
+    /// Indicates whether the preferred username claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool PreferredUsername { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the profile is accessible.
+    /// Indicates whether the profile claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Profile { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the last update timestamp is accessible.
+    /// Indicates whether the last update timestamp claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool UpdatedAt { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the website is accessible.
+    /// Indicates whether the website claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool Website { get; set; }
     /// <summary>
-    /// Gets or sets a value indicating whether the timezone is accessible.
+    /// Indicates whether the timezone claim is accessible as defined by the OpenID Connect Core specification.
     /// </summary>
     public bool TimeZone { get; set; }
 }

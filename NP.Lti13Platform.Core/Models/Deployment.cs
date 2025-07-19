@@ -6,17 +6,17 @@
 public class Deployment
 {
     /// <summary>
-    /// Gets or sets the ID of the deployment.
+    /// The unique identifier for the deployment as assigned by the platform. This value is used to identify the platform-tool integration governing the message.
     /// </summary>
     public required string Id { get; set; }
 
     /// <summary>
-    /// Gets or sets the tool ID.
+    /// The unique identifier for the tool associated with this deployment.
     /// </summary>
     public required string ToolId { get; set; }
 
     /// <summary>
-    /// Gets or sets the custom parameters for the deployment.
+    /// A map of key/value custom parameters for this deployment. These parameters MUST be included in LTI messages if present. Map values must be strings. Note that "empty-string" is a valid value (""); however, null is not a valid value.
     /// </summary>
     public IDictionary<string, string>? Custom { get; set; }
 }

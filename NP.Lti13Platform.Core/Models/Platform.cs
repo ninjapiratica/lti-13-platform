@@ -8,50 +8,37 @@
 public class Platform
 {
     /// <summary>
-    /// Gets or sets the GUID of the platform.
-    /// A globally unique identifier for the platform that should remain consistent across deployments.
-    /// This is used in the 'iss' (Issuer) claim of LTI messages to identify the platform.
+    /// A stable locally unique to the iss identifier for an instance of the tool platform. The value of guid is a case-sensitive string that MUST NOT exceed 255 ASCII characters in length. The use of Universally Unique IDentifier (UUID) defined in [RFC4122] is recommended.
     /// </summary>
     public required string Guid { get; set; }
 
     /// <summary>
-    /// Gets or sets the contact email of the platform.
-    /// An email address that tool providers can use to contact the platform administrator.
-    /// This is typically used for technical support or integration issues.
+    /// Administrative contact email for the platform instance.
     /// </summary>
     public string? ContactEmail { get; set; }
 
     /// <summary>
-    /// Gets or sets the description of the platform.
-    /// A human-readable description of the platform that may be displayed to users or administrators.
+    /// Descriptive phrase for the platform instance.
     /// </summary>
     public string? Description { get; set; }
 
     /// <summary>
-    /// Gets or sets the name of the platform.
-    /// A human-readable name for the platform that is displayed to users.
-    /// This should be recognizable to users of the system.
+    /// Name for the platform instance.
     /// </summary>
     public string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets the URL of the platform.
-    /// The base URL of the platform's web interface.
-    /// This may be used for generating links back to the platform.
+    /// Home HTTPS URL endpoint for the platform instance.
     /// </summary>
     public Uri? Url { get; set; }
 
     /// <summary>
-    /// Gets or sets the product family code of the platform.
-    /// An identifier for the product family that this platform instance belongs to.
-    /// This can be used to identify the specific LMS product (e.g., "moodle", "canvas").
+    /// Vendor product family code for the type of platform.
     /// </summary>
     public string? ProductFamilyCode { get; set; }
 
     /// <summary>
-    /// Gets or sets the version of the platform.
-    /// The version identifier for this platform instance.
-    /// This typically includes the product version number of the LMS.
+    /// Vendor product version for the platform.
     /// </summary>
     public string? Version { get; set; }
 }

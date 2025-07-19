@@ -8,15 +8,13 @@ public class ResourceLink
 {
     /// <summary>
     /// Gets or sets the ID of the resource link.
-    /// The stable unique identifier for the link as provided by the LMS platform.
-    /// This value must be a UUID and must be immutable for a resource link.
+    /// The stable unique identifier for the link as provided by the LMS platform. This value must be a UUID and must be immutable for a resource link.
     /// </summary>
     public required string Id { get; set; }
 
     /// <summary>
     /// Gets or sets the deployment ID.
-    /// Identifies the platform-tool integration governing the message.
-    /// This value is provided by the platform when the tool is installed/registered.
+    /// Identifies the platform-tool integration governing the message. This value is provided by the platform when the tool is installed/registered.
     /// </summary>
     public required string DeploymentId { get; set; }
 
@@ -33,56 +31,42 @@ public class ResourceLink
     public Uri? Url { get; set; }
 
     /// <summary>
-    /// Gets or sets the title of the resource link.
-    /// A plain text title for the resource, used for display purposes in the tool consumer.
+    /// String, plain text to use as the title or heading for content.
     /// </summary>
     public string? Title { get; set; }
 
     /// <summary>
-    /// Gets or sets the text of the resource link.
-    /// A plain text description of the resource, used to enhance display in the tool consumer.
+    /// String, plain text description of the content item intended to be displayed to all users who can access the item.
     /// </summary>
     public string? Text { get; set; }
 
     /// <summary>
-    /// Gets or sets the available start date and time.
-    /// The datetime when the resource becomes available for launch.
-    /// If not specified, the resource is available for launch immediately.
+    /// date and time when the link becomes accessible.
     /// </summary>
     public DateTime? AvailableStartDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the available end date and time.
-    /// The datetime when the resource is no longer available for launch.
-    /// If not specified, the resource is available indefinitely.
+    /// date and time when the link stops being accessible.
     /// </summary>
     public DateTime? AvailableEndDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the submission start date and time.
-    /// The datetime when students can begin submitting to the resource.
-    /// If not specified, students can submit as soon as the resource is available.
+    /// Date and time when the link can start receiving submissions.
     /// </summary>
     public DateTime? SubmissionStartDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the submission end date and time.
-    /// The datetime when students can no longer submit to the resource (due date).
-    /// If not specified, students can submit indefinitely.
+    /// Date and time when the link stops accepting submissions.
     /// </summary>
     public DateTime? SubmissionEndDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the history of cloned IDs.
-    /// The list of resource links that this resource link was copied from.
-    /// This enables platforms to maintain continuity when a link is copied.
+    /// The list of resource links that this resource link was copied from. Enables platforms to maintain continuity when a link is copied.
     /// </summary>
     public IEnumerable<string>? ClonedIdHistory { get; set; }
 
     /// <summary>
-    /// Gets or sets custom properties for the resource link.
-    /// A map of name/value custom parameters specific to this resource link.
-    /// Names should not begin with "lti_" as these are reserved for LTI specification use.
+    /// A map of key/value custom parameters. Those parameters MUST be included in the LtiResourceLinkRequest payload. Value may include substitution parameters as defined in the LTI Core Specification. Map values must be strings. Note that "empty-string" is a valid value (""); however, null is not a valid value.
     /// </summary>
     public IDictionary<string, string>? Custom { get; set; }
 }
