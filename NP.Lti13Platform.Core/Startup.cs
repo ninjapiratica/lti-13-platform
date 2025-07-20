@@ -22,6 +22,9 @@ using System.Web;
 
 namespace NP.Lti13Platform.Core;
 
+/// <summary>
+/// Provides extension methods for configuring and using LTI 1.3 platform core services.
+/// </summary>
 public static class Startup
 {
     const string OpenAPI_Tag = "LTI 1.3 Core";
@@ -45,6 +48,11 @@ public static class Startup
     private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
     private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
 
+    /// <summary>
+    /// Adds the LTI 1.3 platform core services to the specified <see cref="IServiceCollection"/>.
+    /// </summary>
+    /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to add the services to.</param>
+    /// <returns>A <see cref="Lti13PlatformBuilder"/> that can be used to further configure the LTI 1.3 platform services.</returns>
     public static Lti13PlatformBuilder AddLti13PlatformCore(this IServiceCollection serviceCollection)
     {
         var builder = new Lti13PlatformBuilder(serviceCollection);
@@ -74,24 +82,52 @@ public static class Startup
         return builder;
     }
 
+    /// <summary>
+    /// Configures the LTI 1.3 platform to use a custom <see cref="ILti13CoreDataService"/> implementation.
+    /// </summary>
+    /// <typeparam name="T">The type of the custom data service.</typeparam>
+    /// <param name="builder">The <see cref="Lti13PlatformBuilder"/>.</param>
+    /// <param name="serviceLifetime">The <see cref="ServiceLifetime"/> of the data service.</param>
+    /// <returns>The <see cref="Lti13PlatformBuilder"/>.</returns>
     public static Lti13PlatformBuilder WithLti13CoreDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13CoreDataService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13CoreDataService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures the LTI 1.3 platform to use a custom <see cref="ILti13PlatformService"/> implementation.
+    /// </summary>
+    /// <typeparam name="T">The type of the custom platform service.</typeparam>
+    /// <param name="builder">The <see cref="Lti13PlatformBuilder"/>.</param>
+    /// <param name="serviceLifetime">The <see cref="ServiceLifetime"/> of the platform service.</param>
+    /// <returns>The <see cref="Lti13PlatformBuilder"/>.</returns>
     public static Lti13PlatformBuilder WithLti13PlatformService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13PlatformService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13PlatformService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures the LTI 1.3 platform to use a custom <see cref="ILti13TokenConfigService"/> implementation.
+    /// </summary>
+    /// <typeparam name="T">The type of the custom token config service.</typeparam>
+    /// <param name="builder">The <see cref="Lti13PlatformBuilder"/>.</param>
+    /// <param name="serviceLifetime">The <see cref="ServiceLifetime"/> of the token config service.</param>
+    /// <returns>The <see cref="Lti13PlatformBuilder"/>.</returns>
     public static Lti13PlatformBuilder WithLti13TokenConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13TokenConfigService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13TokenConfigService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Adds the LTI 1.3 platform core endpoints to the <see cref="IEndpointRouteBuilder"/>.
+    /// </summary>
+    /// <param name="endpointRouteBuilder">The <see cref="IEndpointRouteBuilder"/>.</param>
+    /// <param name="configure">A delegate to configure the <see cref="Lti13PlatformCoreEndpointsConfig"/>.</param>
+    /// <param name="openAPIGroupName">The OpenAPI group name.</param>
+    /// <returns>The <see cref="IEndpointRouteBuilder"/>.</returns>
     public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = default, string openAPIGroupName = "")
     {
         Lti13PlatformBuilder.CreateTypes();
@@ -506,14 +542,29 @@ internal record TokenResponse
     public required string Scope { get; set; }
 }
 
+/// <summary>
+/// Represents launch presentation override settings.
+/// </summary>
 public record LaunchPresentationOverride
 {
     /// <summary>
-    /// <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values.
+    /// Gets or sets the document target. See <see cref="Lti13PresentationTargetDocuments"/> for possible values.
     /// </summary>
     public string? DocumentTarget { get; set; }
+    /// <summary>
+    /// Gets or sets the height of the presentation target.
+    /// </summary>
     public double? Height { get; set; }
+    /// <summary>
+    /// Gets or sets the width of the presentation target.
+    /// </summary>
     public double? Width { get; set; }
+    /// <summary>
+    /// Gets or sets the return URL.
+    /// </summary>
     public string? ReturnUrl { get; set; }
+    /// <summary>
+    /// Gets or sets the locale.
+    /// </summary>
     public string? Locale { get; set; }
 }

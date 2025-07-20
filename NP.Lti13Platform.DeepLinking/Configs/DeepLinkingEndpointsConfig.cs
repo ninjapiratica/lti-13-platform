@@ -1,5 +1,8 @@
 ﻿namespace NP.Lti13Platform.DeepLinking.Configs;
 
+/// <summary>
+/// Configuration for Deep Linking endpoints in the LTI 1.3 platform.
+/// </summary>
 public class DeepLinkingEndpointsConfig
 {
     /// <summary>

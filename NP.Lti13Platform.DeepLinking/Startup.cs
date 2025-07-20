@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
@@ -20,8 +19,16 @@ using System.Text.Json;
 
 namespace NP.Lti13Platform.DeepLinking;
 
+/// <summary>
+/// Provides extension methods to configure LTI 1.3 Deep Linking in an application.
+/// </summary>
 public static class Startup
 {
+    /// <summary>
+    /// Adds LTI 1.3 Platform Deep Linking services to the application.
+    /// </summary>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
     {
         builder
@@ -38,24 +45,52 @@ public static class Startup
         return builder;
     }
 
+    /// <summary>
+    /// Configures a custom implementation of the Deep Linking Data Service.
+    /// </summary>
+    /// <typeparam name="T">The implementation type of the ILti13DeepLinkingDataService interface.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder WithLti13DeepLinkingDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingDataService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingDataService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures a custom implementation of the Deep Linking Config Service.
+    /// </summary>
+    /// <typeparam name="T">The implementation type of the ILti13DeepLinkingConfigService interface.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder WithLti13DeepLinkingConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingConfigService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingConfigService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures a custom implementation of the Deep Linking Handler.
+    /// </summary>
+    /// <typeparam name="T">The implementation type of the ILti13DeepLinkingHandler interface.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
+    /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder WithLti13DeepLinkingHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingHandler
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingHandler), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures the endpoints for LTI 1.3 Deep Linking.
+    /// </summary>
+    /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
+    /// <param name="configure">Optional function to configure endpoints.</param>
+    /// <param name="openAPIGroupName">The group name for OpenAPI documentation.</param>
+    /// <returns>The endpoint route builder for further configuration.</returns>
     public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder endpointRouteBuilder, Func<DeepLinkingEndpointsConfig, DeepLinkingEndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         const string OpenAPI_Tag = "LTI 1.3 Deep Linking";
@@ -120,15 +155,17 @@ public static class Startup
 
                 var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
 
-                List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems = validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
-                    .Select((x, ix) =>
-                    {
-                        var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
-                        var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
+                List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems =
+                    [
+                        .. validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
+                            .Select((x, ix) =>
+                            {
+                                var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
+                                var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
 
-                        return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);
-                    })
-                    .ToList();
+                                return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);
+                            })
+                    ];
 
                 var response = new DeepLinkResponse
                 {
@@ -193,4 +230,8 @@ public static class Startup
     }
 }
 
+/// <summary>
+/// Represents a request for deep linking response containing a JWT token.
+/// </summary>
+/// <param name="Jwt">The JWT token containing the deep linking response data.</param>
 internal record DeepLinkResponseRequest(string? Jwt);

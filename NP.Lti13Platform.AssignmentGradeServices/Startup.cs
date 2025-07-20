@@ -9,7 +9,6 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
@@ -19,8 +18,16 @@ using System.Security.Claims;
 
 namespace NP.Lti13Platform.AssignmentGradeServices;
 
+/// <summary>
+/// Provides extension methods for configuring assignment grade services in the LTI 1.3 platform.
+/// </summary>
 public static class Startup
 {
+    /// <summary>
+    /// Adds assignment grade services to the LTI 1.3 platform builder.
+    /// </summary>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <returns>The updated LTI 1.3 platform builder.</returns>
     public static Lti13PlatformBuilder AddLti13PlatformAssignmentGradeServices(this Lti13PlatformBuilder builder)
     {
         builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
@@ -31,18 +38,39 @@ public static class Startup
         return builder;
     }
 
+    /// <summary>
+    /// Configures the assignment grade data service for the LTI 1.3 platform.
+    /// </summary>
+    /// <typeparam name="T">The type of the assignment grade data service.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The service lifetime.</param>
+    /// <returns>The updated LTI 1.3 platform builder.</returns>
     public static Lti13PlatformBuilder WithLti13AssignmentGradeDataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13AssignmentGradeDataService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeDataService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures the assignment grade config service for the LTI 1.3 platform.
+    /// </summary>
+    /// <typeparam name="T">The type of the assignment grade config service.</typeparam>
+    /// <param name="builder">The LTI 1.3 platform builder.</param>
+    /// <param name="serviceLifetime">The service lifetime.</param>
+    /// <returns>The updated LTI 1.3 platform builder.</returns>
     public static Lti13PlatformBuilder WithLti13AssignmentGradeConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13AssignmentGradeConfigService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeConfigService), typeof(T), serviceLifetime));
         return builder;
     }
 
+    /// <summary>
+    /// Configures the endpoint route builder for assignment grade services.
+    /// </summary>
+    /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
+    /// <param name="configure">Optional configuration for service endpoints.</param>
+    /// <param name="openAPIGroupName">The OpenAPI group name.</param>
+    /// <returns>The updated endpoint route builder.</returns>
     public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null, string openAPIGroupName = "")
     {
         const string OpenAPI_Tag = "LTI 1.3 Assignment and Grade Services";
@@ -205,7 +233,7 @@ public static class Startup
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Creates a line item within a context.")
-            .WithDescription("Creates a line item within a context."); 
+            .WithDescription("Creates a line item within a context.");
 
         endpointRouteBuilder.MapGet(config.LineItemUrl,
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
@@ -588,8 +616,17 @@ public static class Startup
     }
 }
 
+/// <summary>
+/// Represents a request for a line item.
+/// </summary>
 internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
+/// <summary>
+/// Represents a request for a score.
+/// </summary>
 internal record ScoreRequest(string UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, string ActivityProgress, string GradingProgress);
 
+/// <summary>
+/// Represents a request for score submission.
+/// </summary>
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);

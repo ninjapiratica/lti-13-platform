@@ -1,40 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	  <Title>LTI 1.3 Platform Name and Role Provisioning Services</Title>
-	  <VersionPrefix>0.1.0</VersionPrefix>
-	  <VersionSuffix>beta</VersionSuffix>
-	  <Description>
-		  A platform implementation of the LTI 1.3 Name and Role Provisioning Services spec.
-		  Includes Core spec.
-	  </Description>
-	  <PackageTags>LTI; Advantage; 1.3; Platform; Name and Role Provisioning Services; Name; Role; Services</PackageTags>
-	  <RepositoryType>git</RepositoryType>
-	  <PackageIcon>package-icon.png</PackageIcon>
-	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  <PackageLicenseExpression>MIT-0</PackageLicenseExpression>
-	  <Authors>Ninja.Piratica</Authors>
-	  <Company>Ninja.Piratica</Company>
-	  <PackageProjectUrl>https://github.com/ninjapiratica/lti-13-platform</PackageProjectUrl>
-	  <RepositoryUrl>https://github.com/ninjapiratica/lti-13-platform</RepositoryUrl>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Title>LTI 1.3 Platform Name and Role Provisioning Services</Title>
+		<VersionPrefix>0.1.0</VersionPrefix>
+		<VersionSuffix>beta</VersionSuffix>
+		<Description>
+			A platform implementation of the LTI 1.3 Name and Role Provisioning Services spec.
+			Includes Core spec.
+		</Description>
+		<PackageTags>LTI; Advantage; 1.3; Platform; Name and Role Provisioning Services; Name; Role; Services</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		<PackageIcon>package-icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseExpression>MIT-0</PackageLicenseExpression>
+		<Authors>Ninja.Piratica</Authors>
+		<Company>Ninja.Piratica</Company>
+		<PackageProjectUrl>https://github.com/ninjapiratica/lti-13-platform</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ninjapiratica/lti-13-platform</RepositoryUrl>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\NP.Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\NP.Lti13Platform.Core\NP.Lti13Platform.Core.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="package-icon.png">
-      <PackagePath>\</PackagePath>
-      <Pack>True</Pack>
-    </None>
-    <None Update="README.md">
-      <PackagePath>\</PackagePath>
-      <Pack>True</Pack>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="package-icon.png">
+			<PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+		</None>
+		<None Update="README.md">
+			<PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+		</None>
+	</ItemGroup>
 
 </Project>

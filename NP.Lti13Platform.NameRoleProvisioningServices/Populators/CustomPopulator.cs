@@ -7,14 +7,26 @@ using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices.Populators;
 
+/// <summary>
+/// Defines an interface for a message containing custom parameters.
+/// </summary>
 public interface ICustomMessage
 {
+    /// <summary>
+    /// Gets or sets the dictionary of custom parameters.
+    /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/custom")]
     public IDictionary<string, string>? Custom { get; set; }
 }
 
+/// <summary>
+/// Populates custom parameters for LTI messages.
+/// </summary>
 public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICustomMessage>
 {
+    /// <summary>
+    /// List of resource link variables related to line items, attempts, and grades.
+    /// </summary>
     private static readonly IEnumerable<string> LineItemAttemptGradeVariables = [
         Lti13ResourceLinkVariables.AvailableUserStartDateTime,
         Lti13ResourceLinkVariables.AvailableUserEndDateTime,
@@ -22,6 +34,13 @@ public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICus
         Lti13ResourceLinkVariables.SubmissionUserEndDateTime,
         Lti13ResourceLinkVariables.LineItemUserReleaseDateTime];
 
+    /// <summary>
+    /// Populates custom parameters based on the message scope.
+    /// </summary>
+    /// <param name="obj">The object to populate.</param>
+    /// <param name="scope">The message scope.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
     {
         var customDictionary = scope.Tool.Custom.Merge(scope.Deployment.Custom).Merge(scope.ResourceLink?.Custom);

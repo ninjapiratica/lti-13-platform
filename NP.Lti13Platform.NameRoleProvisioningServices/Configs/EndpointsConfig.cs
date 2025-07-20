@@ -1,5 +1,8 @@
 ﻿namespace NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 
+/// <summary>
+/// Configuration for the Name and Role Provisioning Services endpoints.
+/// </summary>
 public class EndpointsConfig
 {
     /// <summary>

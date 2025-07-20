@@ -1,5 +1,8 @@
 ﻿namespace NP.Lti13Platform.Core.Configs;
 
+/// <summary>
+/// Configuration for LTI 1.3 platform tokens.
+/// </summary>
 public class Lti13PlatformTokenConfig
 {
     private string _issuer = string.Empty;
@@ -30,12 +33,12 @@ public class Lti13PlatformTokenConfig
     public string? TokenAudience { get; set; }
 
     /// <summary>
-    /// 
+    /// The expiration time in seconds for message tokens.
     /// </summary>
     public int MessageTokenExpirationSeconds { get; set; } = 300;
 
     /// <summary>
-    /// 
+    /// The expiration time in seconds for access tokens.
     /// </summary>
     public int AccessTokenExpirationSeconds { get; set; } = 3600;
 }
