@@ -31,7 +31,7 @@ public class LtiMessage
     /// Required for all messages.
     /// </summary>
     [JsonPropertyName("exp")]
-    public long ExpirationDateUnix => new DateTimeOffset(IssuedDate).ToUnixTimeSeconds();
+    public long ExpirationDateUnix => new DateTimeOffset(ExpirationDate).ToUnixTimeSeconds();
 
     /// <summary>
     /// Gets or sets the expiration date of the message.
