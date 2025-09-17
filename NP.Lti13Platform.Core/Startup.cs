@@ -164,7 +164,7 @@ public static class Startup
 
                 return Results.Json(keySet, JSON_OPTIONS);
             })
-            .Produces<JsonWebKeySet>()
+            .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the public keys used for JWT signing verification.")

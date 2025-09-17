@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,6 +16,7 @@ using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Populators;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 using System.Collections.ObjectModel;
+using System.Net.Mime;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -295,8 +297,9 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
             })
-            .Produces<MembershipContainer>()
+            .Produces<MembershipContainer>(contentType: MediaTypeNames.Application.Json)
             .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)

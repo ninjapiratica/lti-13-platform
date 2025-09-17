@@ -14,6 +14,7 @@ using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Security.Claims;
 
 namespace NP.Lti13Platform.AssignmentGradeServices;
@@ -124,16 +125,17 @@ public static class Startup
                     httpContext.Response.Headers.Link = new StringValues([.. links]);
                 }
 
-                return Results.Json(lineItemsResponse.Items.Select(i => new
+                return Results.Json(lineItemsResponse.Items.Select(i => new LineItemResponse
                 {
-                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId = i.Id }),
-                    i.StartDateTime,
-                    i.EndDateTime,
-                    i.ScoreMaximum,
-                    i.Label,
-                    i.Tag,
-                    i.ResourceId,
-                    i.ResourceLinkId
+                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId = i.Id })!,
+                    StartDateTime = i.StartDateTime,
+                    EndDateTime = i.EndDateTime,
+                    ScoreMaximum = i.ScoreMaximum,
+                    Label = i.Label,
+                    Tag = i.Tag,
+                    ResourceId = i.ResourceId,
+                    ResourceLinkId = i.ResourceLinkId,
+                    GradesReleased = i.GradesReleased,
                 }), contentType: ContentTypes.LineItemContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEMS)
@@ -142,6 +144,9 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
             })
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItemContainer)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the line items within a context.")
@@ -210,18 +215,18 @@ public static class Startup
                     EndDateTime = request.EndDateTime?.UtcDateTime,
                 }, cancellationToken);
 
-                var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId });
-                return Results.Created(url, new
+                var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId })!;
+                return Results.Created(url, new LineItemResponse
                 {
                     Id = url,
-                    request.Label,
-                    request.ResourceId,
-                    request.ResourceLinkId,
-                    request.ScoreMaximum,
-                    request.Tag,
-                    request.GradesReleased,
-                    request.StartDateTime,
-                    request.EndDateTime,
+                    Label = request.Label,
+                    ResourceId = request.ResourceId,
+                    ResourceLinkId = request.ResourceLinkId,
+                    ScoreMaximum = request.ScoreMaximum,
+                    Tag = request.Tag,
+                    GradesReleased = request.GradesReleased,
+                    StartDateTime = request.StartDateTime?.UtcDateTime,
+                    EndDateTime = request.EndDateTime?.UtcDateTime,
                 });
             })
             .RequireAuthorization(policy =>
@@ -229,6 +234,10 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem);
             })
+            .Produces<LineItemResponse>(StatusCodes.Status201Created, MediaTypeNames.Application.Json)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
@@ -265,16 +274,17 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                return Results.Json(new
+                return Results.Json(new LineItemResponse
                 {
-                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId }),
-                    lineItem.Label,
-                    lineItem.ResourceId,
-                    lineItem.ResourceLinkId,
-                    lineItem.ScoreMaximum,
-                    lineItem.Tag,
-                    lineItem.StartDateTime,
-                    lineItem.EndDateTime,
+                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId })!,
+                    Label = lineItem.Label,
+                    ResourceId = lineItem.ResourceId,
+                    ResourceLinkId = lineItem.ResourceLinkId,
+                    ScoreMaximum = lineItem.ScoreMaximum,
+                    Tag = lineItem.Tag,
+                    GradesReleased = lineItem.GradesReleased,
+                    StartDateTime = lineItem.StartDateTime,
+                    EndDateTime = lineItem.EndDateTime,
                 }, contentType: ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
@@ -283,6 +293,9 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
             })
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets a line item within a context.")
@@ -349,17 +362,17 @@ public static class Startup
 
                 await assignmentGradeDataService.SaveLineItemAsync(lineItem, cancellationToken);
 
-                return Results.Json(new
+                return Results.Json(new LineItemResponse
                 {
-                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId }),
-                    lineItem.Label,
-                    lineItem.ResourceId,
-                    lineItem.ResourceLinkId,
-                    lineItem.ScoreMaximum,
-                    lineItem.Tag,
-                    lineItem.GradesReleased,
-                    lineItem.StartDateTime,
-                    lineItem.EndDateTime,
+                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId })!,
+                    Label = lineItem.Label,
+                    ResourceId = lineItem.ResourceId,
+                    ResourceLinkId = lineItem.ResourceLinkId,
+                    ScoreMaximum = lineItem.ScoreMaximum,
+                    Tag = lineItem.Tag,
+                    GradesReleased = lineItem.GradesReleased,
+                    StartDateTime = lineItem.StartDateTime,
+                    EndDateTime = lineItem.EndDateTime
                 }, contentType: ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
@@ -367,6 +380,10 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem);
             })
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
@@ -412,6 +429,9 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.LineItem);
             })
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
@@ -470,15 +490,15 @@ public static class Startup
                     httpContext.Response.Headers.Link = new StringValues([.. links]);
                 }
 
-                return Results.Json(gradesResponse.Items.Select(i => new
+                return Results.Json(gradesResponse.Items.Select(i => new LineItemResultResponse
                 {
-                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, i.LineItemId, user_id = i.UserId }),
-                    ScoreOf = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, i.LineItemId }),
-                    i.UserId,
-                    i.ResultScore,
+                    Id = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM_RESULTS, new { deploymentId, contextId, i.LineItemId, user_id = i.UserId })!,
+                    ScoreOf = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, i.LineItemId })!,
+                    UserId = i.UserId,
+                    ResultScore = i.ResultScore,
                     ResultMaximum = i.ResultMaximum ?? 1, // https://www.imsglobal.org/spec/lti-ags/v2p0/#resultmaximum
-                    i.ScoringUserId,
-                    i.Comment
+                    ScoringUserId = i.ScoringUserId,
+                    Comment = i.Comment
                 }), contentType: ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
@@ -487,6 +507,9 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.ResultReadOnly);
             })
+            .Produces<LineItemResultResponse>(StatusCodes.Status200OK, ContentTypes.ResultContainer)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the results within a context and line item.")
@@ -524,7 +547,7 @@ public static class Startup
 
                 if (DateTime.UtcNow < lineItem.StartDateTime)
                 {
-                    return Results.Json(new
+                    return Results.Json(new LtiBadRequest
                     {
                         Error = "startDateTime",
                         Error_Description = "lineItem startDateTime is in the future",
@@ -534,7 +557,7 @@ public static class Startup
 
                 if (DateTime.UtcNow > lineItem.EndDateTime)
                 {
-                    return Results.Json(new
+                    return Results.Json(new LtiBadRequest
                     {
                         Error = "endDateTime",
                         Error_Description = "lineItem endDateTime is in the past",
@@ -555,7 +578,7 @@ public static class Startup
                 }
                 else if (grade.Timestamp >= request.TimeStamp)
                 {
-                    return Results.Conflict(new
+                    return Results.Conflict(new LtiBadRequest
                     {
                         Error = "timestamp",
                         Error_Description = "timestamp must be after the current timestamp",
@@ -606,6 +629,12 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(ServiceScopes.Score);
             })
+            .Produces(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<LtiBadRequest>(StatusCodes.Status409Conflict)
+            .Produces<LtiBadRequest>(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
             .WithGroupName(openAPIGroupName)
             .WithTags(OpenAPI_Tag)
@@ -630,3 +659,28 @@ internal record ScoreRequest(string UserId, string ScoringUserId, decimal? Score
 /// Represents a request for score submission.
 /// </summary>
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
+
+
+internal record LineItemResultResponse
+{
+    public required string Id { get; set; }
+    public required string ScoreOf { get; set; }
+    public required string UserId { get; set; }
+    public decimal? ResultScore { get; set; }
+    public required decimal ResultMaximum { get; set; }
+    public string? ScoringUserId { get; set; }
+    public string? Comment { get; set; }
+}
+
+internal class LineItemResponse
+{
+    public required string Id { get; set; }
+    public required string Label { get; set; }
+    public string? ResourceId { get; set; }
+    public string? ResourceLinkId { get; set; }
+    public decimal ScoreMaximum { get; set; }
+    public string? Tag { get; set; }
+    public bool? GradesReleased { get; set; }
+    public DateTime? StartDateTime { get; set; }
+    public DateTime? EndDateTime { get; set; }
+}
