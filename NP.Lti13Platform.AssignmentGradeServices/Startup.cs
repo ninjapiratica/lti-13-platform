@@ -568,8 +568,8 @@ public static class Startup
                 grade.Comment = request.Comment;
                 grade.ScoringUserId = request.ScoringUserId;
                 grade.Timestamp = request.TimeStamp.UtcDateTime;
-                grade.ActivityProgress = Enum.Parse<ActivityProgress>(request.ActivityProgress);
-                grade.GradingProgress = Enum.Parse<GradingProgress>(request.GradingProgress);
+                grade.ActivityProgress = request.ActivityProgress;
+                grade.GradingProgress = request.GradingProgress;
 
                 if (request.Submission?.StartedAt != null)
                 {
@@ -624,7 +624,7 @@ internal record LineItemRequest(decimal ScoreMaximum, string Label, string? Reso
 /// <summary>
 /// Represents a request for a score.
 /// </summary>
-internal record ScoreRequest(string UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, string ActivityProgress, string GradingProgress);
+internal record ScoreRequest(string UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
 /// <summary>
 /// Represents a request for score submission.
