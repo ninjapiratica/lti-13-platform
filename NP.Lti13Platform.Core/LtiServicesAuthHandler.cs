@@ -44,8 +44,8 @@ public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13Tok
         var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(authHeaderParts[1], new TokenValidationParameters
         {
             IssuerSigningKeys = publicKeys,
-            ValidAudience = tokenConfig.Issuer,
-            ValidIssuer = tokenConfig.Issuer
+            ValidAudience = tokenConfig.Issuer.ToString(),
+            ValidIssuer = tokenConfig.Issuer.ToString()
         });
 
         return validatedToken.IsValid ? AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal([validatedToken.ClaimsIdentity]), SchemeName)) : AuthenticateResult.NoResult();

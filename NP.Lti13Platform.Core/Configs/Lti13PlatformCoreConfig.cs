@@ -5,22 +5,19 @@
 /// </summary>
 public class Lti13PlatformTokenConfig
 {
-    private string _issuer = string.Empty;
+    private Uri _issuer = new("x://x.x.x");
     /// <summary>
     /// A case-sensitive URL using the HTTPS scheme that contains: scheme, host; and, optionally, port number, and path components; and, no query or fragment components. The issuer identifies the platform to the tools.
     /// </summary>
-    public required string Issuer
+    public required Uri Issuer
     {
         get => _issuer;
         set
         {
-            if (Uri.TryCreate(value, UriKind.Absolute, out var result))
+            if (value.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.InvariantCultureIgnoreCase) && string.IsNullOrWhiteSpace(value.Query) && string.IsNullOrWhiteSpace(value.Fragment))
             {
-                if (result.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.InvariantCultureIgnoreCase) && string.IsNullOrWhiteSpace(result.Query) && string.IsNullOrWhiteSpace(result.Fragment))
-                {
-                    _issuer = value;
-                    return;
-                }
+                _issuer = value;
+                return;
             }
 
             throw new UriFormatException("Issuer must follow the guidelines in the LTI 1.3 security spec. https://www.imsglobal.org/spec/security/v1p0/#dfn-issuer-identifier");

@@ -76,7 +76,7 @@ public static class Startup
 
         builder.Services.AddOptions<Lti13PlatformTokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
-            .Validate(x => !string.IsNullOrWhiteSpace(x.Issuer), "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
+            .Validate(x => x.Issuer.Host == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
         builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
 
         return builder;
@@ -274,8 +274,8 @@ public static class Startup
                 var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                 {
                     Subject = validatedToken.ClaimsIdentity,
-                    Issuer = tokenConfig.Issuer,
-                    Audience = tokenConfig.Issuer,
+                    Issuer = tokenConfig.Issuer.ToString(),
+                    Audience = tokenConfig.Issuer.ToString(),
                     Expires = DateTime.UtcNow.AddSeconds(tokenConfig.AccessTokenExpirationSeconds),
                     SigningCredentials = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256),
                     Claims = new Dictionary<string, object>
@@ -411,7 +411,7 @@ public static class Startup
 
         ltiMessage.Audience = tool.ClientId;
         ltiMessage.IssuedDate = DateTime.UtcNow;
-        ltiMessage.Issuer = tokenConfig.Issuer;
+        ltiMessage.Issuer = tokenConfig.Issuer.ToString();
         ltiMessage.Nonce = request.Nonce!;
         ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.MessageTokenExpirationSeconds);
 
