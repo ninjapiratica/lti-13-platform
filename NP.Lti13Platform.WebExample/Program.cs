@@ -64,7 +64,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapGet("", () => { }).RequireAuthorization("policy");
+app.MapGet("", () => { });
 
 app.Run();
 
