@@ -13,20 +13,17 @@ builder.Services
     .AddLti13Platform()
     .WithLti13DataService<DataService>();
 
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.ShouldInclude = (description) => description.GroupName == null || description.GroupName == "v1";
+});
+builder.Services.AddOpenApi("v2", options =>
+{
+    options.ShouldInclude = (description) => description.GroupName == OpenApi.GroupName;
+});
+
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(x =>
-{
-    x.SwaggerDoc("v1", new() { Title = "Public API", Version = "v1" });
-    x.SwaggerDoc("v2", new() { Title = "LTI 1.3", Version = "v2" });
-
-    x.DocInclusionPredicate((docName, apiDesc) =>
-    {
-        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == OpenApi.GroupName);
-    });
-});
 
 builder.Services.Configure<DeepLinkingConfig>(x =>
 {
@@ -52,11 +49,11 @@ app.UseAuthorization();
 
 app.UseLti13Platform();
 
-app.UseSwagger();
+app.MapOpenApi();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Public API");
-    options.SwaggerEndpoint("/swagger/v2/swagger.json", "LTI 1.3 API");
+    options.SwaggerEndpoint("/openapi/v1.json", "Public API");
+    options.SwaggerEndpoint("/openapi/v2.json", "LTI 1.3 API");
 });
 
 app.MapControllerRoute(
