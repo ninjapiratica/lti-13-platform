@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.WebExample;
 
@@ -23,7 +24,7 @@ builder.Services.AddSwaggerGen(x =>
 
     x.DocInclusionPredicate((docName, apiDesc) =>
     {
-        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == "group_name");
+        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == OpenApi.GroupName);
     });
 });
 
@@ -49,7 +50,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13Platform(openAPIGroupName: "group_name");
+app.UseLti13Platform();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

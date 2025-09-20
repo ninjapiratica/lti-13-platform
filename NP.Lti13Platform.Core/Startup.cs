@@ -126,9 +126,8 @@ public static class Startup
     /// </summary>
     /// <param name="endpointRouteBuilder">The <see cref="IEndpointRouteBuilder"/>.</param>
     /// <param name="configure">A delegate to configure the <see cref="Lti13PlatformCoreEndpointsConfig"/>.</param>
-    /// <param name="openAPIGroupName">The OpenAPI group name.</param>
     /// <returns>The <see cref="IEndpointRouteBuilder"/>.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = default, string openAPIGroupName = "")
+    public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = default)
     {
         Lti13PlatformBuilder.CreateTypes();
 
@@ -165,7 +164,7 @@ public static class Startup
                 return Results.Json(keySet, JSON_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the public keys used for JWT signing verification.")
             .WithDescription("Gets the public keys used for JWT signing verification.");
@@ -175,14 +174,14 @@ public static class Startup
             {
                 return await HandleAuthorization(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthorizationEndpoint(openAPIGroupName);
+            .ConfigureAuthorizationEndpoint();
 
         endpointRouteBuilder.MapPost(config.AuthorizationUrl,
             async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
             {
                 return await HandleAuthorization(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthorizationEndpoint(openAPIGroupName);
+            .ConfigureAuthorizationEndpoint();
 
         endpointRouteBuilder.MapPost(config.TokenUrl,
             async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
@@ -296,7 +295,7 @@ public static class Startup
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<TokenResponse>()
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets a token to be used with platform services.")
             .WithDescription("The tool will request from this endpoint a token that will be used to authorize calls into other LTI 1.3 services.");
@@ -486,13 +485,13 @@ public static class Startup
             MediaTypeNames.Text.Html);
     }
 
-    private static RouteHandlerBuilder ConfigureAuthorizationEndpoint(this RouteHandlerBuilder routeHandlerBuilder, string openAPIGroupName)
+    private static RouteHandlerBuilder ConfigureAuthorizationEndpoint(this RouteHandlerBuilder routeHandlerBuilder)
     {
         return routeHandlerBuilder
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<string>(contentType: MediaTypeNames.Text.Html)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Callback that handles the authorization request from the tool")
             .WithDescription("After the tool receives the initial request, it will call back to this endpoint for authorization and to get the message it should handle. This endpoint will verify everything and post back to the tool with the correct message that was initially requested. Can be called as a get with query parameters or a post with a form.");

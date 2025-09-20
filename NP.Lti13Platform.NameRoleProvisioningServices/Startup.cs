@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -140,9 +139,8 @@ public static class Startup
     /// </summary>
     /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
     /// <param name="configure">Optional function to configure endpoints.</param>
-    /// <param name="openAPIGroupName">Optional group name for OpenAPI documentation.</param>
     /// <returns>The endpoint route builder for further configuration.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null, string openAPIGroupName = "")
+    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
     {
         const string OpenAPI_Tag = "LTI 1.3 Name and Role Provisioning Services";
 
@@ -301,7 +299,7 @@ public static class Startup
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the memberships within a context.")
             .WithDescription("Gets the memberships for a context. Can be filtered by role or resourceLinkId (rlid). It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers. This endpoint can also be used to get changes in membership since a specified time. If rlid is provided, messages may be returned with the memberships.");

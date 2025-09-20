@@ -9,6 +9,7 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
@@ -70,9 +71,8 @@ public static class Startup
     /// </summary>
     /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
     /// <param name="configure">Optional configuration for service endpoints.</param>
-    /// <param name="openAPIGroupName">The OpenAPI group name.</param>
     /// <returns>The updated endpoint route builder.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null, string openAPIGroupName = "")
+    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
     {
         const string OpenAPI_Tag = "LTI 1.3 Assignment and Grade Services";
 
@@ -147,7 +147,7 @@ public static class Startup
             .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItemContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the line items within a context.")
             .WithDescription("Gets the line items within a context. Can be filtered by resource id, resource link id, or tag. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
@@ -239,7 +239,7 @@ public static class Startup
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Creates a line item within a context.")
             .WithDescription("Creates a line item within a context.");
@@ -296,7 +296,7 @@ public static class Startup
             .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets a line item within a context.")
             .WithDescription("Gets a line item within a context.");
@@ -385,7 +385,7 @@ public static class Startup
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Updates a line item within a context.")
             .WithDescription("Updates a line item within a context.");
@@ -433,7 +433,7 @@ public static class Startup
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Deletes a line item within a context.")
             .WithDescription("Deletes a line item within a context.");
@@ -510,7 +510,7 @@ public static class Startup
             .Produces<LineItemResultResponse>(StatusCodes.Status200OK, ContentTypes.ResultContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the results within a context and line item.")
             .WithDescription("Gets the results within a context and line item. Can be filtered by user id. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
@@ -636,7 +636,7 @@ public static class Startup
             .Produces<LtiBadRequest>(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Creates or updates a score within a context.")
             .WithDescription("Creates or updates a score within a context.");

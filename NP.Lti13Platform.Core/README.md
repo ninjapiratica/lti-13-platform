@@ -128,7 +128,7 @@ builder.AddLti13PlatformCore()
 
 Documentation for all endpoints are available through OpenAPI. This is normally configured through Swagger, NSwag or similar.
 
-To avoid adding these endpoints to a consumer's normal api documents, no 'group' has been given to the endpoints. This can be configured and added to the documents you choose. Below is an example using Swagger.
+A 'group' has been given to all the endpoints. This can be used to apply to its own document or add it to an existing document. Below is an example using Swagger. The group name is found by the value in `NP.Lti13Platform.Core.Constants.OpenApi.GroupName`.
 
 ```csharp
 builder.Services.AddEndpointsApiExplorer();
@@ -139,11 +139,11 @@ builder.Services.AddSwaggerGen(x =>
 
     x.DocInclusionPredicate((docName, apiDesc) =>
     {
-        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == "group_name");
+        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == NP.Lti13Platform.Core.Constants.OpenApi.GroupName);
     });
 });
 
-app.UseLti13PlatformCore(openAPIGroupName: "group_name");
+app.UseLti13PlatformCore();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
