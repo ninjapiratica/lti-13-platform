@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
-using NP.Lti13Platform.Core.Constants;
+using NP.Lti13Platform.Core;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.WebExample;
 
@@ -20,7 +20,10 @@ builder.Services.AddOpenApi("v1", options =>
 builder.Services.AddOpenApi("v2", options =>
 {
     options.ShouldInclude = (description) => description.GroupName == OpenApi.GroupName;
+    options.AddDocumentTransformer<OpenApi.DocumentTransformer>();
+    options.AddOperationTransformer<OpenApi.OperationTransformer>();
 });
+builder.Services.AddLti13OpenApi("lti");
 
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
@@ -53,14 +56,15 @@ app.MapOpenApi();
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/openapi/v1.json", "Public API");
-    options.SwaggerEndpoint("/openapi/v2.json", "LTI 1.3 API");
+    options.SwaggerEndpoint("/openapi/v2.json", "LTI 1.3 API Manual");
+    options.SwaggerEndpoint("/openapi/lti.json", "LTI 1.3 API Automatic");
 });
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapGet("", () => { });
+app.MapGet("", () => { }).RequireAuthorization("policy");
 
 app.Run();
 

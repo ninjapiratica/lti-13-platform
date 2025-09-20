@@ -42,35 +42,6 @@ The `ILti13NameRoleProvisioningDataService` interface is used to get the persist
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
-## OpenAPI Documenatation
-
-Documentation for all endpoints are available through OpenAPI. This is normally configured through Swagger, NSwag or similar.
-
-A 'group' has been given to all the endpoints. This can be used to apply to its own document or add it to an existing document. Below is an example using Swagger. The group name is found by the value in `NP.Lti13Platform.Core.Constants.OpenApi.GroupName`.
-
-```csharp
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(x =>
-{
-    x.SwaggerDoc("v1", new() { Title = "Public API", Version = "v1" });
-    x.SwaggerDoc("v2", new() { Title = "LTI 1.3", Version = "v2" });
-
-    x.DocInclusionPredicate((docName, apiDesc) =>
-    {
-        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == NP.Lti13Platform.Core.Constants.OpenApi.GroupName);
-    });
-});
-
-app.UseLti13PlatformNameRoleProvisioningServices();
-
-app.UseSwagger();
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Public API");
-    options.SwaggerEndpoint("/swagger/v2/swagger.json", "LTI 1.3 API");
-});
-```
-
 ## Defaults
 
 ### Routing
