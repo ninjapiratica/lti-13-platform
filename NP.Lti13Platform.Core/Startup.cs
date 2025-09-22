@@ -33,6 +33,7 @@ public static class Startup
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() },
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
             Modifiers =
@@ -47,12 +48,9 @@ public static class Startup
             }
         }
     };
-    private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new()
+    private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new(JSON_SERIALIZER_OPTIONS)
     {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         TypeInfoResolver = new LtiMessageTypeResolver(),
-        Converters = { new JsonStringEnumConverter() },
     };
 
     /// <summary>
