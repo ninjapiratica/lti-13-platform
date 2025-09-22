@@ -10,6 +10,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions: 
+  contents: write
+
 jobs:
   tag-preview:
     if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
