@@ -28,9 +28,11 @@ namespace NP.Lti13Platform.Core;
 public static class Startup
 {
     const string OpenAPI_Tag = "LTI 1.3 Core";
-    private static readonly JsonSerializerOptions JSON_OPTIONS = new()
+    private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
+    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
             Modifiers =
@@ -45,8 +47,13 @@ public static class Startup
             }
         }
     };
-    private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
-    private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        TypeInfoResolver = new LtiMessageTypeResolver(),
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     /// <summary>
     /// Adds the LTI 1.3 platform core services to the specified <see cref="IServiceCollection"/>.
@@ -76,7 +83,7 @@ public static class Startup
 
         builder.Services.AddOptions<Lti13PlatformTokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
-            .Validate(x => x.Issuer.Host == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
+            .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
         builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
 
         return builder;
@@ -161,7 +168,7 @@ public static class Startup
                     keySet.Keys.Add(jwk);
                 }
 
-                return Results.Json(keySet, JSON_OPTIONS);
+                return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
             .WithGroupName(OpenApi.GroupName)
@@ -283,13 +290,13 @@ public static class Startup
                     }
                 });
 
-                return Results.Ok(new TokenResponse
+                return Results.Json(new TokenResponse
                 {
                     AccessToken = token,
                     TokenType = "bearer",
                     ExpiresIn = tokenConfig.AccessTokenExpirationSeconds,
                     Scope = string.Join(' ', scopes)
-                });
+                }, JSON_SERIALIZER_OPTIONS);
             })
             .WithName(RouteNames.TOKEN)
             .DisableAntiforgery()

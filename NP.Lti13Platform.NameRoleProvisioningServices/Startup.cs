@@ -27,7 +27,13 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices;
 /// </summary>
 public static class Startup
 {
-    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(),
+        Converters = { new JsonStringEnumConverter() },
+    };
     private static readonly Dictionary<string, MessageType> MessageTypes = [];
     private static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
 
@@ -150,9 +156,10 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
+                pageIndex ??= 0;
 
                 var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
                 if (context == null)
@@ -173,7 +180,7 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
+                var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
 
                 var links = new Collection<string>();
 
@@ -191,7 +198,7 @@ public static class Startup
                 if (since.HasValue)
                 {
                     var asOfDate = new DateTime(since.GetValueOrDefault());
-                    var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
+                    var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
 
                     var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
 

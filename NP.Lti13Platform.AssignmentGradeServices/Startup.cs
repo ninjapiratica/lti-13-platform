@@ -9,7 +9,6 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Populators;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Collections.ObjectModel;
@@ -17,6 +16,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.AssignmentGradeServices;
 
@@ -25,6 +26,13 @@ namespace NP.Lti13Platform.AssignmentGradeServices;
 /// </summary>
 public static class Startup
 {
+    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() },
+    };
+
     /// <summary>
     /// Adds assignment grade services to the LTI 1.3 platform builder.
     /// </summary>
@@ -80,10 +88,11 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.LineItemsUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                pageIndex ??= 0;
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -103,7 +112,7 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var lineItemsResponse = await coreDataService.GetLineItemsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, resource_id, resource_link_id, tag, cancellationToken);
+                var lineItemsResponse = await coreDataService.GetLineItemsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, resource_id, resource_link_id, tag, cancellationToken);
 
                 if (lineItemsResponse.TotalItems > 0 && limit.HasValue)
                 {
@@ -136,7 +145,9 @@ public static class Startup
                     ResourceId = i.ResourceId,
                     ResourceLinkId = i.ResourceLinkId,
                     GradesReleased = i.GradesReleased,
-                }), contentType: ContentTypes.LineItemContainer);
+                }),
+                options: JSON_SERIALIZER_OPTIONS,
+                contentType: ContentTypes.LineItemContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEMS)
             .RequireAuthorization(policy =>
@@ -216,7 +227,10 @@ public static class Startup
                 }, cancellationToken);
 
                 var url = linkGenerator.GetUriByName(httpContext, RouteNames.GET_LINE_ITEM, new { deploymentId, contextId, lineItemId })!;
-                return Results.Created(url, new LineItemResponse
+
+                httpContext.Response.Headers.Location = url;
+
+                return Results.Json(new LineItemResponse
                 {
                     Id = url,
                     Label = request.Label,
@@ -227,7 +241,9 @@ public static class Startup
                     GradesReleased = request.GradesReleased,
                     StartDateTime = request.StartDateTime?.UtcDateTime,
                     EndDateTime = request.EndDateTime?.UtcDateTime,
-                });
+                },
+                options: JSON_SERIALIZER_OPTIONS,
+                statusCode: (int)HttpStatusCode.Created);
             })
             .RequireAuthorization(policy =>
             {
@@ -285,7 +301,9 @@ public static class Startup
                     GradesReleased = lineItem.GradesReleased,
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime,
-                }, contentType: ContentTypes.LineItem);
+                },
+                options: JSON_SERIALIZER_OPTIONS, 
+                contentType: ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
             .RequireAuthorization(policy =>
@@ -373,7 +391,9 @@ public static class Startup
                     GradesReleased = lineItem.GradesReleased,
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime
-                }, contentType: ContentTypes.LineItem);
+                },
+                options: JSON_SERIALIZER_OPTIONS, 
+                contentType: ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
             {
@@ -439,10 +459,11 @@ public static class Startup
             .WithDescription("Deletes a line item within a context.");
 
         endpointRouteBuilder.MapGet($"{config.LineItemUrl}/results",
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int pageIndex = 0, CancellationToken cancellationToken = default) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                pageIndex ??= 0;
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -468,7 +489,7 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var gradesResponse = await assignmentGradeDataService.GetGradesAsync(lineItemId, pageIndex, limit ?? int.MaxValue, user_id, cancellationToken);
+                var gradesResponse = await assignmentGradeDataService.GetGradesAsync(lineItemId, pageIndex.Value, limit ?? int.MaxValue, user_id, cancellationToken);
 
                 if (gradesResponse.TotalItems > 0 && limit.HasValue)
                 {
@@ -499,7 +520,9 @@ public static class Startup
                     ResultMaximum = i.ResultMaximum ?? 1, // https://www.imsglobal.org/spec/lti-ags/v2p0/#resultmaximum
                     ScoringUserId = i.ScoringUserId,
                     Comment = i.Comment
-                }), contentType: ContentTypes.ResultContainer);
+                }),
+                options: JSON_SERIALIZER_OPTIONS, 
+                contentType: ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
             .RequireAuthorization(policy =>
