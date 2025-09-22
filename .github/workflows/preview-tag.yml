@@ -1,0 +1,53 @@
+# This workflow will generate a new tag with an incremented preview number
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Auto Preview Tag on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  tag-preview:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all tags
+
+      - name: Get latest tag and determine new preview tag
+        id: get_tag
+        run: |
+          # Get the latest tag (preview or not)
+          latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
+          echo "Latest tag: $latest_tag"
+          if [[ -z "$latest_tag" ]]; then
+            # No tags found, start at v0.1.0-preview1
+            new_tag="v0.1.0-preview1"
+          elif [[ "$latest_tag" =~ -preview([0-9]+)$ ]]; then
+            # Latest tag is a preview, increment preview number
+            base_version=$(echo $latest_tag | sed -E 's/-preview[0-9]+$//')
+            preview_num=$(echo $latest_tag | grep -oP '(?<=-preview)[0-9]+')
+            preview_num=$((preview_num + 1))
+            new_tag="${base_version}-preview${preview_num}"
+          else
+            # Latest tag is a release, increment patch and start preview1
+            version=$(echo $latest_tag | sed -E 's/^v([0-9]+)\.([0-9]+)\.([0-9]+)$/\1 \2 \3/')
+            read major minor patch <<< "$version"
+            patch=$((patch + 1))
+            new_tag="v${major}.${minor}.${patch}-preview1"
+          fi
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
+      - name: Create new tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.get_tag.outputs.new_tag }}
+          git push origin ${{ steps.get_tag.outputs.new_tag }}

@@ -15,6 +15,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The tool.</returns>
         Task<Tool?> GetToolAsync(string clientId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets a deployment by its ID.
         /// </summary>
@@ -22,6 +23,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The deployment.</returns>
         Task<Deployment?> GetDeploymentAsync(string deploymentId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets a context by its ID.
         /// </summary>
@@ -29,6 +31,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The context.</returns>
         Task<Context?> GetContextAsync(string contextId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets a user by their ID.
         /// </summary>
@@ -36,6 +39,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The user.</returns>
         Task<User?> GetUserAsync(string userId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets a membership by context and user IDs.
         /// </summary>
@@ -44,6 +48,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The membership.</returns>
         Task<Membership?> GetMembershipAsync(string contextId, string userId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets a resource link by its ID.
         /// </summary>
@@ -92,6 +97,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The service token.</returns>
         Task<ServiceToken?> GetServiceTokenAsync(string toolId, string id, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Saves a service token.
         /// </summary>
@@ -103,15 +109,19 @@ namespace NP.Lti13Platform.Core.Services
         /// <summary>
         /// Gets the public keys.
         /// </summary>
+        /// <param name="clientId">The client ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A collection of public keys.</returns>
-        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(string clientId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets the private key.
         /// </summary>
+        /// <param name="clientId">The client ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The private key.</returns>
-        Task<SecurityKey> GetPrivateKeyAsync(CancellationToken cancellationToken = default);
+        Task<SecurityKey> GetPrivateKeyAsync(string clientId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets the custom permissions.
         /// </summary>
@@ -122,6 +132,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The custom permissions.</returns>
         Task<CustomPermissions> GetCustomPermissions(string deploymentId, string? contextId, string userId, string? actualUserId, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Gets the user permissions.
         /// </summary>
