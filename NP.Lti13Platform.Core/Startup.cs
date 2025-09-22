@@ -153,9 +153,9 @@ public static class Startup
         }
 
         endpointRouteBuilder.MapGet(config.JwksUrl,
-            async (ILti13CoreDataService dataService, CancellationToken cancellationToken) =>
+            async (ILti13CoreDataService dataService, string clientId, CancellationToken cancellationToken) =>
             {
-                var keys = await dataService.GetPublicKeysAsync(cancellationToken);
+                var keys = await dataService.GetPublicKeysAsync(clientId, cancellationToken);
                 var keySet = new JsonWebKeySet();
 
                 foreach (var key in keys)
@@ -273,7 +273,7 @@ public static class Startup
                     await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                 }
 
-                var privateKey = await dataService.GetPrivateKeyAsync(cancellationToken);
+                var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
                 var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                 {
@@ -469,7 +469,7 @@ public static class Startup
             await service.PopulateAsync(ltiMessage, scope, cancellationToken);
         }
 
-        var privateKey = await dataService.GetPrivateKeyAsync(cancellationToken);
+        var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
         var token = new JsonWebTokenHandler().CreateToken(
             JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
