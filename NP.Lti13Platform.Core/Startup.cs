@@ -28,9 +28,12 @@ namespace NP.Lti13Platform.Core;
 public static class Startup
 {
     const string OpenAPI_Tag = "LTI 1.3 Core";
-    private static readonly JsonSerializerOptions JSON_OPTIONS = new()
+    private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
+    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() },
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
             Modifiers =
@@ -45,8 +48,10 @@ public static class Startup
             }
         }
     };
-    private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
-    private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new LtiMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions LTI_MESSAGE_JSON_SERIALIZER_OPTIONS = new(JSON_SERIALIZER_OPTIONS)
+    {
+        TypeInfoResolver = new LtiMessageTypeResolver(),
+    };
 
     /// <summary>
     /// Adds the LTI 1.3 platform core services to the specified <see cref="IServiceCollection"/>.
@@ -76,7 +81,7 @@ public static class Startup
 
         builder.Services.AddOptions<Lti13PlatformTokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
-            .Validate(x => x.Issuer.Host == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
+            .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
         builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
 
         return builder;
@@ -126,9 +131,8 @@ public static class Startup
     /// </summary>
     /// <param name="endpointRouteBuilder">The <see cref="IEndpointRouteBuilder"/>.</param>
     /// <param name="configure">A delegate to configure the <see cref="Lti13PlatformCoreEndpointsConfig"/>.</param>
-    /// <param name="openAPIGroupName">The OpenAPI group name.</param>
     /// <returns>The <see cref="IEndpointRouteBuilder"/>.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = default, string openAPIGroupName = "")
+    public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = default)
     {
         Lti13PlatformBuilder.CreateTypes();
 
@@ -162,10 +166,10 @@ public static class Startup
                     keySet.Keys.Add(jwk);
                 }
 
-                return Results.Json(keySet, JSON_OPTIONS);
+                return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);
             })
-            .Produces<JsonWebKeySet>()
-            .WithGroupName(openAPIGroupName)
+            .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the public keys used for JWT signing verification.")
             .WithDescription("Gets the public keys used for JWT signing verification.");
@@ -175,14 +179,14 @@ public static class Startup
             {
                 return await HandleAuthorization(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthorizationEndpoint(openAPIGroupName);
+            .ConfigureAuthorizationEndpoint();
 
         endpointRouteBuilder.MapPost(config.AuthorizationUrl,
             async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlServiceHelper urlServiceHelper, CancellationToken cancellationToken) =>
             {
                 return await HandleAuthorization(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthorizationEndpoint(openAPIGroupName);
+            .ConfigureAuthorizationEndpoint();
 
         endpointRouteBuilder.MapPost(config.TokenUrl,
             async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
@@ -284,19 +288,19 @@ public static class Startup
                     }
                 });
 
-                return Results.Ok(new TokenResponse
+                return Results.Json(new TokenResponse
                 {
                     AccessToken = token,
                     TokenType = "bearer",
                     ExpiresIn = tokenConfig.AccessTokenExpirationSeconds,
                     Scope = string.Join(' ', scopes)
-                });
+                }, JSON_SERIALIZER_OPTIONS);
             })
             .WithName(RouteNames.TOKEN)
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<TokenResponse>()
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets a token to be used with platform services.")
             .WithDescription("The tool will request from this endpoint a token that will be used to authorize calls into other LTI 1.3 services.");
@@ -486,13 +490,13 @@ public static class Startup
             MediaTypeNames.Text.Html);
     }
 
-    private static RouteHandlerBuilder ConfigureAuthorizationEndpoint(this RouteHandlerBuilder routeHandlerBuilder, string openAPIGroupName)
+    private static RouteHandlerBuilder ConfigureAuthorizationEndpoint(this RouteHandlerBuilder routeHandlerBuilder)
     {
         return routeHandlerBuilder
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<string>(contentType: MediaTypeNames.Text.Html)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Callback that handles the authorization request from the tool")
             .WithDescription("After the tool receives the initial request, it will call back to this endpoint for authorization and to get the message it should handle. This endpoint will verify everything and post back to the tool with the correct message that was initially requested. Can be called as a get with query parameters or a post with a form.");

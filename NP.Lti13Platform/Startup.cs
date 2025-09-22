@@ -56,18 +56,17 @@ public static class Startup
     /// </summary>
     /// <param name="app">The endpoint route builder to configure the LTI 1.3 platform endpoints for.</param>
     /// <param name="configure">An optional function to configure the LTI 1.3 platform endpoints.</param>
-    /// <param name="openAPIGroupName">The OpenAPI group name for the LTI 1.3 platform endpoints.</param>
     /// <returns>The configured endpoint route builder.</returns>
-    public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null, string openAPIGroupName = "")
+    public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null)
     {
         Lti13PlatformEndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
         return app
-            .UseLti13PlatformCore(x => config.Core, openAPIGroupName)
-            .UseLti13PlatformDeepLinking(x => config.DeepLinking, openAPIGroupName)
-            .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices, openAPIGroupName)
-            .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices, openAPIGroupName);
+            .UseLti13PlatformCore(x => config.Core)
+            .UseLti13PlatformDeepLinking(x => config.DeepLinking)
+            .UseLti13PlatformNameRoleProvisioningServices(x => config.NameRoleProvisioningServices)
+            .UseLti13PlatformAssignmentGradeServices(x => config.AssignmentGradeServices);
     }
 }
 

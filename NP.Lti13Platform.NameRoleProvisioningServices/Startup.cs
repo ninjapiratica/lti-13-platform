@@ -15,6 +15,7 @@ using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Populators;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 using System.Collections.ObjectModel;
+using System.Net.Mime;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -26,7 +27,13 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices;
 /// </summary>
 public static class Startup
 {
-    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new() { TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(), DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        TypeInfoResolver = new NameRoleProvisioningMessageTypeResolver(),
+        Converters = { new JsonStringEnumConverter() },
+    };
     private static readonly Dictionary<string, MessageType> MessageTypes = [];
     private static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
 
@@ -138,9 +145,8 @@ public static class Startup
     /// </summary>
     /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
     /// <param name="configure">Optional function to configure endpoints.</param>
-    /// <param name="openAPIGroupName">Optional group name for OpenAPI documentation.</param>
     /// <returns>The endpoint route builder for further configuration.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null, string openAPIGroupName = "")
+    public static IEndpointRouteBuilder UseLti13PlatformNameRoleProvisioningServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
     {
         const string OpenAPI_Tag = "LTI 1.3 Name and Role Provisioning Services";
 
@@ -150,9 +156,10 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int pageIndex = 0, long? since = null, CancellationToken cancellationToken = default) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
+                pageIndex ??= 0;
 
                 var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
                 if (context == null)
@@ -173,7 +180,7 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
+                var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
 
                 var links = new Collection<string>();
 
@@ -191,7 +198,7 @@ public static class Startup
                 if (since.HasValue)
                 {
                     var asOfDate = new DateTime(since.GetValueOrDefault());
-                    var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
+                    var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
 
                     var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
 
@@ -295,10 +302,11 @@ public static class Startup
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
             })
-            .Produces<MembershipContainer>()
+            .Produces<MembershipContainer>(contentType: MediaTypeNames.Application.Json)
             .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
-            .WithGroupName(openAPIGroupName)
+            .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the memberships within a context.")
             .WithDescription("Gets the memberships for a context. Can be filtered by role or resourceLinkId (rlid). It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers. This endpoint can also be used to get changes in membership since a specified time. If rlid is provided, messages may be returned with the memberships.");

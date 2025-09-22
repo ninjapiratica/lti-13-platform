@@ -43,35 +43,6 @@ The `ILti13DeepLinkingDataService` interface is used to manage the persistance o
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
-## OpenAPI Documenatation
-
-Documentation for all endpoints are available through OpenAPI. This is normally configured through Swagger, NSwag or similar.
-
-To avoid adding these endpoints to a consumer's normal api documents, no 'group' has been given to the endpoints. This can be configured and added to the documents you choose. Below is an example using Swagger.
-
-```csharp
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(x =>
-{
-    x.SwaggerDoc("v1", new() { Title = "Public API", Version = "v1" });
-    x.SwaggerDoc("v2", new() { Title = "LTI 1.3", Version = "v2" });
-
-    x.DocInclusionPredicate((docName, apiDesc) =>
-    {
-        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == "group_name");
-    });
-});
-
-app.UseLti13PlatformDeepLinking(openAPIGroupName: "group_name");
-
-app.UseSwagger();
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Public API");
-    options.SwaggerEndpoint("/swagger/v2/swagger.json", "LTI 1.3 API");
-});
-```
-
 ## Defaults
 
 ### Routing

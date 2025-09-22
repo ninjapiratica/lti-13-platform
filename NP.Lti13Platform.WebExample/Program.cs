@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
+using NP.Lti13Platform.Core;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.WebExample;
 
@@ -12,20 +13,20 @@ builder.Services
     .AddLti13Platform()
     .WithLti13DataService<DataService>();
 
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.ShouldInclude = (description) => description.GroupName == null || description.GroupName == "v1";
+});
+builder.Services.AddOpenApi("v2", options =>
+{
+    options.ShouldInclude = (description) => description.GroupName == OpenApi.GroupName;
+    options.AddDocumentTransformer<OpenApi.DocumentTransformer>();
+    options.AddOperationTransformer<OpenApi.OperationTransformer>();
+});
+builder.Services.AddLti13OpenApi("lti");
+
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(x =>
-{
-    x.SwaggerDoc("v1", new() { Title = "Public API", Version = "v1" });
-    x.SwaggerDoc("v2", new() { Title = "LTI 1.3", Version = "v2" });
-
-    x.DocInclusionPredicate((docName, apiDesc) =>
-    {
-        return docName == (apiDesc.GroupName ?? string.Empty) || (docName == "v2" && apiDesc.GroupName == "group_name");
-    });
-});
 
 builder.Services.Configure<DeepLinkingConfig>(x =>
 {
@@ -49,13 +50,14 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseLti13Platform(openAPIGroupName: "group_name");
+app.UseLti13Platform();
 
-app.UseSwagger();
+app.MapOpenApi();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Public API");
-    options.SwaggerEndpoint("/swagger/v2/swagger.json", "LTI 1.3 API");
+    options.SwaggerEndpoint("/openapi/v1.json", "Public API");
+    options.SwaggerEndpoint("/openapi/v2.json", "LTI 1.3 API Manual");
+    options.SwaggerEndpoint("/openapi/lti.json", "LTI 1.3 API Automatic");
 });
 
 app.MapControllerRoute(
@@ -135,7 +137,7 @@ namespace NP.Lti13Platform.WebExample
                 OidcInitiationUrl = new Uri("https://saltire.lti.app/tool"),
                 LaunchUrl = new Uri("https://saltire.lti.app/tool"),
                 DeepLinkUrl = new Uri("https://saltire.lti.app/tool"),
-                Jwks = "https://saltire.lti.app/tool/jwks/1e49d5cbb9f93e9bb39a4c3cfcda929d",
+                Jwks = "https://saltire.lti.app/tool/jwks/sb86616b3bd1071dfbd24ff3b251e2570",
                 ServiceScopes =
                 [
                     AssignmentGradeServices.ServiceScopes.LineItem,
