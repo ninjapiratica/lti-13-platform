@@ -1,47 +1,128 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: Release Nuget
+name: Pack, Tag & Publish
 
 on:
-  push:
-    tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
+    inputs:
+      new_major:
+        description: "Is this a new major release?"
+        required: false
+        default: "false"
+      new_minor:
+        description: "Is this a new minor release?"
+        required: false
+        default: "false"
+      preview:
+        description: "Is this a preview release?"
+        required: false
+        default: "false"
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-  
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - uses: actions/checkout@v4
 
-    - name: Verify commit exists in origin/main
-      run: |
-        git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
-        git branch --remote --contains | grep origin/main
+      - name: Determine .NET version from csproj
+        id: dotnet-version
+        run: |
+          PROJECT_FILE=$(find . -name "*.csproj" | head -n 1)
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "No .csproj file found!" >&2
+            exit 1
+          fi
 
-    - name: Set VERSION variable from tag
-      run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+          if grep -q "<TargetFrameworks>" "$PROJECT_FILE"; then
+            TF=$(grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" "$PROJECT_FILE" | cut -d';' -f1)
+          else
+            TF=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" "$PROJECT_FILE")
+          fi
 
-    - name: Build
-      run: dotnet build --configuration Release /p:Version=${VERSION}
+          if [ -z "$TF" ]; then
+            echo "Failed to parse TargetFramework from $PROJECT_FILE" >&2
+            exit 1
+          fi
 
-    - name: Pack
-      run: dotnet pack --configuration Release /p:Version=${VERSION} --no-build --output .
-      
-    - name: Push
-      run: |
-        dotnet nuget push NP.Lti13Platform.Core.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-        dotnet nuget push NP.Lti13Platform.AssignmentGradeServices.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-        dotnet nuget push NP.Lti13Platform.DeepLinking.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-        dotnet nuget push NP.Lti13Platform.NameRoleProvisioningServices.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-        dotnet nuget push NP.Lti13Platform.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-      env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          DOTNET_VERSION="${TF#net}.x"
+          echo "Using .NET version: $DOTNET_VERSION"
+          echo "DOTNET_VERSION=$DOTNET_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ steps.dotnet-version.outputs.DOTNET_VERSION }}
+
+      - name: Compute next semantic version
+        id: version
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          CLEAN_TAG=${LAST_TAG#v}
+          CLEAN_TAG=${CLEAN_TAG%%-preview*}
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_TAG"
+
+          if [ "${{ github.event.inputs.new_major }}" = "true" ]; then
+            MAJOR=$((MAJOR+1))
+            MINOR=0
+            PATCH=0
+          elif [ "${{ github.event.inputs.new_minor }}" = "true" ]; then
+            MINOR=$((MINOR+1))
+            PATCH=0
+          else
+            PATCH=$((PATCH+1))
+          fi
+
+          VERSION="$MAJOR.$MINOR.$PATCH"
+
+          if [ "${{ github.event.inputs.preview }}" = "true" ]; then
+            BUILD_NUM=$(git rev-list --count HEAD)
+            VERSION="$VERSION-preview.$BUILD_NUM"
+          fi
+
+          echo "Computed version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
+
+      - name: Pack NuGet
+        run: dotnet pack --configuration Release -o ./artifacts /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
+
+      - name: Push NuGet packages
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          PACKAGES=(
+            "NP.Lti13Platform.Core.$VERSION.nupkg"
+            "NP.Lti13Platform.AssignmentGradeServices.$VERSION.nupkg"
+            "NP.Lti13Platform.DeepLinking.$VERSION.nupkg"
+            "NP.Lti13Platform.NameRoleProvisioningServices.$VERSION.nupkg"
+            "NP.Lti13Platform.$VERSION.nupkg"
+          )
+          for pkg in "${PACKAGES[@]}"; do
+            if [ -f "./artifacts/$pkg" ]; then
+              echo "Pushing $pkg..."
+              dotnet nuget push ./artifacts/$pkg --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
+            else
+              echo "Warning: $pkg not found, skipping..."
+            fi
+          done
+
+      - name: Create tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          git tag $TAG
+          git push origin $TAG
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: $TAG
+          name: Release $TAG
+          prerelease: ${{ github.event.inputs.preview }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
