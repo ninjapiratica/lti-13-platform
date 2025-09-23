@@ -84,8 +84,7 @@ jobs:
             VERSION="$MAJOR.$MINOR.$PATCH"
 
             if [ "${{ github.event.inputs.preview }}" = "true" ]; then
-              BUILD_NUM=$(git rev-list --count HEAD)
-              VERSION="$VERSION-preview.$BUILD_NUM"
+              VERSION="$VERSION-preview.${{ github.run_number }}"
             fi
           fi
 
