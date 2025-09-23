@@ -50,9 +50,20 @@ jobs:
           fi
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
-      - name: Create new tag
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
+
+      - name: Create new tag using GitHub API
+        env:  
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.get_tag.outputs.new_tag }}
-          git push origin ${{ steps.get_tag.outputs.new_tag }}
+          gh api repos/${{ github.repository }}/git/refs \
+          -f ref="refs/tags/${{ steps.get_tag.outputs.new_tag }}" \
+          -f sha="$(git rev-parse HEAD)"
+
+      # - name: Create new tag
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git tag ${{ steps.get_tag.outputs.new_tag }}
+      #     git push origin ${{ steps.get_tag.outputs.new_tag }}
