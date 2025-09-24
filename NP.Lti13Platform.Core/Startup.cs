@@ -255,7 +255,7 @@ public static class Startup
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                     ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
-                    ValidIssuer = tool.ClientId.ToString()
+                    ValidIssuer = tool.ClientId
                 });
 
                 if (!validatedToken.IsValid)
@@ -278,8 +278,8 @@ public static class Startup
                 var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                 {
                     Subject = validatedToken.ClaimsIdentity,
-                    Issuer = tokenConfig.Issuer.ToString(),
-                    Audience = tokenConfig.Issuer.ToString(),
+                    Issuer = tokenConfig.Issuer.OriginalString,
+                    Audience = tokenConfig.Issuer.OriginalString,
                     Expires = DateTime.UtcNow.AddSeconds(tokenConfig.AccessTokenExpirationSeconds),
                     SigningCredentials = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256),
                     Claims = new Dictionary<string, object>
@@ -415,7 +415,7 @@ public static class Startup
 
         ltiMessage.Audience = tool.ClientId;
         ltiMessage.IssuedDate = DateTime.UtcNow;
-        ltiMessage.Issuer = tokenConfig.Issuer.ToString();
+        ltiMessage.Issuer = tokenConfig.Issuer.OriginalString;
         ltiMessage.Nonce = request.Nonce!;
         ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.MessageTokenExpirationSeconds);
 
@@ -447,11 +447,11 @@ public static class Startup
             ltiMessage.Nickname = userPermissions.Nickname ? user.Nickname : null;
             ltiMessage.PhoneNumber = userPermissions.PhoneNumber ? user.PhoneNumber : null;
             ltiMessage.PhoneNumberVerified = userPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
-            ltiMessage.Picture = userPermissions.Picture ? user.Picture?.ToString() : null;
+            ltiMessage.Picture = userPermissions.Picture ? user.Picture?.OriginalString : null;
             ltiMessage.PreferredUsername = userPermissions.PreferredUsername ? user.PreferredUsername : null;
-            ltiMessage.Profile = userPermissions.Profile ? user.Profile?.ToString() : null;
+            ltiMessage.Profile = userPermissions.Profile ? user.Profile?.OriginalString : null;
             ltiMessage.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
-            ltiMessage.Website = userPermissions.Website ? user.Website?.ToString() : null;
+            ltiMessage.Website = userPermissions.Website ? user.Website?.OriginalString : null;
             ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
         }
 

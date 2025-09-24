@@ -84,7 +84,7 @@ public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICus
             var value = kvp.Value switch
             {
                 Lti13UserVariables.Id when customPermissions.UserId => scope.UserScope.User.Id,
-                Lti13UserVariables.Image when customPermissions.UserImage => scope.UserScope.User.Picture?.ToString(),
+                Lti13UserVariables.Image when customPermissions.UserImage => scope.UserScope.User.Picture?.OriginalString,
                 Lti13UserVariables.Username when customPermissions.UserUsername => scope.UserScope.User.Username,
                 Lti13UserVariables.Org when customPermissions.UserOrg => string.Join(',', scope.UserScope.User.Orgs),
                 Lti13UserVariables.ScopeMentor when customPermissions.UserScopeMentor => string.Join(',', mentoredUserIds),

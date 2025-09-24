@@ -133,8 +133,8 @@ public static class Startup
                 var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
-                    ValidAudience = tokenConfig.Issuer.ToString(),
-                    ValidIssuer = tool.ClientId.ToString()
+                    ValidAudience = tokenConfig.Issuer.OriginalString,
+                    ValidIssuer = tool.ClientId
                 });
 
                 if (!validatedToken.IsValid)

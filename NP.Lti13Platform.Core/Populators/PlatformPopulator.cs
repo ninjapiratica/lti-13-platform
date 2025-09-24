@@ -83,7 +83,7 @@ public class PlatformPopulator(ILti13PlatformService platformService) : Populato
                 Description = platform.Description,
                 Name = platform.Name,
                 ProductFamilyCode = platform.ProductFamilyCode,
-                Url = platform.Url?.ToString(),
+                Url = platform.Url?.OriginalString,
                 Version = platform.Version,
             };
         }
