@@ -155,15 +155,21 @@ public static class Startup
         endpointRouteBuilder.MapGet(config.JwksUrl,
             async (ILti13CoreDataService dataService, string clientId, CancellationToken cancellationToken) =>
             {
-                var keys = await dataService.GetPublicKeysAsync(clientId, cancellationToken);
                 var keySet = new JsonWebKeySet();
 
-                foreach (var key in keys)
+                var tool = await dataService.GetToolAsync(clientId, cancellationToken);
+
+                if (tool != null)
                 {
-                    var jwk = JsonWebKeyConverter.ConvertFromSecurityKey(key);
-                    jwk.Use = JsonWebKeyUseNames.Sig;
-                    jwk.Alg = SecurityAlgorithms.RsaSha256;
-                    keySet.Keys.Add(jwk);
+                    var keys = await dataService.GetPublicKeysAsync(tool.Id, cancellationToken);
+
+                    foreach (var key in keys)
+                    {
+                        var jwk = JsonWebKeyConverter.ConvertFromSecurityKey(key);
+                        jwk.Use = JsonWebKeyUseNames.Sig;
+                        jwk.Alg = SecurityAlgorithms.RsaSha256;
+                        keySet.Keys.Add(jwk);
+                    }
                 }
 
                 return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);

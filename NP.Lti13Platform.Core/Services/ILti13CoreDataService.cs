@@ -109,18 +109,18 @@ namespace NP.Lti13Platform.Core.Services
         /// <summary>
         /// Gets the public keys.
         /// </summary>
-        /// <param name="clientId">The client ID.</param>
+        /// <param name="toolId">The tool ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A collection of public keys.</returns>
-        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(string toolId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the private key.
         /// </summary>
-        /// <param name="clientId">The client ID.</param>
+        /// <param name="toolId">The tool ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The private key.</returns>
-        Task<SecurityKey> GetPrivateKeyAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<SecurityKey> GetPrivateKeyAsync(string toolId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the custom permissions.

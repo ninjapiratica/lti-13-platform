@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Services;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -45,9 +46,14 @@ public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13Tok
 
         var jwt = new JsonWebToken(authHeaderParts[1]);
 
-        var tokenConfig = await tokenService.GetTokenConfigAsync(jwt.Subject, CancellationToken.None);
+        var tool = await dataService.GetToolAsync(jwt.Subject, CancellationToken.None);
+        if (tool == null)
+        {
+            return AuthenticateResult.NoResult();
+        }
 
-        var publicKeys = await dataService.GetPublicKeysAsync(jwt.Subject, CancellationToken.None);
+        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, CancellationToken.None);
+        var publicKeys = await dataService.GetPublicKeysAsync(tool.Id, CancellationToken.None);
 
         var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(authHeaderParts[1], new TokenValidationParameters
         {
