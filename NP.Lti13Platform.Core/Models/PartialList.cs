@@ -10,6 +10,7 @@ public class PartialList<T>
     /// Gets or sets the items in the partial list.
     /// </summary>
     public required IEnumerable<T> Items { get; set; }
+
     /// <summary>
     /// Gets or sets the total number of items available.
     /// </summary>

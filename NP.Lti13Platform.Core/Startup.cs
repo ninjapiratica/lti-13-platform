@@ -561,18 +561,22 @@ public record LaunchPresentationOverride
     /// Gets or sets the document target. See <see cref="Lti13PresentationTargetDocuments"/> for possible values.
     /// </summary>
     public string? DocumentTarget { get; set; }
+
     /// <summary>
     /// Gets or sets the height of the presentation target.
     /// </summary>
     public double? Height { get; set; }
+
     /// <summary>
     /// Gets or sets the width of the presentation target.
     /// </summary>
     public double? Width { get; set; }
+
     /// <summary>
     /// Gets or sets the return URL.
     /// </summary>
     public string? ReturnUrl { get; set; }
+
     /// <summary>
     /// Gets or sets the locale.
     /// </summary>
