@@ -72,7 +72,7 @@ public class PlatformPopulator(ILti13PlatformService platformService) : Populato
     /// <inheritdoc />
     public override async Task PopulateAsync(IPlatformMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
     {
-        var platform = await platformService.GetPlatformAsync(scope.Tool.ClientId, cancellationToken);
+        var platform = await platformService.GetPlatformAsync(scope.Tool.Id, cancellationToken);
 
         if (platform != null)
         {

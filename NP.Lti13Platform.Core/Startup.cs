@@ -255,7 +255,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                 }
 
-                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
+                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.Id, cancellationToken);
 
                 var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                 {
@@ -413,7 +413,7 @@ public static class Startup
 
         var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId, cancellationToken);
 
-        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
+        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.Id, cancellationToken);
 
         var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
 

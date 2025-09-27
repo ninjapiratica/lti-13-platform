@@ -134,7 +134,7 @@ public class DeepLinkingPopulator(LinkGenerator linkGenerator, ILti13DeepLinking
             launchPresentation = JsonSerializer.Deserialize<LaunchPresentationOverride>(parts[1]);
         }
 
-        var config = await deepLinkingService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
+        var config = await deepLinkingService.GetConfigAsync(scope.Tool.Id, cancellationToken);
 
         obj.DeepLinkSettings = new IDeepLinkingMessage.DeepLinkSettingsMessage
         {

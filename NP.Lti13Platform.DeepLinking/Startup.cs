@@ -128,7 +128,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment_id is invalid", Error_Uri = DEEP_LINKING_SPEC });
                 }
 
-                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
+                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.Id, cancellationToken);
 
                 var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                 {
@@ -152,7 +152,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "version is invalid", Error_Uri = DEEP_LINKING_SPEC });
                 }
 
-                var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
+                var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.Id, cancellationToken);
 
                 List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems =
                     [
@@ -214,7 +214,7 @@ public static class Startup
                     await Task.WhenAll(saveTasks);
                 }
 
-                return await deepLinkingHandler.HandleResponseAsync(tool.ClientId, deployment.Id, contextId, response, cancellationToken);
+                return await deepLinkingHandler.HandleResponseAsync(tool.Id, deployment.Id, contextId, response, cancellationToken);
             })
             .WithName(RouteNames.DEEP_LINKING_RESPONSE)
             .DisableAntiforgery()

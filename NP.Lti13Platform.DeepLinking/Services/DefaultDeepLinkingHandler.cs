@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.DeepLinking.Services;
 
 internal class DefaultDeepLinkingHandler() : ILti13DeepLinkingHandler
 {
-    public Task<IResult> HandleResponseAsync(string clientId, string deploymentId, string? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default) =>
+    public Task<IResult> HandleResponseAsync(string toolId, string deploymentId, string? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default) =>
         Task.FromResult(Results.Content(@$"<!DOCTYPE html>
                 <html>
                 <body>

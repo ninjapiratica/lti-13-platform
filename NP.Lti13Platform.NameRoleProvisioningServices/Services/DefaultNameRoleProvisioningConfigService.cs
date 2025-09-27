@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Services;
 
 internal class DefaultNameRoleProvisioningConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13NameRoleProvisioningConfigService
 {
-    public async Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
+    public async Task<ServicesConfig> GetConfigAsync(string toolId, CancellationToken cancellationToken = default)
     {
         var servicesConfig = config.CurrentValue;
         if (servicesConfig.ServiceAddress == ServicesConfig.DefaultUri)

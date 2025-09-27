@@ -46,7 +46,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
         Platform? platform = null;
         if (customDictionary.Values.Any(v => v.StartsWith(Lti13ToolPlatformVariables.Version.Split('.')[0])) == true)
         {
-            platform = await platformService.GetPlatformAsync(scope.Tool.ClientId, cancellationToken);
+            platform = await platformService.GetPlatformAsync(scope.Tool.Id, cancellationToken);
         }
 
         IEnumerable<string> mentoredUserIds = [];

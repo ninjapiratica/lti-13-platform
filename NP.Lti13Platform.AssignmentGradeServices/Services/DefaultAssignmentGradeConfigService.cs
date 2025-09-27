@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services;
 
 internal class DefaultAssignmentGradeConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13AssignmentGradeConfigService
 {
-    public async Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default)
+    public async Task<ServicesConfig> GetConfigAsync(string toolId, CancellationToken cancellationToken = default)
     {
         var servicesConfig = config.CurrentValue;
         if (servicesConfig.ServiceAddress == ServicesConfig.DefaultUri)
