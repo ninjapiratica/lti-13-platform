@@ -73,7 +73,7 @@ public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ILti13CoreDa
                 }
             }
 
-            var config = await assignmentGradeService.GetConfigAsync(scope.Tool.Id, cancellationToken);
+            var config = await assignmentGradeService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 
             obj.ServiceEndpoints = new IServiceEndpoints.LineItemServiceEndpoints
             {

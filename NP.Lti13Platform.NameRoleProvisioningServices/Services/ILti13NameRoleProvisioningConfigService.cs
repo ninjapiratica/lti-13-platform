@@ -10,8 +10,8 @@ public interface ILti13NameRoleProvisioningConfigService
     /// <summary>
     /// Gets the configuration for name and role provisioning services.
     /// </summary>
-    /// <param name="toolId">The tool id for which to retrieve the configuration.</param>
+    /// <param name="clientId">The tool id for which to retrieve the configuration.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the services configuration.</returns>
-    Task<ServicesConfig> GetConfigAsync(string toolId, CancellationToken cancellationToken = default);
+    Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
 }

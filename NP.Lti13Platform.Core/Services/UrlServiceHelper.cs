@@ -117,7 +117,7 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
         var builder = new UriBuilder(tool.OidcInitiationUrl);
 
         var query = HttpUtility.ParseQueryString(builder.Query);
-        query.Add("iss", (await tokenService.GetTokenConfigAsync(tool.Id, cancellationToken)).Issuer.OriginalString);
+        query.Add("iss", (await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken)).Issuer.OriginalString);
         query.Add("login_hint", await GetLoginHintAsync(userId, actualUserId, isAnonymous, cancellationToken));
         query.Add("target_link_uri", targetLinkUri.OriginalString);
         query.Add("client_id", tool.ClientId);

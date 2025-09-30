@@ -161,7 +161,7 @@ public static class Startup
 
                 if (tool != null)
                 {
-                    var keys = await dataService.GetPublicKeysAsync(tool.Id, cancellationToken);
+                    var keys = await dataService.GetPublicKeysAsync(tool.ClientId, cancellationToken);
 
                     foreach (var key in keys)
                     {
@@ -255,7 +255,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
                 }
 
-                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.Id, cancellationToken);
+                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
                 var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                 {
@@ -270,16 +270,16 @@ public static class Startup
                 }
                 else
                 {
-                    var serviceToken = await dataService.GetServiceTokenAsync(tool.Id, validatedToken.SecurityToken.Id, cancellationToken);
+                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, validatedToken.SecurityToken.Id, cancellationToken);
                     if (serviceToken?.Expiration > DateTime.UtcNow)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "jti has already been used and is not expired", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
+                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                 }
 
-                var privateKey = await dataService.GetPrivateKeyAsync(tool.Id, cancellationToken);
+                var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
                 var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                 {
@@ -385,7 +385,7 @@ public static class Startup
         var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint, cancellationToken);
 
         var deployment = await dataService.GetDeploymentAsync(deploymentId, cancellationToken);
-        if (deployment?.ToolId != tool.Id)
+        if (deployment?.ClientId != tool.ClientId)
         {
             return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment is not for client", Error_Uri = AUTH_SPEC_URI });
         }
@@ -413,7 +413,7 @@ public static class Startup
 
         var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId, cancellationToken);
 
-        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.Id, cancellationToken);
+        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
         var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
 
@@ -475,7 +475,7 @@ public static class Startup
             await service.PopulateAsync(ltiMessage, scope, cancellationToken);
         }
 
-        var privateKey = await dataService.GetPrivateKeyAsync(tool.Id, cancellationToken);
+        var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
         var token = new JsonWebTokenHandler().CreateToken(
             JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),

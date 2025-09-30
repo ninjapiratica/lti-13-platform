@@ -52,7 +52,7 @@ public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ILti13NameRo
     {
         if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && !string.IsNullOrWhiteSpace(scope.Context?.Id))
         {
-            var config = await nameRoleProvisioningService.GetConfigAsync(scope.Tool.Id, cancellationToken);
+            var config = await nameRoleProvisioningService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 
             obj.NamesRoleService = new IServiceEndpoints.ServiceEndpoints
             {

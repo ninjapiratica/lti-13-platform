@@ -52,8 +52,8 @@ public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13Tok
             return AuthenticateResult.NoResult();
         }
 
-        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.Id, CancellationToken.None);
-        var publicKeys = await dataService.GetPublicKeysAsync(tool.Id, CancellationToken.None);
+        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, CancellationToken.None);
+        var publicKeys = await dataService.GetPublicKeysAsync(tool.ClientId, CancellationToken.None);
 
         var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(authHeaderParts[1], new TokenValidationParameters
         {

@@ -8,13 +8,7 @@
 public class Tool
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the tool.
-    /// A locally assigned identifier used by the platform to refer to this tool. This may differ from the client ID which is used for OAuth 2.0 authentication.
-    /// </summary>
-    public required string Id { get; set; }
-
-    /// <summary>
-    /// Gets or sets the client identifier for the tool.
+    /// Gets or sets the identifier for the tool.
     /// The OAuth 2.0 client identifier that the tool uses when making requests to the platform. This is a required value as per the LTI 1.3 specification and corresponds to the client_id parameter in OpenID Connect and OAuth 2.0.
     /// </summary>
     public required string ClientId { get; set; }
