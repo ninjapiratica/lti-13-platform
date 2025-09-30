@@ -360,7 +360,7 @@ namespace NP.Lti13Platform.WebExample
                     Custom = ci.Custom,
                     Text = ci.Text,
                     Title = ci.Title,
-                    Url = ci.Url == null ? null : new Uri(ci.Url)
+                    Url = ci.Url
                 });
             }
 
