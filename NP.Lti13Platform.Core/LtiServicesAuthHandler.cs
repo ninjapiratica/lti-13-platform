@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Services;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -25,7 +26,15 @@ public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13Tok
     /// </summary>
     public static readonly string SchemeName = "NP.Lti13Platform.Services";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Handles the authentication process for incoming requests by validating a Bearer token.
+    /// </summary>
+    /// <remarks>This method extracts the Bearer token from the Authorization header of the HTTP request,
+    /// validates it using the provided token configuration and public keys, and returns an authentication result. If
+    /// the token is valid, an <see cref="AuthenticateResult.Success"/> is returned with the associated claims.
+    /// Otherwise, <see cref="AuthenticateResult.NoResult"/> is returned.</remarks>
+    /// <returns>An <see cref="AuthenticateResult"/> indicating the outcome of the authentication process. Returns <see
+    /// cref="AuthenticateResult.Success"/> if the token is valid; otherwise, <see cref="AuthenticateResult.NoResult"/>.</returns>
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var authHeaderParts = Context.Request.Headers.Authorization.ToString().Trim().Split(' ');
@@ -37,15 +46,20 @@ public class LtiServicesAuthHandler(ILti13CoreDataService dataService, ILti13Tok
 
         var jwt = new JsonWebToken(authHeaderParts[1]);
 
-        var tokenConfig = await tokenService.GetTokenConfigAsync(jwt.Subject, CancellationToken.None);
+        var tool = await dataService.GetToolAsync(jwt.Subject, CancellationToken.None);
+        if (tool == null)
+        {
+            return AuthenticateResult.NoResult();
+        }
 
-        var publicKeys = await dataService.GetPublicKeysAsync(jwt.Subject, CancellationToken.None);
+        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, CancellationToken.None);
+        var publicKeys = await dataService.GetPublicKeysAsync(tool.ClientId, CancellationToken.None);
 
         var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(authHeaderParts[1], new TokenValidationParameters
         {
             IssuerSigningKeys = publicKeys,
-            ValidAudience = tokenConfig.Issuer.ToString(),
-            ValidIssuer = tokenConfig.Issuer.ToString()
+            ValidAudience = tokenConfig.Issuer.OriginalString,
+            ValidIssuer = tokenConfig.Issuer.OriginalString
         });
 
         return validatedToken.IsValid ? AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal([validatedToken.ClaimsIdentity]), SchemeName)) : AuthenticateResult.NoResult();

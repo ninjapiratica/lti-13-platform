@@ -9,20 +9,20 @@ namespace NP.Lti13Platform.DeepLinking.Models;
 /// <summary>
 /// Represents a dictionary for content items with a specific tool Id and content item type.
 /// </summary>
-public class ContentItemDictionary() : IDictionary<(string? ToolId, string ContentItemType), Type>
+public class ContentItemDictionary() : IDictionary<(string? ClientId, string ContentItemType), Type>
 {
     private readonly IDictionary<(string?, string), Type> _items = new Dictionary<(string?, string), Type>();
 
     /// <summary>
     /// Gets or sets the Type associated with the specified key.
-    /// If the key is not found but has a non-null ToolId, attempts to find a Type with the same ContentItemType but null ToolId.
+    /// If the key is not found but has a non-null ClientId, attempts to find a Type with the same ContentItemType but null ClientId.
     /// If no match is found, returns DefaultContentItem type.
     /// </summary>
-    /// <param name="key">The key containing ToolId and ContentItemType.</param>
+    /// <param name="key">The key containing ClientId and ContentItemType.</param>
     /// <returns>The Type associated with the specified key, or DefaultContentItem if not found.</returns>
-    public Type this[(string? ToolId, string ContentItemType) key]
+    public Type this[(string? ClientId, string ContentItemType) key]
     {
-        get => _items.TryGetValue(key, out Type? value) ? value : key.ToolId != null && _items.TryGetValue((null, key.ContentItemType), out value) ? value : typeof(DefaultContentItem);
+        get => _items.TryGetValue(key, out Type? value) ? value : key.ClientId != null && _items.TryGetValue((null, key.ContentItemType), out value) ? value : typeof(DefaultContentItem);
         set => _items[key] = value;
     }
 

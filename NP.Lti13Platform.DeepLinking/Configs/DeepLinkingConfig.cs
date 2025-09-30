@@ -42,7 +42,7 @@ namespace NP.Lti13Platform.DeepLinking.Configs
         /// <summary>
         /// Gets the mapping of content item types.
         /// </summary>
-        public IDictionary<(string? ToolId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
+        public IDictionary<(string? ClientId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
 
         /// <summary>
         /// Gets or sets the service address for deep linking.

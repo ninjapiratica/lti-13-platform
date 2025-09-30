@@ -155,15 +155,21 @@ public static class Startup
         endpointRouteBuilder.MapGet(config.JwksUrl,
             async (ILti13CoreDataService dataService, string clientId, CancellationToken cancellationToken) =>
             {
-                var keys = await dataService.GetPublicKeysAsync(clientId, cancellationToken);
                 var keySet = new JsonWebKeySet();
 
-                foreach (var key in keys)
+                var tool = await dataService.GetToolAsync(clientId, cancellationToken);
+
+                if (tool != null)
                 {
-                    var jwk = JsonWebKeyConverter.ConvertFromSecurityKey(key);
-                    jwk.Use = JsonWebKeyUseNames.Sig;
-                    jwk.Alg = SecurityAlgorithms.RsaSha256;
-                    keySet.Keys.Add(jwk);
+                    var keys = await dataService.GetPublicKeysAsync(tool.ClientId, cancellationToken);
+
+                    foreach (var key in keys)
+                    {
+                        var jwk = JsonWebKeyConverter.ConvertFromSecurityKey(key);
+                        jwk.Use = JsonWebKeyUseNames.Sig;
+                        jwk.Alg = SecurityAlgorithms.RsaSha256;
+                        keySet.Keys.Add(jwk);
+                    }
                 }
 
                 return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);
@@ -255,7 +261,7 @@ public static class Startup
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                     ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
-                    ValidIssuer = tool.ClientId.ToString()
+                    ValidIssuer = tool.ClientId
                 });
 
                 if (!validatedToken.IsValid)
@@ -264,13 +270,13 @@ public static class Startup
                 }
                 else
                 {
-                    var serviceToken = await dataService.GetServiceTokenAsync(tool.Id, validatedToken.SecurityToken.Id, cancellationToken);
+                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, validatedToken.SecurityToken.Id, cancellationToken);
                     if (serviceToken?.Expiration > DateTime.UtcNow)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "jti has already been used and is not expired", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ToolId = tool.Id, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
+                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                 }
 
                 var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
@@ -278,8 +284,8 @@ public static class Startup
                 var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
                 {
                     Subject = validatedToken.ClaimsIdentity,
-                    Issuer = tokenConfig.Issuer.ToString(),
-                    Audience = tokenConfig.Issuer.ToString(),
+                    Issuer = tokenConfig.Issuer.OriginalString,
+                    Audience = tokenConfig.Issuer.OriginalString,
                     Expires = DateTime.UtcNow.AddSeconds(tokenConfig.AccessTokenExpirationSeconds),
                     SigningCredentials = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256),
                     Claims = new Dictionary<string, object>
@@ -379,7 +385,7 @@ public static class Startup
         var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint, cancellationToken);
 
         var deployment = await dataService.GetDeploymentAsync(deploymentId, cancellationToken);
-        if (deployment?.ToolId != tool.Id)
+        if (deployment?.ClientId != tool.ClientId)
         {
             return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment is not for client", Error_Uri = AUTH_SPEC_URI });
         }
@@ -415,7 +421,7 @@ public static class Startup
 
         ltiMessage.Audience = tool.ClientId;
         ltiMessage.IssuedDate = DateTime.UtcNow;
-        ltiMessage.Issuer = tokenConfig.Issuer.ToString();
+        ltiMessage.Issuer = tokenConfig.Issuer.OriginalString;
         ltiMessage.Nonce = request.Nonce!;
         ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.MessageTokenExpirationSeconds);
 
@@ -447,11 +453,11 @@ public static class Startup
             ltiMessage.Nickname = userPermissions.Nickname ? user.Nickname : null;
             ltiMessage.PhoneNumber = userPermissions.PhoneNumber ? user.PhoneNumber : null;
             ltiMessage.PhoneNumberVerified = userPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
-            ltiMessage.Picture = userPermissions.Picture ? user.Picture?.ToString() : null;
+            ltiMessage.Picture = userPermissions.Picture ? user.Picture?.OriginalString : null;
             ltiMessage.PreferredUsername = userPermissions.PreferredUsername ? user.PreferredUsername : null;
-            ltiMessage.Profile = userPermissions.Profile ? user.Profile?.ToString() : null;
+            ltiMessage.Profile = userPermissions.Profile ? user.Profile?.OriginalString : null;
             ltiMessage.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
-            ltiMessage.Website = userPermissions.Website ? user.Website?.ToString() : null;
+            ltiMessage.Website = userPermissions.Website ? user.Website?.OriginalString : null;
             ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
         }
 
@@ -555,18 +561,22 @@ public record LaunchPresentationOverride
     /// Gets or sets the document target. See <see cref="Lti13PresentationTargetDocuments"/> for possible values.
     /// </summary>
     public string? DocumentTarget { get; set; }
+
     /// <summary>
     /// Gets or sets the height of the presentation target.
     /// </summary>
     public double? Height { get; set; }
+
     /// <summary>
     /// Gets or sets the width of the presentation target.
     /// </summary>
     public double? Width { get; set; }
+
     /// <summary>
     /// Gets or sets the return URL.
     /// </summary>
     public string? ReturnUrl { get; set; }
+
     /// <summary>
     /// Gets or sets the locale.
     /// </summary>

@@ -175,7 +175,7 @@ public static class Startup
                 }
 
                 var deployment = await coreDataService.GetDeploymentAsync(deploymentId, cancellationToken);
-                if (deployment?.ToolId != tool.Id)
+                if (deployment?.ClientId != tool.ClientId)
                 {
                     return Results.NotFound();
                 }

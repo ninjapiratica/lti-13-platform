@@ -92,11 +92,11 @@ namespace NP.Lti13Platform.Core.Services
         /// <summary>
         /// Gets a service token by tool and token IDs.
         /// </summary>
-        /// <param name="toolId">The tool ID.</param>
+        /// <param name="clientId">The tool ID.</param>
         /// <param name="id">The token ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The service token.</returns>
-        Task<ServiceToken?> GetServiceTokenAsync(string toolId, string id, CancellationToken cancellationToken = default);
+        Task<ServiceToken?> GetServiceTokenAsync(string clientId, string id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Saves a service token.
@@ -109,7 +109,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <summary>
         /// Gets the public keys.
         /// </summary>
-        /// <param name="clientId">The client ID.</param>
+        /// <param name="clientId">The tool ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A collection of public keys.</returns>
         Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(string clientId, CancellationToken cancellationToken = default);
@@ -117,7 +117,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <summary>
         /// Gets the private key.
         /// </summary>
-        /// <param name="clientId">The client ID.</param>
+        /// <param name="clientId">The tool ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The private key.</returns>
         Task<SecurityKey> GetPrivateKeyAsync(string clientId, CancellationToken cancellationToken = default);

@@ -123,7 +123,7 @@ public static class Startup
                 }
 
                 var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value, cancellationToken);
-                if (deployment == null || deployment.ToolId != tool.Id)
+                if (deployment == null || deployment.ClientId != tool.ClientId)
                 {
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment_id is invalid", Error_Uri = DEEP_LINKING_SPEC });
                 }
@@ -133,8 +133,8 @@ public static class Startup
                 var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Jwt, new TokenValidationParameters
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
-                    ValidAudience = tokenConfig.Issuer.ToString(),
-                    ValidIssuer = tool.ClientId.ToString()
+                    ValidAudience = tokenConfig.Issuer.OriginalString,
+                    ValidIssuer = tool.ClientId
                 });
 
                 if (!validatedToken.IsValid)

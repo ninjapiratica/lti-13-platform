@@ -10,7 +10,7 @@ public interface ILti13DeepLinkingHandler
     /// <summary>
     /// Handles a deep linking response from an LTI tool.
     /// </summary>
-    /// <param name="clientId">The client identifier.</param>
+    /// <param name="clientId">The tool identifier.</param>
     /// <param name="deploymentId">The deployment identifier.</param>
     /// <param name="contextId">Optional. The context identifier.</param>
     /// <param name="response">The deep linking response to handle.</param>

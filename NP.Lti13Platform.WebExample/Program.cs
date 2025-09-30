@@ -132,7 +132,6 @@ namespace NP.Lti13Platform.WebExample
         {
             Tools.Add(new Tool
             {
-                Id = "toolId",
                 ClientId = "clientId",
                 OidcInitiationUrl = new Uri("https://saltire.lti.app/tool"),
                 LaunchUrl = new Uri("https://saltire.lti.app/tool"),
@@ -151,7 +150,7 @@ namespace NP.Lti13Platform.WebExample
             Deployments.Add(new Deployment
             {
                 Id = "deploymentId",
-                ToolId = "toolId"
+                ClientId = "toolId"
             });
 
             Contexts.Add(new Context
@@ -277,14 +276,14 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenAsync(string toolId, string serviceTokenId, CancellationToken cancellationToken)
+        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenAsync(string clientId, string serviceTokenId, CancellationToken cancellationToken)
         {
-            return Task.FromResult(ServiceTokens.FirstOrDefault(x => x.ToolId == toolId && x.Id == serviceTokenId));
+            return Task.FromResult(ServiceTokens.FirstOrDefault(x => x.ClientId == clientId && x.Id == serviceTokenId));
         }
 
         Task ILti13CoreDataService.SaveServiceTokenAsync(ServiceToken serviceToken, CancellationToken cancellationToken)
         {
-            var existing = ServiceTokens.SingleOrDefault(x => x.ToolId == serviceToken.ToolId && x.Id == serviceToken.Id);
+            var existing = ServiceTokens.SingleOrDefault(x => x.ClientId == serviceToken.ClientId && x.Id == serviceToken.Id);
             if (existing != null)
             {
                 ServiceTokens[ServiceTokens.IndexOf(existing)] = serviceToken;
@@ -324,8 +323,6 @@ namespace NP.Lti13Platform.WebExample
 
             return Task.FromResult<SecurityKey>(securityKey);
         }
-
-
 
         Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
         {
