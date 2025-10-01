@@ -167,7 +167,7 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
                 {

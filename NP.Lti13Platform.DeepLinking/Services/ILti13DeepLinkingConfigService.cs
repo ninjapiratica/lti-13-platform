@@ -1,4 +1,5 @@
-﻿using NP.Lti13Platform.DeepLinking.Configs;
+﻿using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.DeepLinking.Configs;
 
 namespace NP.Lti13Platform.DeepLinking.Services;
 
@@ -13,5 +14,5 @@ public interface ILti13DeepLinkingConfigService
     /// <param name="clientId">The tool identifier for which to retrieve the configuration.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the deep linking configuration.</returns>
-    Task<DeepLinkingConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
+    Task<DeepLinkingConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }

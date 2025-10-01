@@ -1,4 +1,5 @@
 ﻿using NP.Lti13Platform.Core.Configs;
+using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.Core.Services
 {
@@ -13,6 +14,6 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="clientId">The tool identifier for which to retrieve token configuration.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the token configuration.</returns>
-        Task<Lti13PlatformTokenConfig> GetTokenConfigAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<Lti13PlatformTokenConfig> GetTokenConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
     }
 }

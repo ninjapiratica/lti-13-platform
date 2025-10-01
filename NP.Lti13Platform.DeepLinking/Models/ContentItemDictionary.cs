@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using NP.Lti13Platform.Core.Models;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
 namespace NP.Lti13Platform.DeepLinking.Models;
@@ -6,9 +7,9 @@ namespace NP.Lti13Platform.DeepLinking.Models;
 /// <summary>
 /// Represents a dictionary for content items with a specific tool Id and content item type.
 /// </summary>
-public class ContentItemDictionary() : IDictionary<(string? ClientId, string ContentItemType), Type>
+public class ContentItemDictionary() : IDictionary<(ClientId? ClientId, string ContentItemType), Type>
 {
-    private readonly IDictionary<(string?, string), Type> _items = new Dictionary<(string?, string), Type>();
+    private readonly IDictionary<(ClientId?, string), Type> _items = new Dictionary<(ClientId?, string), Type>();
 
     /// <summary>
     /// Gets or sets the Type associated with the specified key.
@@ -17,7 +18,7 @@ public class ContentItemDictionary() : IDictionary<(string? ClientId, string Con
     /// </summary>
     /// <param name="key">The key containing ClientId and ContentItemType.</param>
     /// <returns>The Type associated with the specified key, or DefaultContentItem if not found.</returns>
-    public Type this[(string? ClientId, string ContentItemType) key]
+    public Type this[(ClientId? ClientId, string ContentItemType) key]
     {
         get => _items.TryGetValue(key, out Type? value) ? value : key.ClientId != null && _items.TryGetValue((null, key.ContentItemType), out value) ? value : typeof(DefaultContentItem);
         set => _items[key] = value;
@@ -26,7 +27,7 @@ public class ContentItemDictionary() : IDictionary<(string? ClientId, string Con
     /// <summary>
     /// Gets a collection containing the keys in the dictionary.
     /// </summary>
-    public ICollection<(string?, string)> Keys => _items.Keys;
+    public ICollection<(ClientId?, string)> Keys => _items.Keys;
 
     /// <summary>
     /// Gets a collection containing the values in the dictionary.
@@ -48,13 +49,13 @@ public class ContentItemDictionary() : IDictionary<(string? ClientId, string Con
     /// </summary>
     /// <param name="key">The key of the element to add.</param>
     /// <param name="value">The value of the element to add.</param>
-    public void Add((string?, string) key, Type value) => _items[key] = value;
+    public void Add((ClientId?, string) key, Type value) => _items[key] = value;
 
     /// <summary>
     /// Adds the specified key/value pair to the dictionary.
     /// </summary>
     /// <param name="item">The key/value pair to add.</param>
-    public void Add(KeyValuePair<(string?, string), Type> item) => _items[item.Key] = item.Value;
+    public void Add(KeyValuePair<(ClientId?, string), Type> item) => _items[item.Key] = item.Value;
 
     /// <summary>
     /// Removes all keys and values from the dictionary.
@@ -66,41 +67,41 @@ public class ContentItemDictionary() : IDictionary<(string? ClientId, string Con
     /// </summary>
     /// <param name="item">The key/value pair to locate in the dictionary.</param>
     /// <returns>True if the key/value pair is found in the dictionary; otherwise, false.</returns>
-    public bool Contains(KeyValuePair<(string?, string), Type> item) => _items.Contains(item);
+    public bool Contains(KeyValuePair<(ClientId?, string), Type> item) => _items.Contains(item);
 
     /// <summary>
     /// Determines whether the dictionary contains the specified key.
     /// </summary>
     /// <param name="key">The key to locate in the dictionary.</param>
     /// <returns>True if the dictionary contains an element with the specified key; otherwise, false.</returns>
-    public bool ContainsKey((string?, string) key) => _items.ContainsKey(key);
+    public bool ContainsKey((ClientId?, string) key) => _items.ContainsKey(key);
 
     /// <summary>
     /// Copies the elements of the dictionary to an array, starting at the specified array index.
     /// </summary>
     /// <param name="array">The one-dimensional array that is the destination of the elements copied from the dictionary.</param>
     /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-    public void CopyTo(KeyValuePair<(string?, string), Type>[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+    public void CopyTo(KeyValuePair<(ClientId?, string), Type>[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
 
     /// <summary>
     /// Returns an enumerator that iterates through the dictionary.
     /// </summary>
     /// <returns>An enumerator for the dictionary.</returns>
-    public IEnumerator<KeyValuePair<(string?, string), Type>> GetEnumerator() => _items.GetEnumerator();
+    public IEnumerator<KeyValuePair<(ClientId?, string), Type>> GetEnumerator() => _items.GetEnumerator();
 
     /// <summary>
     /// Removes the element with the specified key from the dictionary.
     /// </summary>
     /// <param name="key">The key of the element to remove.</param>
     /// <returns>True if the element is successfully removed; otherwise, false.</returns>
-    public bool Remove((string?, string) key) => _items.Remove(key);
+    public bool Remove((ClientId?, string) key) => _items.Remove(key);
 
     /// <summary>
     /// Removes the first occurrence of a specific key/value pair from the dictionary.
     /// </summary>
     /// <param name="item">The key/value pair to remove.</param>
     /// <returns>True if the key/value pair was successfully removed; otherwise, false.</returns>
-    public bool Remove(KeyValuePair<(string?, string), Type> item) => _items.Remove(item.Key);
+    public bool Remove(KeyValuePair<(ClientId?, string), Type> item) => _items.Remove(item.Key);
 
     /// <summary>
     /// Gets the value associated with the specified key.
@@ -110,7 +111,7 @@ public class ContentItemDictionary() : IDictionary<(string? ClientId, string Con
     /// <param name="value">When this method returns, the value associated with the specified key, if the key is found;
     /// otherwise, the default value for the type of the value parameter.</param>
     /// <returns>Always returns true.</returns>
-    public bool TryGetValue((string?, string) key, [MaybeNullWhen(false)] out Type value)
+    public bool TryGetValue((ClientId?, string) key, [MaybeNullWhen(false)] out Type value)
     {
         value = this[key];
         return true;

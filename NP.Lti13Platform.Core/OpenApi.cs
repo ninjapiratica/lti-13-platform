@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 namespace NP.Lti13Platform.Core
 {
@@ -67,12 +68,10 @@ namespace NP.Lti13Platform.Core
             /// Adds a predefined security scheme to the OpenAPI document if it is not already present.
             /// </summary>
             /// <remarks>This method ensures that the OpenAPI document includes a security scheme
-            /// with the HTTP bearer authentication type. If the security scheme already exists
-            /// in the document, no changes are made.</remarks>
+            /// with the HTTP bearer authentication type and marks custom types with appropriately.</remarks>
             /// <param name="document">The <see cref="OpenApiDocument"/> to which the security scheme will be added.</param>
             /// <param name="context">The context for the OpenAPI document transformation. This parameter provides additional metadata or state for the transformation process.</param>
             /// <param name="cancellationToken">A token to monitor for cancellation requests. This can be used to cancel the operation if needed.</param>
-            /// <returns>A task that represents the asynchronous operation. The task completes when the transformation is finished.</returns>
             public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
             {
                 document.Components ??= new OpenApiComponents();
@@ -85,6 +84,15 @@ namespace NP.Lti13Platform.Core
                         Scheme = "bearer",
                         In = ParameterLocation.Header,
                     });
+                }
+
+                foreach(var type in AppDomain.CurrentDomain
+                    .GetAssemblies()
+                    .Where(x => x.FullName != null && x.FullName.StartsWith("NP.Lti13Platform"))
+                    .SelectMany(x => x.GetTypes())
+                    .Where(x => x.GetCustomAttribute<StringIdAttribute>() != null))
+                {
+                    document.Components.Schemas.Remove(type.Name);
                 }
 
                 return Task.CompletedTask;

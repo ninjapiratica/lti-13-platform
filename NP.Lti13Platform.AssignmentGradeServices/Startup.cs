@@ -91,7 +91,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 pageIndex ??= 0;
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
@@ -167,7 +167,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -264,7 +264,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -323,7 +323,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -414,7 +414,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -462,7 +462,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 pageIndex ??= 0;
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
@@ -542,7 +542,7 @@ public static class Startup
             async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)

@@ -153,7 +153,7 @@ public static class Startup
         }
 
         endpointRouteBuilder.MapGet(config.JwksUrl,
-            async (ILti13CoreDataService dataService, string clientId, CancellationToken cancellationToken) =>
+            async (ILti13CoreDataService dataService, ClientId clientId, CancellationToken cancellationToken) =>
             {
                 var keySet = new JsonWebKeySet();
 
@@ -239,7 +239,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                 }
 
-                var tool = await dataService.GetToolAsync(jwt.Issuer, cancellationToken);
+                var tool = await dataService.GetToolAsync(new ClientId(jwt.Issuer), cancellationToken);
                 if (tool?.Jwks == null)
                 {
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
@@ -261,7 +261,7 @@ public static class Startup
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                     ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
-                    ValidIssuer = tool.ClientId
+                    ValidIssuer = tool.ClientId.ToString()
                 });
 
                 if (!validatedToken.IsValid)
@@ -365,7 +365,7 @@ public static class Startup
             return Results.BadRequest(new LtiBadRequest { Error = INVALID_CLIENT, Error_Description = "client_id is required.", Error_Uri = AUTH_SPEC_URI });
         }
 
-        var tool = await dataService.GetToolAsync(request.Client_Id, cancellationToken);
+        var tool = await dataService.GetToolAsync(new ClientId(request.Client_Id), cancellationToken);
 
         if (tool == null)
         {
@@ -419,7 +419,7 @@ public static class Startup
 
         ltiMessage.MessageType = messageTypeString;
 
-        ltiMessage.Audience = tool.ClientId;
+        ltiMessage.Audience = tool.ClientId.ToString();
         ltiMessage.IssuedDate = DateTime.UtcNow;
         ltiMessage.Issuer = tokenConfig.Issuer.OriginalString;
         ltiMessage.Nonce = request.Nonce!;

@@ -13,7 +13,7 @@ public class Deployment
     /// <summary>
     /// The unique identifier for the tool associated with this deployment.
     /// </summary>
-    public required string ClientId { get; set; }
+    public required ClientId ClientId { get; set; }
 
     /// <summary>
     /// A map of key/value custom parameters for this deployment. These parameters MUST be included in LTI messages if present. Map values must be strings. Note that "empty-string" is a valid value (""); however, null is not a valid value.

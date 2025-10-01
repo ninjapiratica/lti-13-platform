@@ -14,7 +14,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="clientId">The client ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The tool.</returns>
-        Task<Tool?> GetToolAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<Tool?> GetToolAsync(ClientId clientId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a deployment by its ID.
@@ -96,7 +96,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="id">The token ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The service token.</returns>
-        Task<ServiceToken?> GetServiceTokenAsync(string clientId, string id, CancellationToken cancellationToken = default);
+        Task<ServiceToken?> GetServiceTokenAsync(ClientId clientId, string id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Saves a service token.
@@ -112,7 +112,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="clientId">The tool ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A collection of public keys.</returns>
-        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(ClientId clientId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the private key.
@@ -120,7 +120,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="clientId">The tool ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The private key.</returns>
-        Task<SecurityKey> GetPrivateKeyAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<SecurityKey> GetPrivateKeyAsync(ClientId clientId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the custom permissions.

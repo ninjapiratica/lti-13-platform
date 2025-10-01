@@ -1,4 +1,5 @@
-﻿using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
+﻿using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices.Services;
 
@@ -13,5 +14,5 @@ public interface ILti13NameRoleProvisioningConfigService
     /// <param name="clientId">The tool id for which to retrieve the configuration.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the services configuration.</returns>
-    Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
+    Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }

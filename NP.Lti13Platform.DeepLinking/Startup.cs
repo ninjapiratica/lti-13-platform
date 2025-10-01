@@ -109,7 +109,7 @@ public static class Startup
                 }
 
                 var jwt = new JsonWebToken(request.Jwt);
-                var clientId = jwt.Issuer;
+                var clientId = new ClientId(jwt.Issuer);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool?.Jwks == null)
@@ -134,7 +134,7 @@ public static class Startup
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                     ValidAudience = tokenConfig.Issuer.OriginalString,
-                    ValidIssuer = tool.ClientId
+                    ValidIssuer = tool.ClientId.ToString()
                 });
 
                 if (!validatedToken.IsValid)
