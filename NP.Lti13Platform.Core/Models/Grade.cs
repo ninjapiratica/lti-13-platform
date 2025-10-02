@@ -22,7 +22,7 @@ public class Grade
     /// <summary>
     /// The user who created or last modified this grade (typically an instructor or grader).
     /// </summary>
-    public string? ScoringUserId { get; set; }
+    public UserId? ScoringUserId { get; set; }
 
     /// <summary>
     /// The numeric score achieved by the student on the associated line item. This may be scaled by resultMaximum to determine the final grade percentage.

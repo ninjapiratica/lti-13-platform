@@ -670,7 +670,7 @@ public static class Startup
 
 internal record LineItemRequest(decimal ScoreMaximum, string Label, ResourceLinkId? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-internal record ScoreRequest(UserId UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
+internal record ScoreRequest(UserId UserId, UserId ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
 
@@ -681,7 +681,7 @@ internal record LineItemResultResponse
     public required UserId UserId { get; set; }
     public decimal? ResultScore { get; set; }
     public required decimal ResultMaximum { get; set; }
-    public string? ScoringUserId { get; set; }
+    public UserId? ScoringUserId { get; set; }
     public string? Comment { get; set; }
 }
 
