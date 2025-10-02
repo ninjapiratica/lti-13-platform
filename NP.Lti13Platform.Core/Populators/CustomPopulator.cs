@@ -115,7 +115,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
                 Lti13ContextVariables.IdHistory when customPermissions.ContextIdHistory => scope.Context != null ? string.Join(',', scope.Context.ClonedIdHistory) : string.Empty,
                 Lti13ContextVariables.GradeLevelsOneRoster when customPermissions.ContextGradeLevelsOneRoster => scope.Context != null ? string.Join(',', scope.Context.OneRosterGrades) : string.Empty,
 
-                Lti13ResourceLinkVariables.Id when customPermissions.ResourceLinkId => scope.ResourceLink?.Id,
+                Lti13ResourceLinkVariables.Id when customPermissions.ResourceLinkId => scope.ResourceLink?.Id.ToString(),
                 Lti13ResourceLinkVariables.Title when customPermissions.ResourceLinkTitle => scope.ResourceLink?.Title,
                 Lti13ResourceLinkVariables.Description when customPermissions.ResourceLinkDescription => scope.ResourceLink?.Text,
                 Lti13ResourceLinkVariables.AvailableStartDateTime when customPermissions.ResourceLinkAvailableStartDateTime => scope.ResourceLink?.AvailableStartDateTime?.ToString("O"),

@@ -207,12 +207,12 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Memberships.SingleOrDefault(m => m.ContextId == contextId && m.UserId == userId));
         }
 
-        Task<ResourceLink?> ILti13CoreDataService.GetResourceLinkAsync(string resourceLinkId, CancellationToken cancellationToken)
+        Task<ResourceLink?> ILti13CoreDataService.GetResourceLinkAsync(ResourceLinkId resourceLinkId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ResourceLinks.SingleOrDefault(r => r.Id == resourceLinkId));
         }
 
-        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag, CancellationToken cancellationToken)
+        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId, ResourceLinkId? resourceLinkId, string? tag, CancellationToken cancellationToken)
         {
             var lineItems = LineItems.Where(li => li.DeploymentId == deploymentId && li.ContextId == contextId && (resourceId == null || li.ResourceId == resourceId) && (resourceLinkId == null || li.ResourceLinkId == resourceLinkId) && (tag == null || li.Tag == tag)).ToList();
 
@@ -246,7 +246,7 @@ namespace NP.Lti13Platform.WebExample
             }
         }
 
-        async Task<Attempt?> ILti13CoreDataService.GetAttemptAsync(string resourceLinkId, UserId userId, CancellationToken cancellationToken)
+        async Task<Attempt?> ILti13CoreDataService.GetAttemptAsync(ResourceLinkId resourceLinkId, UserId userId, CancellationToken cancellationToken)
         {
             return await Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
@@ -330,7 +330,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult<SecurityKey>(securityKey);
         }
 
-        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
+        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
         {
             if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
@@ -349,7 +349,7 @@ namespace NP.Lti13Platform.WebExample
 
         Task<string> ILti13DeepLinkingDataService.SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken)
         {
-            var id = Guid.NewGuid().ToString();
+            var id = new ResourceLinkId(Guid.NewGuid().ToString());
 
             if (contentItem is LtiResourceLinkContentItem ci && contextId != null)
             {
@@ -370,7 +370,7 @@ namespace NP.Lti13Platform.WebExample
                 });
             }
 
-            return Task.FromResult(id);
+            return Task.FromResult(id.ToString());
         }
 
 

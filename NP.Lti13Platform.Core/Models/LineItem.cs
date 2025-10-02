@@ -40,7 +40,7 @@ public class LineItem
     /// Gets or sets the resource link ID.
     /// The unique identifier of the resource link that originated this line item, if applicable. Can be null for line items not associated with a specific resource link.
     /// </summary>
-    public string? ResourceLinkId { get; set; }
+    public ResourceLinkId? ResourceLinkId { get; set; }
 
     /// <summary>
     /// Gets or sets the resource ID.

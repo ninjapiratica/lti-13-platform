@@ -156,7 +156,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, string? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 pageIndex ??= 0;
@@ -212,9 +212,9 @@ public static class Startup
                 }
 
                 var messages = new Dictionary<UserId, IEnumerable<NameRoleProvisioningMessage>>();
-                if (!string.IsNullOrWhiteSpace(rlid))
+                if (rlid != null && rlid != ResourceLinkId.Empty)
                 {
-                    var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
+                    var resourceLink = await coreDataService.GetResourceLinkAsync(rlid.GetValueOrDefault(), cancellationToken);
                     if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
