@@ -46,6 +46,7 @@ namespace NP.Lti13Platform.Core
         {
             services.AddOpenApi(documentName, options =>
             {
+                options.CreateSchemaReferenceId = (type) => type.Type.IsEnum || type.Type.GetCustomAttributes<StringIdAttribute>().Any() ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
                 options.ShouldInclude = (description) => description.GroupName == GroupName;
                 options.AddDocumentTransformer<DocumentTransformer>();
                 options.AddDocumentTransformer((document, context, cancellationToken) =>
@@ -68,7 +69,7 @@ namespace NP.Lti13Platform.Core
             /// Adds a predefined security scheme to the OpenAPI document if it is not already present.
             /// </summary>
             /// <remarks>This method ensures that the OpenAPI document includes a security scheme
-            /// with the HTTP bearer authentication type and marks custom types with appropriately.</remarks>
+            /// with the HTTP bearer authentication type.</remarks>
             /// <param name="document">The <see cref="OpenApiDocument"/> to which the security scheme will be added.</param>
             /// <param name="context">The context for the OpenAPI document transformation. This parameter provides additional metadata or state for the transformation process.</param>
             /// <param name="cancellationToken">A token to monitor for cancellation requests. This can be used to cancel the operation if needed.</param>
@@ -84,15 +85,6 @@ namespace NP.Lti13Platform.Core
                         Scheme = "bearer",
                         In = ParameterLocation.Header,
                     });
-                }
-
-                foreach(var type in AppDomain.CurrentDomain
-                    .GetAssemblies()
-                    .Where(x => x.FullName != null && x.FullName.StartsWith("NP.Lti13Platform"))
-                    .SelectMany(x => x.GetTypes())
-                    .Where(x => x.GetCustomAttribute<StringIdAttribute>() != null))
-                {
-                    document.Components.Schemas.Remove(type.Name);
                 }
 
                 return Task.CompletedTask;

@@ -1,4 +1,6 @@
-﻿namespace NP.Lti13Platform.Core.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace NP.Lti13Platform.Core.Models;
 
 /// <summary>
 /// Represents a grade associated with a line item and user as defined in the LTI 1.3 Assignment and Grade Services specification.
@@ -72,6 +74,7 @@ public class Grade
 /// Represents the progress of an activity as defined in the LTI 1.3 Assignment and Grade Services specification.
 /// This enumeration indicates the current state of a learner's activity.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<ActivityProgress>))]
 public enum ActivityProgress
 {
     /// <summary>
@@ -109,6 +112,7 @@ public enum ActivityProgress
 /// Represents the progress of grading as defined in the LTI 1.3 Assignment and Grade Services specification.
 /// This enumeration indicates the current state of the grading process.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<GradingProgress>))]
 public enum GradingProgress
 {
     /// <summary>

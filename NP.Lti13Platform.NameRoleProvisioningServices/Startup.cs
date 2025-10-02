@@ -287,9 +287,9 @@ public static class Startup
                             Picture = x.UserPermissions.Picture ? x.User.Picture : null,
                             Status = x.Membership.Status switch
                             {
-                                MembershipStatus.Active when x.IsCurrent => "Active",
-                                MembershipStatus.Inactive when x.IsCurrent => "Inactive",
-                                _ => "Deleted"
+                                MembershipStatus.Active when x.IsCurrent => MemberInfoStatus.Active,
+                                MembershipStatus.Inactive when x.IsCurrent => MemberInfoStatus.Inactive,
+                                _ => MemberInfoStatus.Deleted
                             },
                             Message = messages.TryGetValue(x.User.Id, out var message) ? message : null
                         };
@@ -343,6 +343,14 @@ internal record MemberInfo
     public string? FamilyName { get; set; }
     public string? Email { get; set; }
     public Uri? Picture { get; set; }
-    public required string Status { get; set; }
+    public required MemberInfoStatus Status { get; set; }
     public IEnumerable<NameRoleProvisioningMessage>? Message { get; set; }
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<MemberInfoStatus>))]
+internal enum MemberInfoStatus
+{
+    Active,
+    Inactive,
+    Deleted
 }

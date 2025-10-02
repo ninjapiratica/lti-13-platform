@@ -302,7 +302,7 @@ public static class Startup
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime,
                 },
-                options: JSON_SERIALIZER_OPTIONS, 
+                options: JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
@@ -392,7 +392,7 @@ public static class Startup
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime
                 },
-                options: JSON_SERIALIZER_OPTIONS, 
+                options: JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
@@ -521,7 +521,7 @@ public static class Startup
                     ScoringUserId = i.ScoringUserId,
                     Comment = i.Comment
                 }),
-                options: JSON_SERIALIZER_OPTIONS, 
+                options: JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
@@ -668,21 +668,11 @@ public static class Startup
     }
 }
 
-/// <summary>
-/// Represents a request for a line item.
-/// </summary>
 internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-/// <summary>
-/// Represents a request for a score.
-/// </summary>
 internal record ScoreRequest(string UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
-/// <summary>
-/// Represents a request for score submission.
-/// </summary>
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
-
 
 internal record LineItemResultResponse
 {
