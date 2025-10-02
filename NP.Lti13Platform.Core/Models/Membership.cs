@@ -28,7 +28,7 @@ public class Membership
     /// <summary>
     /// The IDs of the users mentored by this user, as defined by the LTI 1.3 specification.
     /// </summary>
-    public required IEnumerable<string> MentoredUserIds { get; set; }
+    public required IEnumerable<UserId> MentoredUserIds { get; set; }
 }
 
 /// <summary>

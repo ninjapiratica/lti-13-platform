@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using NP.Lti13Platform.Core.Constants;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 
 namespace NP.Lti13Platform.Core.Populators;
@@ -19,7 +20,7 @@ public interface IRolesMessage
     /// Gets or sets the users being mentored by this user.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor")]
-    public IEnumerable<string>? RoleScopeMentor { get; set; }
+    public IEnumerable<UserId>? RoleScopeMentor { get; set; }
 }
 
 /// <summary>

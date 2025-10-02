@@ -49,7 +49,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
             platform = await platformService.GetPlatformAsync(scope.Tool.ClientId, cancellationToken);
         }
 
-        IEnumerable<string> mentoredUserIds = [];
+        IEnumerable<UserId> mentoredUserIds = [];
         if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
         {
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
@@ -59,7 +59,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
             }
         }
 
-        IEnumerable<string> actualUserMentoredUserIds = [];
+        IEnumerable<UserId> actualUserMentoredUserIds = [];
         if (customDictionary.Values.Any(v => v == Lti13ActualUserVariables.ScopeMentor) && scope.Context != null && scope.UserScope.ActualUser != null)
         {
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);

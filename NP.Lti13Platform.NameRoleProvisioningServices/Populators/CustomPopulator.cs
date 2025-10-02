@@ -50,7 +50,7 @@ public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICus
             return;
         }
 
-        IEnumerable<string> mentoredUserIds = [];
+        IEnumerable<UserId> mentoredUserIds = [];
         if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null )
         {
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
