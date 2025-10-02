@@ -410,7 +410,7 @@ public static class Startup
             }
         }
 
-        var context = string.IsNullOrWhiteSpace(contextId) ? null : await dataService.GetContextAsync(contextId, cancellationToken);
+        var context = contextId == null ? null : await dataService.GetContextAsync(contextId.GetValueOrDefault(), cancellationToken);
 
         var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId, cancellationToken);
 

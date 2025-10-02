@@ -22,7 +22,7 @@ public class ResourceLink
     /// Gets or sets the context ID.
     /// An opaque identifier that uniquely identifies the context from which the resource link was launched.
     /// </summary>
-    public required string ContextId { get; set; }
+    public required ContextId ContextId { get; set; }
 
     /// <summary>
     /// Gets or sets the URL of the resource link.

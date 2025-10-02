@@ -106,7 +106,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
                 Lti13ActualUserVariables.ScopeMentor when customPermissions.ActualUserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', actualUserMentoredUserIds),
                 Lti13ActualUserVariables.GradeLevelsOneRoster when customPermissions.ActualUserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.OneRosterGrades) : string.Empty,
 
-                Lti13ContextVariables.Id when customPermissions.ContextId => scope.Context?.Id,
+                Lti13ContextVariables.Id when customPermissions.ContextId => scope.Context?.Id.ToString(),
                 Lti13ContextVariables.Org when customPermissions.ContextOrg => scope.Context != null ? string.Join(',', scope.Context.Orgs) : string.Empty,
                 Lti13ContextVariables.Type when customPermissions.ContextType => scope.Context != null ? string.Join(',', scope.Context.Types) : string.Empty,
                 Lti13ContextVariables.Label when customPermissions.ContextLabel => scope.Context?.Label,

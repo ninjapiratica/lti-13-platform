@@ -156,7 +156,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, string contextId, string? role, string? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, string? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 pageIndex ??= 0;
@@ -326,7 +326,7 @@ internal record MembershipContainer
 
 internal record MembershipContext
 {
-    public required string Id { get; set; }
+    public required ContextId Id { get; set; }
     public string? Label { get; set; }
     public string? Title { get; set; }
 }

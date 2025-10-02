@@ -22,7 +22,7 @@ public class Deployment
 }
 
 /// <summary>
-/// Represents a unique identifier for a tool.
+/// Represents a unique identifier for a deployment.
 /// </summary>
 [StringId]
 public readonly partial record struct DeploymentId;

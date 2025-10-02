@@ -13,7 +13,7 @@ public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper se
     {
         var tool = await dataService.GetToolAsync(new ClientId("clientId"), cancellationToken);
         var deployment = await dataService.GetDeploymentAsync(new DeploymentId("deploymentId"), cancellationToken);
-        var context = await dataService.GetContextAsync("contextId", cancellationToken);
+        var context = await dataService.GetContextAsync(new ContextId("contextId"), cancellationToken);
         var userId = "userId";
         var documentTarget = Lti13PresentationTargetDocuments.Window;
         var height = 200;

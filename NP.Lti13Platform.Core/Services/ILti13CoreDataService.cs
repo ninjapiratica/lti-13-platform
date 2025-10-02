@@ -30,7 +30,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="contextId">The context ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The context.</returns>
-        Task<Context?> GetContextAsync(string contextId, CancellationToken cancellationToken = default);
+        Task<Context?> GetContextAsync(ContextId contextId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a user by their ID.
@@ -47,7 +47,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="userId">The user ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The membership.</returns>
-        Task<Membership?> GetMembershipAsync(string contextId, string userId, CancellationToken cancellationToken = default);
+        Task<Membership?> GetMembershipAsync(ContextId contextId, string userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a resource link by its ID.
@@ -69,7 +69,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="tag">The tag.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A partial list of line items.</returns>
-        Task<PartialList<LineItem>> GetLineItemsAsync(DeploymentId deploymentId, string contextId, int pageIndex, int limit, string? resourceId = null, string? resourceLinkId = null, string? tag = null, CancellationToken cancellationToken = default);
+        Task<PartialList<LineItem>> GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId = null, string? resourceLinkId = null, string? tag = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets an attempt by resource link and user IDs.
@@ -131,7 +131,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="actualUserId">The actual user ID (if impersonating).</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The custom permissions.</returns>
-        Task<CustomPermissions> GetCustomPermissions(DeploymentId deploymentId, string? contextId, string userId, string? actualUserId, CancellationToken cancellationToken = default);
+        Task<CustomPermissions> GetCustomPermissions(DeploymentId deploymentId, ContextId? contextId, string userId, string? actualUserId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the user permissions.
@@ -141,6 +141,6 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="userId">The user ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The user permissions.</returns>
-        Task<UserPermissions> GetUserPermissionsAsync(DeploymentId deploymentId, string? contextId, string userId, CancellationToken cancellationToken = default);
+        Task<UserPermissions> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, string userId, CancellationToken cancellationToken = default);
     }
 }

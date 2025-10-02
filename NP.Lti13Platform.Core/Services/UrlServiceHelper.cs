@@ -24,7 +24,7 @@ public interface IUrlServiceHelper
     /// <param name="launchPresentation">The launch presentation override.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The resource link initiation URL.</returns>
-    Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, DeploymentId deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default);
+    Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, DeploymentId deploymentId, ContextId contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default);
     /// <summary>
     /// Gets a URL for an LTI message.
     /// </summary>
@@ -40,7 +40,7 @@ public interface IUrlServiceHelper
     /// <param name="messageHint">The message hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The URL.</returns>
-    Task<Uri> GetUrlAsync(string messageType, Tool tool, DeploymentId deploymentId, Uri targetLinkUri, string userId, bool isAnonymous, string? actualUserId = null, string? contextId = null, string? resourceLinkId = null, string? messageHint = null, CancellationToken cancellationToken = default);
+    Task<Uri> GetUrlAsync(string messageType, Tool tool, DeploymentId deploymentId, Uri targetLinkUri, string userId, bool isAnonymous, string? actualUserId = null, ContextId? contextId = null, string? resourceLinkId = null, string? messageHint = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the login hint.
@@ -69,14 +69,14 @@ public interface IUrlServiceHelper
     /// <param name="messageHint">The message hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The LTI message hint.</returns>
-    Task<string> GetLtiMessageHintAsync(string MessageType, DeploymentId DeploymentId, string? ContextId, string? ResourceLinkId, string? messageHint, CancellationToken cancellationToken = default);
+    Task<string> GetLtiMessageHintAsync(string MessageType, DeploymentId DeploymentId, ContextId? ContextId, string? ResourceLinkId, string? messageHint, CancellationToken cancellationToken = default);
     /// <summary>
     /// Parses the LTI message hint.
     /// </summary>
     /// <param name="messageHint">The message hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The parsed LTI message hint components.</returns>
-    Task<(string MessageType, DeploymentId DeploymentId, string? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default);
+    Task<(string MessageType, DeploymentId DeploymentId, ContextId? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -86,7 +86,7 @@ public interface IUrlServiceHelper
 public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServiceHelper
 {
     /// <inheritdoc />
-    public async Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, DeploymentId deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default)
+    public async Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, DeploymentId deploymentId, ContextId contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default)
         => await GetUrlAsync(
             Lti13MessageType.LtiResourceLinkRequest,
             tool,
@@ -109,7 +109,7 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
         string userId,
         bool isAnonymous,
         string? actualUserId = null,
-        string? contextId = null,
+        ContextId? contextId = null,
         string? resourceLinkId = null,
         string? messageHint = null,
         CancellationToken cancellationToken = default)
@@ -139,12 +139,12 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
             (string.Empty, null, false));
 
     /// <inheritdoc />
-    public async Task<string> GetLtiMessageHintAsync(string messageType, DeploymentId deploymentId, string? contextId, string? resourceLinkId, string? messageHint, CancellationToken cancellationToken = default) =>
+    public async Task<string> GetLtiMessageHintAsync(string messageType, DeploymentId deploymentId, ContextId? contextId, string? resourceLinkId, string? messageHint, CancellationToken cancellationToken = default) =>
         await Task.FromResult($"{messageType}|{deploymentId}|{contextId}|{resourceLinkId}|{messageHint}");
 
     /// <inheritdoc />
-    public async Task<(string MessageType, DeploymentId DeploymentId, string? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default) =>
+    public async Task<(string MessageType, DeploymentId DeploymentId, ContextId? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default) =>
         await Task.FromResult(messageHint.Split('|', 5) is [var messageType, var deploymentId, var contextId, var resourceLinkId, var messageHintString] ?
-            (messageType, new DeploymentId(deploymentId), contextId, resourceLinkId, messageHintString) :
+            (messageType, new DeploymentId(deploymentId), (ContextId?)new ContextId(contextId), resourceLinkId, messageHintString) :
             (string.Empty, DeploymentId.Empty, null, null, null));
 }

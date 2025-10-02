@@ -22,7 +22,7 @@ public class LineItem
     /// Gets or sets the context ID.
     /// The unique identifier of the context (course/section) with which this line item is associated. This links the line item to a specific context in the learning platform.
     /// </summary>
-    public required string ContextId { get; set; }
+    public required ContextId ContextId { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum score for the line item.

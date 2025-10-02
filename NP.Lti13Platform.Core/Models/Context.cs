@@ -11,7 +11,7 @@ public class Context
     /// Gets or sets the unique identifier for the context.
     /// An opaque identifier that uniquely identifies the context that contains the link being launched. Max Length 255 characters. Case sensitive. This must be immutable for a context in the LMS platform.
     /// </summary>
-    public required string Id { get; set; }
+    public required ContextId Id { get; set; }
 
     /// <summary>
     /// Gets or sets the label for the context.
@@ -55,3 +55,9 @@ public class Context
     /// </summary>
     public IEnumerable<string> OneRosterGrades { get; set; } = [];
 }
+
+/// <summary>
+/// Represents a unique identifier for a context.
+/// </summary>
+[StringId]
+public readonly partial record struct ContextId;

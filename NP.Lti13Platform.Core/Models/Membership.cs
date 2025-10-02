@@ -8,7 +8,7 @@ public class Membership
     /// <summary>
     /// The unique identifier of the context in which the membership exists, as defined by the LTI 1.3 specification.
     /// </summary>
-    public required string ContextId { get; set; }
+    public required ContextId ContextId { get; set; }
 
     /// <summary>
     /// The unique identifier of the user who is a member of the context, as defined by the LTI 1.3 specification.

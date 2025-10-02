@@ -32,7 +32,7 @@ public static class ServiceExtensions
         string userId,
         bool isAnonymous,
         string? actualUserId = null,
-        string? contextId = null,
+        ContextId? contextId = null,
         DeepLinkSettingsOverride? deepLinkSettings = null,
         LaunchPresentationOverride? launchPresentation = null,
         CancellationToken cancellationToken = default)

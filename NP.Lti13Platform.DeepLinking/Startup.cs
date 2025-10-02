@@ -98,7 +98,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         _ = endpointRouteBuilder.MapPost(config.DeepLinkingResponseUrl,
-            async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
+            async ([FromForm] DeepLinkResponseRequest request, ContextId? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
             {
                 const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                 const string INVALID_REQUEST = "invalid_request";
@@ -198,7 +198,7 @@ public static class Startup
                             {
                                 Id = string.Empty,
                                 DeploymentId = deployment.Id,
-                                ContextId = contextId,
+                                ContextId = contextId.GetValueOrDefault(),
                                 Label = ci.LtiResourceLink.LineItem!.Label ?? ci.LtiResourceLink.Title ?? ci.LtiResourceLink.Type,
                                 ScoreMaximum = ci.LtiResourceLink.LineItem.ScoreMaximum,
                                 GradesReleased = ci.LtiResourceLink.LineItem.GradesReleased,
