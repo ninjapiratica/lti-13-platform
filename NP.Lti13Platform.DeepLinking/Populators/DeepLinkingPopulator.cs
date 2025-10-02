@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.DeepLinking.Services;
 using System.Text;
@@ -24,7 +25,7 @@ public interface IDeepLinkingMessage : ILaunchPresentationMessage
     /// Gets or sets the deployment identifier.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/deployment_id")]
-    string DeploymentId { get; set; }
+    DeploymentId DeploymentId { get; set; }
 
     /// <summary>
     /// Gets or sets the deep linking settings.

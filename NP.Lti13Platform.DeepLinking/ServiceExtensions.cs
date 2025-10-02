@@ -28,7 +28,7 @@ public static class ServiceExtensions
     public static async Task<Uri> GetDeepLinkInitiationUrlAsync(
         this IUrlServiceHelper service,
         Tool tool,
-        string deploymentId,
+        DeploymentId deploymentId,
         string userId,
         bool isAnonymous,
         string? actualUserId = null,

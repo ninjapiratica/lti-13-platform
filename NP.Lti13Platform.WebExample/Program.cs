@@ -155,7 +155,7 @@ namespace NP.Lti13Platform.WebExample
 
             Deployments.Add(new Deployment
             {
-                Id = "deploymentId",
+                Id = new DeploymentId("deploymentId"),
                 ClientId = new ClientId("toolId")
             });
 
@@ -187,7 +187,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Tools.SingleOrDefault(t => t.ClientId == clientId));
         }
 
-        Task<Deployment?> ILti13CoreDataService.GetDeploymentAsync(string deploymentId, CancellationToken cancellationToken)
+        Task<Deployment?> ILti13CoreDataService.GetDeploymentAsync(DeploymentId deploymentId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Deployments.SingleOrDefault(d => d.Id == deploymentId));
         }
@@ -212,7 +212,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(ResourceLinks.SingleOrDefault(r => r.Id == resourceLinkId));
         }
 
-        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag, CancellationToken cancellationToken)
+        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(DeploymentId deploymentId, string contextId, int pageIndex, int limit, string? resourceId, string? resourceLinkId, string? tag, CancellationToken cancellationToken)
         {
             var lineItems = LineItems.Where(li => li.DeploymentId == deploymentId && li.ContextId == contextId && (resourceId == null || li.ResourceId == resourceId) && (resourceLinkId == null || li.ResourceLinkId == resourceLinkId) && (tag == null || li.Tag == tag)).ToList();
 
@@ -330,7 +330,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult<SecurityKey>(securityKey);
         }
 
-        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(string deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
+        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, string contextId, int pageIndex, int limit, string? role, string? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
         {
             if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
@@ -347,7 +347,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(PartialList<(Membership, User)>.Empty);
         }
 
-        Task<string> ILti13DeepLinkingDataService.SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem, CancellationToken cancellationToken)
+        Task<string> ILti13DeepLinkingDataService.SaveContentItemAsync(DeploymentId deploymentId, string? contextId, ContentItem contentItem, CancellationToken cancellationToken)
         {
             var id = Guid.NewGuid().ToString();
 
@@ -387,7 +387,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissions(string deploymentId, string? contextId, string userId, string? actualUserId, CancellationToken cancellationToken)
+        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissions(DeploymentId deploymentId, string? contextId, string userId, string? actualUserId, CancellationToken cancellationToken)
         {
             return Task.FromResult(new CustomPermissions { UserId = true, UserUsername = true });
         }
@@ -400,7 +400,7 @@ namespace NP.Lti13Platform.WebExample
         /// <param name="userId">The user ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The user's permissions.</returns>
-        public Task<UserPermissions> GetUserPermissionsAsync(string deploymentId, string? contextId, string userId, CancellationToken cancellationToken = default)
+        public Task<UserPermissions> GetUserPermissionsAsync(DeploymentId deploymentId, string? contextId, string userId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new UserPermissions { UserId = userId, FamilyName = true, Name = true, GivenName = true });
         }
@@ -413,7 +413,7 @@ namespace NP.Lti13Platform.WebExample
         /// <param name="userIds">The user IDs.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A collection of user permissions.</returns>
-        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(string deploymentId, string? contextId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
+        public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(DeploymentId deploymentId, string? contextId, IEnumerable<string> userIds, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(userIds.Select(x => new UserPermissions { UserId = x, FamilyName = true, Name = true, GivenName = true }));
         }

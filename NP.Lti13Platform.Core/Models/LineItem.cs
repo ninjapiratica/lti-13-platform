@@ -16,7 +16,7 @@ public class LineItem
     /// Gets or sets the deployment ID.
     /// Identifies the platform-tool integration that this line item is associated with. This value is provided by the platform when the tool is installed/registered.
     /// </summary>
-    public required string DeploymentId { get; set; }
+    public required DeploymentId DeploymentId { get; set; }
 
     /// <summary>
     /// Gets or sets the context ID.

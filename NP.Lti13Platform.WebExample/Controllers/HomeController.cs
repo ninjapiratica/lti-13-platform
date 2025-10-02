@@ -12,7 +12,7 @@ public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper se
     public async Task<IResult> Index(CancellationToken cancellationToken)
     {
         var tool = await dataService.GetToolAsync(new ClientId("clientId"), cancellationToken);
-        var deployment = await dataService.GetDeploymentAsync("deploymentId", cancellationToken);
+        var deployment = await dataService.GetDeploymentAsync(new DeploymentId("deploymentId"), cancellationToken);
         var context = await dataService.GetContextAsync("contextId", cancellationToken);
         var userId = "userId";
         var documentTarget = Lti13PresentationTargetDocuments.Window;

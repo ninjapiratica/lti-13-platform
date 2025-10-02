@@ -16,7 +16,7 @@ public class ResourceLink
     /// Gets or sets the deployment ID.
     /// Identifies the platform-tool integration governing the message. This value is provided by the platform when the tool is installed/registered.
     /// </summary>
-    public required string DeploymentId { get; set; }
+    public required DeploymentId DeploymentId { get; set; }
 
     /// <summary>
     /// Gets or sets the context ID.

@@ -8,7 +8,7 @@ public class Deployment
     /// <summary>
     /// The unique identifier for the deployment as assigned by the platform. This value is used to identify the platform-tool integration governing the message.
     /// </summary>
-    public required string Id { get; set; }
+    public required DeploymentId Id { get; set; }
 
     /// <summary>
     /// The unique identifier for the tool associated with this deployment.
@@ -20,3 +20,9 @@ public class Deployment
     /// </summary>
     public IDictionary<string, string>? Custom { get; set; }
 }
+
+/// <summary>
+/// Represents a unique identifier for a tool.
+/// </summary>
+[StringId]
+public readonly partial record struct DeploymentId;

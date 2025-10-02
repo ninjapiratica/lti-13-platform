@@ -122,7 +122,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment_id is required", Error_Uri = DEEP_LINKING_SPEC });
                 }
 
-                var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value, cancellationToken);
+                var deployment = await coreDataService.GetDeploymentAsync(new DeploymentId(deploymentIdClaim.Value), cancellationToken);
                 if (deployment == null || deployment.ClientId != tool.ClientId)
                 {
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment_id is invalid", Error_Uri = DEEP_LINKING_SPEC });
