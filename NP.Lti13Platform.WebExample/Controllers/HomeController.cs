@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Constants;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
 
@@ -10,10 +11,10 @@ public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper se
 {
     public async Task<IResult> Index(CancellationToken cancellationToken)
     {
-        var tool = await dataService.GetToolAsync("clientId", cancellationToken);
-        var deployment = await dataService.GetDeploymentAsync("deploymentId", cancellationToken);
-        var context = await dataService.GetContextAsync("contextId", cancellationToken);
-        var userId = "userId";
+        var tool = await dataService.GetToolAsync(new ClientId("clientId"), cancellationToken);
+        var deployment = await dataService.GetDeploymentAsync(new DeploymentId("deploymentId"), cancellationToken);
+        var context = await dataService.GetContextAsync(new ContextId("contextId"), cancellationToken);
+        var userId = new UserId("userId");
         var documentTarget = Lti13PresentationTargetDocuments.Window;
         var height = 200;
         var width = 250;

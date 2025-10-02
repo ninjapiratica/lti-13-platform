@@ -5,13 +5,13 @@
 /// A tool (also referred to as an LTI tool or tool provider) is an external application that can be 
 /// integrated with a learning platform using the LTI protocol.
 /// </summary>
-public class Tool
+public record Tool
 {
     /// <summary>
     /// Gets or sets the identifier for the tool.
     /// The OAuth 2.0 client identifier that the tool uses when making requests to the platform. This is a required value as per the LTI 1.3 specification and corresponds to the client_id parameter in OpenID Connect and OAuth 2.0.
     /// </summary>
-    public required string ClientId { get; set; }
+    public required ClientId ClientId { get; set; }
 
     /// <summary>
     /// Gets or sets the OIDC initiation URL for the tool.
@@ -55,3 +55,9 @@ public class Tool
     /// </summary>
     public IEnumerable<string> ServiceScopes { get; set; } = [];
 }
+
+/// <summary>
+/// Represents a unique identifier for a tool.
+/// </summary>
+[StringId]
+public readonly partial record struct ClientId;

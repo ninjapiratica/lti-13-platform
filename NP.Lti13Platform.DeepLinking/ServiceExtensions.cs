@@ -28,11 +28,11 @@ public static class ServiceExtensions
     public static async Task<Uri> GetDeepLinkInitiationUrlAsync(
         this IUrlServiceHelper service,
         Tool tool,
-        string deploymentId,
-        string userId,
+        DeploymentId deploymentId,
+        UserId userId,
         bool isAnonymous,
-        string? actualUserId = null,
-        string? contextId = null,
+        UserId? actualUserId = null,
+        ContextId? contextId = null,
         DeepLinkSettingsOverride? deepLinkSettings = null,
         LaunchPresentationOverride? launchPresentation = null,
         CancellationToken cancellationToken = default)

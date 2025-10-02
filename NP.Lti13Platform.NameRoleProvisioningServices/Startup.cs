@@ -156,7 +156,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? role, string? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, ContentItemId? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 pageIndex ??= 0;
@@ -167,7 +167,7 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
                 {
@@ -211,10 +211,10 @@ public static class Startup
                         .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
                 }
 
-                var messages = new Dictionary<string, IEnumerable<NameRoleProvisioningMessage>>();
-                if (!string.IsNullOrWhiteSpace(rlid))
+                var messages = new Dictionary<UserId, IEnumerable<NameRoleProvisioningMessage>>();
+                if (rlid != null && rlid != ContentItemId.Empty)
                 {
-                    var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
+                    var resourceLink = await coreDataService.GetResourceLinkAsync(rlid.GetValueOrDefault(), cancellationToken);
                     if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
@@ -287,9 +287,9 @@ public static class Startup
                             Picture = x.UserPermissions.Picture ? x.User.Picture : null,
                             Status = x.Membership.Status switch
                             {
-                                MembershipStatus.Active when x.IsCurrent => "Active",
-                                MembershipStatus.Inactive when x.IsCurrent => "Inactive",
-                                _ => "Deleted"
+                                MembershipStatus.Active when x.IsCurrent => MemberInfoStatus.Active,
+                                MembershipStatus.Inactive when x.IsCurrent => MemberInfoStatus.Inactive,
+                                _ => MemberInfoStatus.Deleted
                             },
                             Message = messages.TryGetValue(x.User.Id, out var message) ? message : null
                         };
@@ -326,7 +326,7 @@ internal record MembershipContainer
 
 internal record MembershipContext
 {
-    public required string Id { get; set; }
+    public required ContextId Id { get; set; }
     public string? Label { get; set; }
     public string? Title { get; set; }
 }
@@ -334,7 +334,7 @@ internal record MembershipContext
 internal record MemberInfo
 {
     [JsonPropertyName("user_id")]
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
     public required IEnumerable<string> Roles { get; set; }
     public string? Name { get; set; }
     [JsonPropertyName("given_name")]
@@ -343,6 +343,14 @@ internal record MemberInfo
     public string? FamilyName { get; set; }
     public string? Email { get; set; }
     public Uri? Picture { get; set; }
-    public required string Status { get; set; }
+    public required MemberInfoStatus Status { get; set; }
     public IEnumerable<NameRoleProvisioningMessage>? Message { get; set; }
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<MemberInfoStatus>))]
+internal enum MemberInfoStatus
+{
+    Active,
+    Inactive,
+    Deleted
 }

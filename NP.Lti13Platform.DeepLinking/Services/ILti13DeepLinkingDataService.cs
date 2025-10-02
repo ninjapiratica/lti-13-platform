@@ -16,7 +16,7 @@ public interface ILti13DeepLinkingDataService
     /// <param name="contentItem">The content item to save.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the identifier of the saved content item.</returns>
-    Task<string> SaveContentItemAsync(string deploymentId, string? contextId, ContentItem contentItem, CancellationToken cancellationToken = default);
+    Task<ContentItemId> SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Saves a line item to the data store.
@@ -24,5 +24,5 @@ public interface ILti13DeepLinkingDataService
     /// <param name="lineItem">The line item to save.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the identifier of the saved line item.</returns>
-    Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
+    Task<LineItemId> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
 }

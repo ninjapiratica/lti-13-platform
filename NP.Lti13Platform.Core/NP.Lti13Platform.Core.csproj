@@ -31,6 +31,10 @@
   </ItemGroup>
 
   <ItemGroup>
+	<ProjectReference Include="..\NP.Lti13Platform.SourceGenerator\NP.Lti13Platform.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceoutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="package-icon.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.CourseGrou
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.ProctoringServices", "NP.Lti13Platform.ProctoringServices\NP.Lti13Platform.ProctoringServices.csproj", "{E119A4C8-5B2E-467E-AFAD-3C601D030D99}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NP.Lti13Platform.SourceGenerator", "NP.Lti13Platform.SourceGenerator\NP.Lti13Platform.SourceGenerator.csproj", "{E94D3BF2-97FA-411D-8B58-842A762530EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E119A4C8-5B2E-467E-AFAD-3C601D030D99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E94D3BF2-97FA-411D-8B58-842A762530EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E94D3BF2-97FA-411D-8B58-842A762530EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E94D3BF2-97FA-411D-8B58-842A762530EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E94D3BF2-97FA-411D-8B58-842A762530EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

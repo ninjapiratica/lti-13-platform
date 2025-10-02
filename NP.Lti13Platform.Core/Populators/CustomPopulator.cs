@@ -49,7 +49,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
             platform = await platformService.GetPlatformAsync(scope.Tool.ClientId, cancellationToken);
         }
 
-        IEnumerable<string> mentoredUserIds = [];
+        IEnumerable<UserId> mentoredUserIds = [];
         if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null)
         {
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
@@ -59,7 +59,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
             }
         }
 
-        IEnumerable<string> actualUserMentoredUserIds = [];
+        IEnumerable<UserId> actualUserMentoredUserIds = [];
         if (customDictionary.Values.Any(v => v == Lti13ActualUserVariables.ScopeMentor) && scope.Context != null && scope.UserScope.ActualUser != null)
         {
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.ActualUser.Id, cancellationToken);
@@ -92,21 +92,21 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
             // TODO: LIS variables
             customDictionary[kvp.Key] = kvp.Value switch
             {
-                Lti13UserVariables.Id when customPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id,
+                Lti13UserVariables.Id when customPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id.ToString(),
                 Lti13UserVariables.Image when customPermissions.UserImage && !scope.UserScope.IsAnonymous => scope.UserScope.User.Picture?.OriginalString,
                 Lti13UserVariables.Username when customPermissions.UserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.User.Username,
                 Lti13UserVariables.Org when customPermissions.UserOrg && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.Orgs),
                 Lti13UserVariables.ScopeMentor when customPermissions.UserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', mentoredUserIds),
                 Lti13UserVariables.GradeLevelsOneRoster when customPermissions.UserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.OneRosterGrades),
 
-                Lti13ActualUserVariables.Id when customPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id,
+                Lti13ActualUserVariables.Id when customPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id.ToString(),
                 Lti13ActualUserVariables.Image when customPermissions.ActualUserImage && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Picture?.OriginalString,
                 Lti13ActualUserVariables.Username when customPermissions.ActualUserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Username,
                 Lti13ActualUserVariables.Org when customPermissions.ActualUserOrg && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.Orgs) : string.Empty,
                 Lti13ActualUserVariables.ScopeMentor when customPermissions.ActualUserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', actualUserMentoredUserIds),
                 Lti13ActualUserVariables.GradeLevelsOneRoster when customPermissions.ActualUserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.OneRosterGrades) : string.Empty,
 
-                Lti13ContextVariables.Id when customPermissions.ContextId => scope.Context?.Id,
+                Lti13ContextVariables.Id when customPermissions.ContextId => scope.Context?.Id.ToString(),
                 Lti13ContextVariables.Org when customPermissions.ContextOrg => scope.Context != null ? string.Join(',', scope.Context.Orgs) : string.Empty,
                 Lti13ContextVariables.Type when customPermissions.ContextType => scope.Context != null ? string.Join(',', scope.Context.Types) : string.Empty,
                 Lti13ContextVariables.Label when customPermissions.ContextLabel => scope.Context?.Label,
@@ -115,7 +115,7 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
                 Lti13ContextVariables.IdHistory when customPermissions.ContextIdHistory => scope.Context != null ? string.Join(',', scope.Context.ClonedIdHistory) : string.Empty,
                 Lti13ContextVariables.GradeLevelsOneRoster when customPermissions.ContextGradeLevelsOneRoster => scope.Context != null ? string.Join(',', scope.Context.OneRosterGrades) : string.Empty,
 
-                Lti13ResourceLinkVariables.Id when customPermissions.ResourceLinkId => scope.ResourceLink?.Id,
+                Lti13ResourceLinkVariables.Id when customPermissions.ResourceLinkId => scope.ResourceLink?.Id.ToString(),
                 Lti13ResourceLinkVariables.Title when customPermissions.ResourceLinkTitle => scope.ResourceLink?.Title,
                 Lti13ResourceLinkVariables.Description when customPermissions.ResourceLinkDescription => scope.ResourceLink?.Text,
                 Lti13ResourceLinkVariables.AvailableStartDateTime when customPermissions.ResourceLinkAvailableStartDateTime => scope.ResourceLink?.AvailableStartDateTime?.ToString("O"),

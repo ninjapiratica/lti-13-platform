@@ -50,7 +50,7 @@ public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ILti13NameRo
     /// <returns>A task that represents the asynchronous operation.</returns>
     public override async Task PopulateAsync(IServiceEndpoints obj, MessageScope scope, CancellationToken cancellationToken = default)
     {
-        if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && !string.IsNullOrWhiteSpace(scope.Context?.Id))
+        if (scope.Tool.ServiceScopes.Contains(Lti13ServiceScopes.MembershipReadOnly) && scope.Context?.Id != null)
         {
             var config = await nameRoleProvisioningService.GetConfigAsync(scope.Tool.ClientId, cancellationToken);
 

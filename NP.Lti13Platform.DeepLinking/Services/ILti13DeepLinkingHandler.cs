@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.DeepLinking.Services;
 
@@ -16,5 +17,5 @@ public interface ILti13DeepLinkingHandler
     /// <param name="response">The deep linking response to handle.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the HTTP result to return to the client.</returns>
-    Task<IResult> HandleResponseAsync(string clientId, string deploymentId, string? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default);
+    Task<IResult> HandleResponseAsync(ClientId clientId, DeploymentId deploymentId, ContextId? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default);
 }

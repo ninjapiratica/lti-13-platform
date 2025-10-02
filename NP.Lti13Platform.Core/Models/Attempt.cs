@@ -8,12 +8,12 @@ public class Attempt
     /// <summary>
     /// The unique identifier of the resource link for which this attempt is made.
     /// </summary>
-    public required string ResourceLinkId { get; set; }
+    public required ContentItemId ResourceLinkId { get; set; }
 
     /// <summary>
     /// The unique identifier of the user making the attempt.
     /// </summary>
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
 
     /// <summary>
     /// Date and time when the attempt becomes available.

@@ -24,7 +24,7 @@ public interface IUrlServiceHelper
     /// <param name="launchPresentation">The launch presentation override.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The resource link initiation URL.</returns>
-    Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default);
+    Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, DeploymentId deploymentId, ContextId contextId, ResourceLink resourceLink, UserId userId, bool isAnonymous, UserId? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default);
     /// <summary>
     /// Gets a URL for an LTI message.
     /// </summary>
@@ -40,7 +40,7 @@ public interface IUrlServiceHelper
     /// <param name="messageHint">The message hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The URL.</returns>
-    Task<Uri> GetUrlAsync(string messageType, Tool tool, string deploymentId, Uri targetLinkUri, string userId, bool isAnonymous, string? actualUserId = null, string? contextId = null, string? resourceLinkId = null, string? messageHint = null, CancellationToken cancellationToken = default);
+    Task<Uri> GetUrlAsync(string messageType, Tool tool, DeploymentId deploymentId, Uri targetLinkUri, UserId userId, bool isAnonymous, UserId? actualUserId = null, ContextId? contextId = null, ContentItemId? resourceLinkId = null, string? messageHint = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the login hint.
@@ -50,14 +50,14 @@ public interface IUrlServiceHelper
     /// <param name="isAnonymous">A value indicating whether the user is anonymous.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The login hint.</returns>
-    Task<string> GetLoginHintAsync(string userId, string? actualUserId, bool isAnonymous, CancellationToken cancellationToken = default);
+    Task<string> GetLoginHintAsync(UserId userId, UserId? actualUserId, bool isAnonymous, CancellationToken cancellationToken = default);
     /// <summary>
     /// Parses the login hint.
     /// </summary>
     /// <param name="loginHint">The login hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The parsed login hint components.</returns>
-    Task<(string UserId, string? ActualUserId, bool IsAnonymous)> ParseLoginHintAsync(string loginHint, CancellationToken cancellationToken = default);
+    Task<(UserId UserId, UserId? ActualUserId, bool IsAnonymous)> ParseLoginHintAsync(string loginHint, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the LTI message hint.
@@ -69,14 +69,14 @@ public interface IUrlServiceHelper
     /// <param name="messageHint">The message hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The LTI message hint.</returns>
-    Task<string> GetLtiMessageHintAsync(string MessageType, string DeploymentId, string? ContextId, string? ResourceLinkId, string? messageHint, CancellationToken cancellationToken = default);
+    Task<string> GetLtiMessageHintAsync(string MessageType, DeploymentId DeploymentId, ContextId? ContextId, ContentItemId? ResourceLinkId, string? messageHint, CancellationToken cancellationToken = default);
     /// <summary>
     /// Parses the LTI message hint.
     /// </summary>
     /// <param name="messageHint">The message hint.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The parsed LTI message hint components.</returns>
-    Task<(string MessageType, string DeploymentId, string? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default);
+    Task<(string MessageType, DeploymentId DeploymentId, ContextId? ContextId, ContentItemId? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -86,7 +86,7 @@ public interface IUrlServiceHelper
 public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServiceHelper
 {
     /// <inheritdoc />
-    public async Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, string deploymentId, string contextId, ResourceLink resourceLink, string userId, bool isAnonymous, string? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default)
+    public async Task<Uri> GetResourceLinkInitiationUrlAsync(Tool tool, DeploymentId deploymentId, ContextId contextId, ResourceLink resourceLink, UserId userId, bool isAnonymous, UserId? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default)
         => await GetUrlAsync(
             Lti13MessageType.LtiResourceLinkRequest,
             tool,
@@ -104,13 +104,13 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
     public async Task<Uri> GetUrlAsync(
         string messageType,
         Tool tool,
-        string deploymentId,
+        DeploymentId deploymentId,
         Uri targetLinkUri,
-        string userId,
+        UserId userId,
         bool isAnonymous,
-        string? actualUserId = null,
-        string? contextId = null,
-        string? resourceLinkId = null,
+        UserId? actualUserId = null,
+        ContextId? contextId = null,
+        ContentItemId? resourceLinkId = null,
         string? messageHint = null,
         CancellationToken cancellationToken = default)
     {
@@ -120,31 +120,31 @@ public class UrlServiceHelper(ILti13TokenConfigService tokenService) : IUrlServi
         query.Add("iss", (await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken)).Issuer.OriginalString);
         query.Add("login_hint", await GetLoginHintAsync(userId, actualUserId, isAnonymous, cancellationToken));
         query.Add("target_link_uri", targetLinkUri.OriginalString);
-        query.Add("client_id", tool.ClientId);
+        query.Add("client_id", tool.ClientId.ToString());
         query.Add("lti_message_hint", await GetLtiMessageHintAsync(messageType, deploymentId, contextId, resourceLinkId, messageHint, cancellationToken));
-        query.Add("lti_deployment_id", deploymentId);
+        query.Add("lti_deployment_id", deploymentId.ToString());
         builder.Query = query.ToString();
 
         return builder.Uri;
     }
 
     /// <inheritdoc />
-    public async Task<string> GetLoginHintAsync(string userId, string? actualUserId, bool isAnonymous, CancellationToken cancellationToken = default) =>
+    public async Task<string> GetLoginHintAsync(UserId userId, UserId? actualUserId, bool isAnonymous, CancellationToken cancellationToken = default) =>
         await Task.FromResult($"{userId}|{(isAnonymous ? "1" : string.Empty)}|{actualUserId}");
 
     /// <inheritdoc />
-    public async Task<(string UserId, string? ActualUserId, bool IsAnonymous)> ParseLoginHintAsync(string loginHint, CancellationToken cancellationToken = default) =>
+    public async Task<(UserId UserId, UserId? ActualUserId, bool IsAnonymous)> ParseLoginHintAsync(string loginHint, CancellationToken cancellationToken = default) =>
         await Task.FromResult(loginHint.Split('|', 3) is [var userId, var isAnonymousString, var actualUserId] ?
-            (userId, actualUserId, !string.IsNullOrWhiteSpace(isAnonymousString)) :
-            (string.Empty, null, false));
+            (new UserId(userId), (UserId?)new UserId(actualUserId), !string.IsNullOrWhiteSpace(isAnonymousString)) :
+            (UserId.Empty, null, false));
 
     /// <inheritdoc />
-    public async Task<string> GetLtiMessageHintAsync(string messageType, string deploymentId, string? contextId, string? resourceLinkId, string? messageHint, CancellationToken cancellationToken = default) =>
+    public async Task<string> GetLtiMessageHintAsync(string messageType, DeploymentId deploymentId, ContextId? contextId, ContentItemId? resourceLinkId, string? messageHint, CancellationToken cancellationToken = default) =>
         await Task.FromResult($"{messageType}|{deploymentId}|{contextId}|{resourceLinkId}|{messageHint}");
 
     /// <inheritdoc />
-    public async Task<(string MessageType, string DeploymentId, string? ContextId, string? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default) =>
+    public async Task<(string MessageType, DeploymentId DeploymentId, ContextId? ContextId, ContentItemId? ResourceLinkId, string? MessageHint)> ParseLtiMessageHintAsync(string messageHint, CancellationToken cancellationToken = default) =>
         await Task.FromResult(messageHint.Split('|', 5) is [var messageType, var deploymentId, var contextId, var resourceLinkId, var messageHintString] ?
-            (messageType, deploymentId, contextId, resourceLinkId, messageHintString) :
-            (string.Empty, string.Empty, null, null, null));
+            (messageType, new DeploymentId(deploymentId), (ContextId?)new ContextId(contextId), (ContentItemId?)new ContentItemId(resourceLinkId), messageHintString) :
+            (string.Empty, DeploymentId.Empty, null, null, null));
 }

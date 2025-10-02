@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using NP.Lti13Platform.Core.Models;
+using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.Core.Populators;
 
@@ -22,7 +23,7 @@ public interface IContextMessage
         /// Gets or sets the ID of the context.
         /// </summary>
         [JsonPropertyName("id")]
-        public required string Id { get; set; }
+        public required ContextId Id { get; set; }
 
         /// <summary>
         /// Gets or sets the label of the context.
@@ -59,7 +60,7 @@ public class ContextPopulator() : Populator<IContextMessage>
                 Id = scope.Context.Id,
                 Label = scope.Context.Label,
                 Title = scope.Context.Title,
-                Types = scope.Context.Types.ToArray()
+                Types = [.. scope.Context.Types]
             };
         }
 

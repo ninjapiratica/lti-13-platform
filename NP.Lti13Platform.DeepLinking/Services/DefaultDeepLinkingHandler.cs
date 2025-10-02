@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
+using NP.Lti13Platform.Core.Models;
 using System.Net.Mime;
 
 namespace NP.Lti13Platform.DeepLinking.Services;
 
 internal class DefaultDeepLinkingHandler() : ILti13DeepLinkingHandler
 {
-    public Task<IResult> HandleResponseAsync(string clientId, string deploymentId, string? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default) =>
+    public Task<IResult> HandleResponseAsync(ClientId clientId, DeploymentId deploymentId, ContextId? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default) =>
         Task.FromResult(Results.Content(@$"<!DOCTYPE html>
                 <html>
                 <body>

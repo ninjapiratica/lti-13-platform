@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
@@ -153,7 +154,7 @@ public static class Startup
         }
 
         endpointRouteBuilder.MapGet(config.JwksUrl,
-            async (ILti13CoreDataService dataService, string clientId, CancellationToken cancellationToken) =>
+            async (ILti13CoreDataService dataService, ClientId clientId, CancellationToken cancellationToken) =>
             {
                 var keySet = new JsonWebKeySet();
 
@@ -239,7 +240,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
                 }
 
-                var tool = await dataService.GetToolAsync(jwt.Issuer, cancellationToken);
+                var tool = await dataService.GetToolAsync(new ClientId(jwt.Issuer), cancellationToken);
                 if (tool?.Jwks == null)
                 {
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
@@ -261,7 +262,7 @@ public static class Startup
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                     ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
-                    ValidIssuer = tool.ClientId
+                    ValidIssuer = tool.ClientId.ToString()
                 });
 
                 if (!validatedToken.IsValid)
@@ -270,13 +271,13 @@ public static class Startup
                 }
                 else
                 {
-                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, validatedToken.SecurityToken.Id, cancellationToken);
+                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, new ServiceTokenId(validatedToken.SecurityToken.Id), cancellationToken);
                     if (serviceToken?.Expiration > DateTime.UtcNow)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "jti has already been used and is not expired", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
+                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = new ServiceTokenId(validatedToken.SecurityToken.Id), ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                 }
 
                 var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
@@ -365,7 +366,7 @@ public static class Startup
             return Results.BadRequest(new LtiBadRequest { Error = INVALID_CLIENT, Error_Description = "client_id is required.", Error_Uri = AUTH_SPEC_URI });
         }
 
-        var tool = await dataService.GetToolAsync(request.Client_Id, cancellationToken);
+        var tool = await dataService.GetToolAsync(new ClientId(request.Client_Id), cancellationToken);
 
         if (tool == null)
         {
@@ -399,9 +400,9 @@ public static class Startup
         }
 
         User? actualUser = null; ;
-        if (!string.IsNullOrWhiteSpace(actualUserId))
+        if (actualUserId != null && actualUserId != UserId.Empty)
         {
-            actualUser = await dataService.GetUserAsync(actualUserId, cancellationToken);
+            actualUser = await dataService.GetUserAsync(actualUserId.GetValueOrDefault(), cancellationToken);
 
             if (actualUser == null)
             {
@@ -409,9 +410,9 @@ public static class Startup
             }
         }
 
-        var context = string.IsNullOrWhiteSpace(contextId) ? null : await dataService.GetContextAsync(contextId, cancellationToken);
+        var context = contextId == null ? null : await dataService.GetContextAsync(contextId.GetValueOrDefault(), cancellationToken);
 
-        var resourceLink = string.IsNullOrWhiteSpace(resourceLinkId) ? null : await dataService.GetResourceLinkAsync(resourceLinkId, cancellationToken);
+        var resourceLink = resourceLinkId == null || resourceLinkId == ContentItemId.Empty ? null : await dataService.GetResourceLinkAsync(resourceLinkId.GetValueOrDefault(), cancellationToken);
 
         var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
@@ -419,7 +420,7 @@ public static class Startup
 
         ltiMessage.MessageType = messageTypeString;
 
-        ltiMessage.Audience = tool.ClientId;
+        ltiMessage.Audience = tool.ClientId.ToString();
         ltiMessage.IssuedDate = DateTime.UtcNow;
         ltiMessage.Issuer = tokenConfig.Issuer.OriginalString;
         ltiMessage.Nonce = request.Nonce!;
@@ -429,7 +430,7 @@ public static class Startup
         {
             var userPermissions = await dataService.GetUserPermissionsAsync(deployment.Id, contextId, user.Id, cancellationToken);
 
-            ltiMessage.Subject = user.Id;
+            ltiMessage.Subject = user.Id.ToString();
 
             ltiMessage.Address = user.Address == null || !userPermissions.Address ? null : new AddressClaim
             {

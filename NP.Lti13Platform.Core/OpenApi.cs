@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 namespace NP.Lti13Platform.Core
 {
@@ -45,6 +46,7 @@ namespace NP.Lti13Platform.Core
         {
             services.AddOpenApi(documentName, options =>
             {
+                options.CreateSchemaReferenceId = (type) => type.Type.IsEnum || type.Type.GetCustomAttributes<StringIdAttribute>().Any() ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
                 options.ShouldInclude = (description) => description.GroupName == GroupName;
                 options.AddDocumentTransformer<DocumentTransformer>();
                 options.AddDocumentTransformer((document, context, cancellationToken) =>
@@ -67,12 +69,10 @@ namespace NP.Lti13Platform.Core
             /// Adds a predefined security scheme to the OpenAPI document if it is not already present.
             /// </summary>
             /// <remarks>This method ensures that the OpenAPI document includes a security scheme
-            /// with the HTTP bearer authentication type. If the security scheme already exists
-            /// in the document, no changes are made.</remarks>
+            /// with the HTTP bearer authentication type.</remarks>
             /// <param name="document">The <see cref="OpenApiDocument"/> to which the security scheme will be added.</param>
             /// <param name="context">The context for the OpenAPI document transformation. This parameter provides additional metadata or state for the transformation process.</param>
             /// <param name="cancellationToken">A token to monitor for cancellation requests. This can be used to cancel the operation if needed.</param>
-            /// <returns>A task that represents the asynchronous operation. The task completes when the transformation is finished.</returns>
             public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
             {
                 document.Components ??= new OpenApiComponents();

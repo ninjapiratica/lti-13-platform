@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
         /// <param name="lineItemId">The identifier of the line item to retrieve.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the line item if found; otherwise, null.</returns>
-        Task<LineItem?> GetLineItemAsync(string lineItemId, CancellationToken cancellationToken = default);
+        Task<LineItem?> GetLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Deletes a line item by its identifier.
@@ -21,7 +21,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
         /// <param name="lineItemId">The identifier of the line item to delete.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        Task DeleteLineItemAsync(string lineItemId, CancellationToken cancellationToken = default);
+        Task DeleteLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Saves a line item to the data store.
@@ -29,7 +29,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
         /// <param name="lineItem">The line item to save.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the identifier of the saved line item.</returns>
-        Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
+        Task<LineItemId> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves grades for a specified line item.
@@ -40,7 +40,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
         /// <param name="userId">Optional. The identifier of a specific user to retrieve grades for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a partial list of grades.</returns>
-        Task<PartialList<Grade>> GetGradesAsync(string lineItemId, int pageIndex, int limit, string? userId = null, CancellationToken cancellationToken = default);
+        Task<PartialList<Grade>> GetGradesAsync(LineItemId lineItemId, int pageIndex, int limit, UserId? userId = null, CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Saves a grade to the data store.

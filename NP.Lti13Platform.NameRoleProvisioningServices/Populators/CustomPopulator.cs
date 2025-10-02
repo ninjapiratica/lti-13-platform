@@ -50,7 +50,7 @@ public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICus
             return;
         }
 
-        IEnumerable<string> mentoredUserIds = [];
+        IEnumerable<UserId> mentoredUserIds = [];
         if (customDictionary.Values.Any(v => v == Lti13UserVariables.ScopeMentor) && scope.Context != null )
         {
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
@@ -83,7 +83,7 @@ public class CustomPopulator(ILti13CoreDataService dataService) : Populator<ICus
         {
             var value = kvp.Value switch
             {
-                Lti13UserVariables.Id when customPermissions.UserId => scope.UserScope.User.Id,
+                Lti13UserVariables.Id when customPermissions.UserId => scope.UserScope.User.Id.ToString(),
                 Lti13UserVariables.Image when customPermissions.UserImage => scope.UserScope.User.Picture?.OriginalString,
                 Lti13UserVariables.Username when customPermissions.UserUsername => scope.UserScope.User.Username,
                 Lti13UserVariables.Org when customPermissions.UserOrg => string.Join(',', scope.UserScope.User.Orgs),

@@ -1,4 +1,5 @@
 ﻿using NP.Lti13Platform.AssignmentGradeServices.Configs;
+using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Services
 {
@@ -13,6 +14,6 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services
         /// <param name="clientId">The tool identifier for which to retrieve configuration.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the services configuration.</returns>
-        Task<ServicesConfig> GetConfigAsync(string clientId, CancellationToken cancellationToken = default);
+        Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
     }
 }

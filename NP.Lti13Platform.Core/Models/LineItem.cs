@@ -10,19 +10,19 @@ public class LineItem
     /// Gets or sets the ID of the line item.
     /// A unique identifier for the line item as assigned by the platform. The line item ID should remain consistent across sessions and for the lifetime of the line item.
     /// </summary>
-    public required string Id { get; set; }
+    public required LineItemId Id { get; set; }
 
     /// <summary>
     /// Gets or sets the deployment ID.
     /// Identifies the platform-tool integration that this line item is associated with. This value is provided by the platform when the tool is installed/registered.
     /// </summary>
-    public required string DeploymentId { get; set; }
+    public required DeploymentId DeploymentId { get; set; }
 
     /// <summary>
     /// Gets or sets the context ID.
     /// The unique identifier of the context (course/section) with which this line item is associated. This links the line item to a specific context in the learning platform.
     /// </summary>
-    public required string ContextId { get; set; }
+    public required ContextId ContextId { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum score for the line item.
@@ -40,7 +40,7 @@ public class LineItem
     /// Gets or sets the resource link ID.
     /// The unique identifier of the resource link that originated this line item, if applicable. Can be null for line items not associated with a specific resource link.
     /// </summary>
-    public string? ResourceLinkId { get; set; }
+    public ContentItemId? ResourceLinkId { get; set; }
 
     /// <summary>
     /// Gets or sets the resource ID.
@@ -78,3 +78,9 @@ public class LineItem
     /// </summary>
     public DateTime? EndDateTime { get; set; }
 }
+
+/// <summary>
+/// Represents a unique identifier for a user.
+/// </summary>
+[StringId]
+public readonly partial record struct LineItemId;

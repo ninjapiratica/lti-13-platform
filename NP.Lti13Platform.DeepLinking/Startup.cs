@@ -98,7 +98,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         _ = endpointRouteBuilder.MapPost(config.DeepLinkingResponseUrl,
-            async ([FromForm] DeepLinkResponseRequest request, string? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
+            async ([FromForm] DeepLinkResponseRequest request, ContextId? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
             {
                 const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                 const string INVALID_REQUEST = "invalid_request";
@@ -109,7 +109,7 @@ public static class Startup
                 }
 
                 var jwt = new JsonWebToken(request.Jwt);
-                var clientId = jwt.Issuer;
+                var clientId = new ClientId(jwt.Issuer);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool?.Jwks == null)
@@ -122,7 +122,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment_id is required", Error_Uri = DEEP_LINKING_SPEC });
                 }
 
-                var deployment = await coreDataService.GetDeploymentAsync(deploymentIdClaim.Value, cancellationToken);
+                var deployment = await coreDataService.GetDeploymentAsync(new DeploymentId(deploymentIdClaim.Value), cancellationToken);
                 if (deployment == null || deployment.ClientId != tool.ClientId)
                 {
                     return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment_id is invalid", Error_Uri = DEEP_LINKING_SPEC });
@@ -134,7 +134,7 @@ public static class Startup
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
                     ValidAudience = tokenConfig.Issuer.OriginalString,
-                    ValidIssuer = tool.ClientId
+                    ValidIssuer = tool.ClientId.ToString()
                 });
 
                 if (!validatedToken.IsValid)
@@ -196,9 +196,9 @@ public static class Startup
                         {
                             await deepLinkingDataService.SaveLineItemAsync(new LineItem
                             {
-                                Id = string.Empty,
+                                Id = LineItemId.Empty,
                                 DeploymentId = deployment.Id,
-                                ContextId = contextId,
+                                ContextId = contextId.GetValueOrDefault(),
                                 Label = ci.LtiResourceLink.LineItem!.Label ?? ci.LtiResourceLink.Title ?? ci.LtiResourceLink.Type,
                                 ScoreMaximum = ci.LtiResourceLink.LineItem.ScoreMaximum,
                                 GradesReleased = ci.LtiResourceLink.LineItem.GradesReleased,

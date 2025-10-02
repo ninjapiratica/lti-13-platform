@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using NP.Lti13Platform.Core.Models;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,7 +20,7 @@ public interface IResourceLinkMessage : ILaunchPresentationMessage
     /// Gets or sets the deployment Id.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/deployment_id")]
-    public string DeploymentId { get; set; }
+    public DeploymentId DeploymentId { get; set; }
 
     /// <summary>
     /// Gets or sets the target link URI.
@@ -42,7 +43,7 @@ public interface IResourceLinkMessage : ILaunchPresentationMessage
         /// Gets or sets the resource link Id.
         /// </summary>
         [JsonPropertyName("id")]
-        public required string Id { get; set; }
+        public required ContentItemId Id { get; set; }
 
         /// <summary>
         /// Gets or sets the resource link description.

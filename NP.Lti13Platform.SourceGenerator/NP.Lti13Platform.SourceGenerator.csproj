@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	<LangVersion>preview</LangVersion>
+	<OutputItemType>Analyzer</OutputItemType>
+	<IncludeBuildOutput>false</IncludeBuildOutput>
+	<Nullable>enable</Nullable>
+	<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<EmbeddedResource Include="StringId.tpl" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.14.0" />
+  </ItemGroup>
+</Project>

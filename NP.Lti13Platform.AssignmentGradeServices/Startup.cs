@@ -88,10 +88,10 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.LineItemsUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string? resource_id, string? resource_link_id, string? tag, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? resource_id, ContentItemId? resource_link_id, string? tag, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 pageIndex ??= 0;
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
@@ -164,10 +164,10 @@ public static class Startup
             .WithDescription("Gets the line items within a context. Can be filtered by resource id, resource link id, or tag. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
 
         endpointRouteBuilder.MapPost(config.LineItemsUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, LineItemRequest request, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -202,9 +202,9 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
                 }
 
-                if (!string.IsNullOrWhiteSpace(request.ResourceLinkId))
+                if (request.ResourceLinkId != null && request.ResourceLinkId != ContentItemId.Empty)
                 {
-                    var resourceLink = await coreDataService.GetResourceLinkAsync(request.ResourceLinkId, cancellationToken);
+                    var resourceLink = await coreDataService.GetResourceLinkAsync(request.ResourceLinkId.GetValueOrDefault(), cancellationToken);
                     if (resourceLink?.DeploymentId != deploymentId || resourceLink.ContextId != contextId)
                     {
                         return Results.NotFound();
@@ -213,7 +213,7 @@ public static class Startup
 
                 var lineItemId = await assignmentGradeDataService.SaveLineItemAsync(new LineItem
                 {
-                    Id = string.Empty,
+                    Id = LineItemId.Empty,
                     DeploymentId = deploymentId,
                     ContextId = contextId,
                     Label = request.Label,
@@ -261,10 +261,10 @@ public static class Startup
             .WithDescription("Creates a line item within a context.");
 
         endpointRouteBuilder.MapGet(config.LineItemUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -302,7 +302,7 @@ public static class Startup
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime,
                 },
-                options: JSON_SERIALIZER_OPTIONS, 
+                options: JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
@@ -320,10 +320,10 @@ public static class Startup
             .WithDescription("Gets a line item within a context.");
 
         endpointRouteBuilder.MapPut(config.LineItemUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -364,7 +364,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
                 }
 
-                if (!string.IsNullOrWhiteSpace(request.ResourceLinkId) && request.ResourceLinkId != lineItem.ResourceLinkId)
+                if (request.ResourceLinkId != null && request.ResourceLinkId != lineItem.ResourceLinkId)
                 {
                     return Results.BadRequest(new LtiBadRequest { Error = "Invalid ResourceLinkId", Error_Description = "ResourceLinkId may not change after creation", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item" });
                 }
@@ -392,7 +392,7 @@ public static class Startup
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime
                 },
-                options: JSON_SERIALIZER_OPTIONS, 
+                options: JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
@@ -411,10 +411,10 @@ public static class Startup
             .WithDescription("Updates a line item within a context.");
 
         endpointRouteBuilder.MapDelete(config.LineItemUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -459,10 +459,10 @@ public static class Startup
             .WithDescription("Deletes a line item within a context.");
 
         endpointRouteBuilder.MapGet($"{config.LineItemUrl}/results",
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, string deploymentId, string contextId, string lineItemId, string? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, UserId? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 pageIndex ??= 0;
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
@@ -521,7 +521,7 @@ public static class Startup
                     ScoringUserId = i.ScoringUserId,
                     Comment = i.Comment
                 }),
-                options: JSON_SERIALIZER_OPTIONS, 
+                options: JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
@@ -539,10 +539,10 @@ public static class Startup
             .WithDescription("Gets the results within a context and line item. Can be filtered by user id. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
 
         endpointRouteBuilder.MapPost($"{config.LineItemUrl}/scores",
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, string deploymentId, string contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                var clientId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+                var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
                 if (tool == null)
@@ -668,30 +668,20 @@ public static class Startup
     }
 }
 
-/// <summary>
-/// Represents a request for a line item.
-/// </summary>
-internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
+internal record LineItemRequest(decimal ScoreMaximum, string Label, ContentItemId? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-/// <summary>
-/// Represents a request for a score.
-/// </summary>
-internal record ScoreRequest(string UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
+internal record ScoreRequest(UserId UserId, UserId ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
-/// <summary>
-/// Represents a request for score submission.
-/// </summary>
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
-
 
 internal record LineItemResultResponse
 {
     public required string Id { get; set; }
     public required string ScoreOf { get; set; }
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
     public decimal? ResultScore { get; set; }
     public required decimal ResultMaximum { get; set; }
-    public string? ScoringUserId { get; set; }
+    public UserId? ScoringUserId { get; set; }
     public string? Comment { get; set; }
 }
 
@@ -700,7 +690,7 @@ internal class LineItemResponse
     public required string Id { get; set; }
     public required string Label { get; set; }
     public string? ResourceId { get; set; }
-    public string? ResourceLinkId { get; set; }
+    public ContentItemId? ResourceLinkId { get; set; }
     public decimal ScoreMaximum { get; set; }
     public string? Tag { get; set; }
     public bool? GradesReleased { get; set; }

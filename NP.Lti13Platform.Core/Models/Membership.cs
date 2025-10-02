@@ -8,12 +8,12 @@ public class Membership
     /// <summary>
     /// The unique identifier of the context in which the membership exists, as defined by the LTI 1.3 specification.
     /// </summary>
-    public required string ContextId { get; set; }
+    public required ContextId ContextId { get; set; }
 
     /// <summary>
     /// The unique identifier of the user who is a member of the context, as defined by the LTI 1.3 specification.
     /// </summary>
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
 
     /// <summary>
     /// The status of the membership (active or inactive) as defined by the LTI 1.3 specification.
@@ -28,7 +28,7 @@ public class Membership
     /// <summary>
     /// The IDs of the users mentored by this user, as defined by the LTI 1.3 specification.
     /// </summary>
-    public required IEnumerable<string> MentoredUserIds { get; set; }
+    public required IEnumerable<UserId> MentoredUserIds { get; set; }
 }
 
 /// <summary>

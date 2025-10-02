@@ -1,4 +1,5 @@
 ﻿using NP.Lti13Platform.Core.Constants;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.DeepLinking.Models;
 using System.Net.Mime;
 
@@ -42,7 +43,7 @@ namespace NP.Lti13Platform.DeepLinking.Configs
         /// <summary>
         /// Gets the mapping of content item types.
         /// </summary>
-        public IDictionary<(string? ClientId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
+        public IDictionary<(ClientId? ClientId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
 
         /// <summary>
         /// Gets or sets the service address for deep linking.
