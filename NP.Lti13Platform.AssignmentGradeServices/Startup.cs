@@ -88,7 +88,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.LineItemsUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? resource_id, ResourceLinkId? resource_link_id, string? tag, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? resource_id, ContentItemId? resource_link_id, string? tag, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -202,7 +202,7 @@ public static class Startup
                     return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
                 }
 
-                if (request.ResourceLinkId != null && request.ResourceLinkId != ResourceLinkId.Empty)
+                if (request.ResourceLinkId != null && request.ResourceLinkId != ContentItemId.Empty)
                 {
                     var resourceLink = await coreDataService.GetResourceLinkAsync(request.ResourceLinkId.GetValueOrDefault(), cancellationToken);
                     if (resourceLink?.DeploymentId != deploymentId || resourceLink.ContextId != contextId)
@@ -668,7 +668,7 @@ public static class Startup
     }
 }
 
-internal record LineItemRequest(decimal ScoreMaximum, string Label, ResourceLinkId? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
+internal record LineItemRequest(decimal ScoreMaximum, string Label, ContentItemId? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
 internal record ScoreRequest(UserId UserId, UserId ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
@@ -690,7 +690,7 @@ internal class LineItemResponse
     public required string Id { get; set; }
     public required string Label { get; set; }
     public string? ResourceId { get; set; }
-    public ResourceLinkId? ResourceLinkId { get; set; }
+    public ContentItemId? ResourceLinkId { get; set; }
     public decimal ScoreMaximum { get; set; }
     public string? Tag { get; set; }
     public bool? GradesReleased { get; set; }

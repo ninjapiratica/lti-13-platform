@@ -156,7 +156,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, ContentItemId? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 pageIndex ??= 0;
@@ -212,7 +212,7 @@ public static class Startup
                 }
 
                 var messages = new Dictionary<UserId, IEnumerable<NameRoleProvisioningMessage>>();
-                if (rlid != null && rlid != ResourceLinkId.Empty)
+                if (rlid != null && rlid != ContentItemId.Empty)
                 {
                     var resourceLink = await coreDataService.GetResourceLinkAsync(rlid.GetValueOrDefault(), cancellationToken);
                     if (resourceLink == null || resourceLink.DeploymentId != deploymentId)

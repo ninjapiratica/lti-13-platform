@@ -204,7 +204,7 @@ public static class Startup
                                 GradesReleased = ci.LtiResourceLink.LineItem.GradesReleased,
                                 Tag = ci.LtiResourceLink.LineItem.Tag,
                                 ResourceId = ci.LtiResourceLink.LineItem.ResourceId,
-                                ResourceLinkId = new ResourceLinkId(id),
+                                ResourceLinkId = id,
                                 StartDateTime = ci.LtiResourceLink.Submission?.StartDateTime?.UtcDateTime,
                                 EndDateTime = ci.LtiResourceLink.Submission?.EndDateTime?.UtcDateTime
                             });

@@ -19,7 +19,7 @@ public interface ILti13NameRoleProvisioningDataService
     /// <param name="asOfDate">Optional. Return memberships as of a specific date.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a partial list of membership and user tuples.</returns>
-    Task<PartialList<(Membership Membership, User User)>> GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate = null, CancellationToken cancellationToken = default);
+    Task<PartialList<(Membership Membership, User User)>> GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, ContentItemId? resourceLinkId, DateTime? asOfDate = null, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets user permissions for a list of users in a context.

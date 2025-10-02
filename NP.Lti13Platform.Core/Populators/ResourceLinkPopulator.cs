@@ -43,7 +43,7 @@ public interface IResourceLinkMessage : ILaunchPresentationMessage
         /// Gets or sets the resource link Id.
         /// </summary>
         [JsonPropertyName("id")]
-        public required ResourceLinkId Id { get; set; }
+        public required ContentItemId Id { get; set; }
 
         /// <summary>
         /// Gets or sets the resource link description.

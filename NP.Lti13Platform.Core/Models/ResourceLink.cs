@@ -10,7 +10,7 @@ public class ResourceLink
     /// Gets or sets the ID of the resource link.
     /// The stable unique identifier for the link as provided by the LMS platform. This value must be a UUID and must be immutable for a resource link.
     /// </summary>
-    public required ResourceLinkId Id { get; set; }
+    public required ContentItemId Id { get; set; }
 
     /// <summary>
     /// Gets or sets the deployment ID.
@@ -75,4 +75,4 @@ public class ResourceLink
 /// Represents a unique identifier for a user.
 /// </summary>
 [StringId]
-public readonly partial record struct ResourceLinkId;
+public readonly partial record struct ContentItemId;
