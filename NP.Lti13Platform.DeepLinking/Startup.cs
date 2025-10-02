@@ -196,7 +196,7 @@ public static class Startup
                         {
                             await deepLinkingDataService.SaveLineItemAsync(new LineItem
                             {
-                                Id = string.Empty,
+                                Id = LineItemId.Empty,
                                 DeploymentId = deployment.Id,
                                 ContextId = contextId.GetValueOrDefault(),
                                 Label = ci.LtiResourceLink.LineItem!.Label ?? ci.LtiResourceLink.Title ?? ci.LtiResourceLink.Type,

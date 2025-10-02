@@ -223,14 +223,13 @@ namespace NP.Lti13Platform.WebExample
             });
         }
 
-        // deeplinking && assignmentgradeservices
         /// <summary>
         /// Saves a line item.
         /// </summary>
         /// <param name="lineItem">The line item to save.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The ID of the saved line item.</returns>
-        public Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default)
+        public Task<LineItemId> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default)
         {
             var existingLineItem = LineItems.SingleOrDefault(x => x.Id == lineItem.Id);
             if (existingLineItem != null)
@@ -240,7 +239,7 @@ namespace NP.Lti13Platform.WebExample
             }
             else
             {
-                lineItem.Id = Guid.NewGuid().ToString();
+                lineItem.Id = new LineItemId(Guid.NewGuid().ToString());
                 LineItems.Add(lineItem);
                 return Task.FromResult(lineItem.Id);
             }
@@ -251,7 +250,7 @@ namespace NP.Lti13Platform.WebExample
             return await Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
 
-        Task<PartialList<Grade>> ILti13AssignmentGradeDataService.GetGradesAsync(string lineItemId, int pageIndex, int limit, UserId? userId, CancellationToken cancellationToken)
+        Task<PartialList<Grade>> ILti13AssignmentGradeDataService.GetGradesAsync(LineItemId lineItemId, int pageIndex, int limit, UserId? userId, CancellationToken cancellationToken)
         {
             var grades = Grades.Where(x => x.LineItemId == lineItemId && (userId == null || x.UserId == userId)).ToList();
 
@@ -262,7 +261,7 @@ namespace NP.Lti13Platform.WebExample
             });
         }
 
-        Task<Grade?> ILti13CoreDataService.GetGradeAsync(string lineItemId, UserId userId, CancellationToken cancellationToken)
+        Task<Grade?> ILti13CoreDataService.GetGradeAsync(LineItemId lineItemId, UserId userId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
@@ -375,12 +374,12 @@ namespace NP.Lti13Platform.WebExample
 
 
 
-        Task<LineItem?> ILti13AssignmentGradeDataService.GetLineItemAsync(string lineItemId, CancellationToken cancellationToken)
+        Task<LineItem?> ILti13AssignmentGradeDataService.GetLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken)
         {
             return Task.FromResult(LineItems.SingleOrDefault(x => x.Id == lineItemId));
         }
 
-        Task ILti13AssignmentGradeDataService.DeleteLineItemAsync(string lineItemId, CancellationToken cancellationToken)
+        Task ILti13AssignmentGradeDataService.DeleteLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken)
         {
             LineItems.RemoveAll(i => i.Id == lineItemId);
 

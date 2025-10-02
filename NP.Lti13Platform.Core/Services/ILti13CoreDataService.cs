@@ -87,7 +87,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="userId">The user ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The grade.</returns>
-        Task<Grade?> GetGradeAsync(string lineItemId, UserId userId, CancellationToken cancellationToken = default);
+        Task<Grade?> GetGradeAsync(LineItemId lineItemId, UserId userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a service token by tool and token IDs.

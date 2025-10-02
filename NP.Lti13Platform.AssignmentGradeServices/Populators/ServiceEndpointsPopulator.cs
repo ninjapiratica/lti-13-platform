@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
+using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Populators;
 using NP.Lti13Platform.Core.Services;
 using System.Text.Json.Serialization;
@@ -62,7 +63,7 @@ public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ILti13CoreDa
 
         if (lineItemScopes.Count > 0 && scope.Context != null)
         {
-            string? lineItemId = null;
+            LineItemId? lineItemId = null;
 
             if (scope.ResourceLink != null)
             {
@@ -79,7 +80,7 @@ public class ServiceEndpointsPopulator(LinkGenerator linkGenerator, ILti13CoreDa
             {
                 Scopes = lineItemScopes,
                 LineItemsUrl = linkGenerator.GetUriByName(RouteNames.GET_LINE_ITEMS, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)),
-                LineItemUrl = string.IsNullOrWhiteSpace(lineItemId) ? null : linkGenerator.GetUriByName(RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)),
+                LineItemUrl = lineItemId == null || lineItemId == LineItemId.Empty ? null : linkGenerator.GetUriByName(RouteNames.GET_LINE_ITEM, new { deploymentId = scope.Deployment.Id, contextId = scope.Context.Id, lineItemId }, config.ServiceAddress.Scheme, new HostString(config.ServiceAddress.Authority)),
             };
         }
     }

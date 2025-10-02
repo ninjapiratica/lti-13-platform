@@ -213,7 +213,7 @@ public static class Startup
 
                 var lineItemId = await assignmentGradeDataService.SaveLineItemAsync(new LineItem
                 {
-                    Id = string.Empty,
+                    Id = LineItemId.Empty,
                     DeploymentId = deploymentId,
                     ContextId = contextId,
                     Label = request.Label,
@@ -261,7 +261,7 @@ public static class Startup
             .WithDescription("Creates a line item within a context.");
 
         endpointRouteBuilder.MapGet(config.LineItemUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string lineItemId, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -320,7 +320,7 @@ public static class Startup
             .WithDescription("Gets a line item within a context.");
 
         endpointRouteBuilder.MapPut(config.LineItemUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, LineItemRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -411,7 +411,7 @@ public static class Startup
             .WithDescription("Updates a line item within a context.");
 
         endpointRouteBuilder.MapDelete(config.LineItemUrl,
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, DeploymentId deploymentId, ContextId contextId, string lineItemId, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -459,7 +459,7 @@ public static class Startup
             .WithDescription("Deletes a line item within a context.");
 
         endpointRouteBuilder.MapGet($"{config.LineItemUrl}/results",
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string lineItemId, UserId? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, UserId? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -539,7 +539,7 @@ public static class Startup
             .WithDescription("Gets the results within a context and line item. Can be filtered by user id. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
 
         endpointRouteBuilder.MapPost($"{config.LineItemUrl}/scores",
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, DeploymentId deploymentId, ContextId contextId, string lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, DeploymentId deploymentId, ContextId contextId, LineItemId lineItemId, ScoreRequest request, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);

@@ -12,7 +12,7 @@ public class Grade
     /// Gets or sets the identifier of the line item.
     /// References the line item in the gradebook to which this grade belongs.
     /// </summary>
-    public required string LineItemId { get; set; }
+    public required LineItemId LineItemId { get; set; }
 
     /// <summary>
     /// The user to whom this grade applies. This should correspond to a user ID in the platform.

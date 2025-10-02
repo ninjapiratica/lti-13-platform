@@ -24,5 +24,5 @@ public interface ILti13DeepLinkingDataService
     /// <param name="lineItem">The line item to save.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the identifier of the saved line item.</returns>
-    Task<string> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
+    Task<LineItemId> SaveLineItemAsync(LineItem lineItem, CancellationToken cancellationToken = default);
 }

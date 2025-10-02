@@ -10,7 +10,7 @@ public class LineItem
     /// Gets or sets the ID of the line item.
     /// A unique identifier for the line item as assigned by the platform. The line item ID should remain consistent across sessions and for the lifetime of the line item.
     /// </summary>
-    public required string Id { get; set; }
+    public required LineItemId Id { get; set; }
 
     /// <summary>
     /// Gets or sets the deployment ID.
@@ -78,3 +78,9 @@ public class LineItem
     /// </summary>
     public DateTime? EndDateTime { get; set; }
 }
+
+/// <summary>
+/// Represents a unique identifier for a user.
+/// </summary>
+[StringId]
+public readonly partial record struct LineItemId;
