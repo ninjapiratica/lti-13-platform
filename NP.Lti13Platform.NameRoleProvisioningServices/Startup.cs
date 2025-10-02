@@ -211,7 +211,7 @@ public static class Startup
                         .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
                 }
 
-                var messages = new Dictionary<string, IEnumerable<NameRoleProvisioningMessage>>();
+                var messages = new Dictionary<UserId, IEnumerable<NameRoleProvisioningMessage>>();
                 if (!string.IsNullOrWhiteSpace(rlid))
                 {
                     var resourceLink = await coreDataService.GetResourceLinkAsync(rlid, cancellationToken);
@@ -334,7 +334,7 @@ internal record MembershipContext
 internal record MemberInfo
 {
     [JsonPropertyName("user_id")]
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
     public required IEnumerable<string> Roles { get; set; }
     public string? Name { get; set; }
     [JsonPropertyName("given_name")]

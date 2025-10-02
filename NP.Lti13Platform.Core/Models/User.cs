@@ -9,7 +9,7 @@ public class User
     /// <summary>
     /// Gets or sets the unique identifier for the user.
     /// </summary>
-    public required string Id { get; set; }
+    public required UserId Id { get; set; }
 
     /// <summary>
     /// Full name in displayable form including all name parts, possibly including titles and suffixes, ordered according to the user's locale and preferences.
@@ -158,3 +158,9 @@ public class Address
     /// </summary>
     public string? Country { get; set; }
 }
+
+/// <summary>
+/// Represents a unique identifier for a user.
+/// </summary>
+[StringId]
+public readonly partial record struct UserId;

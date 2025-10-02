@@ -13,7 +13,7 @@ public class Attempt
     /// <summary>
     /// The unique identifier of the user making the attempt.
     /// </summary>
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
 
     /// <summary>
     /// Date and time when the attempt becomes available.

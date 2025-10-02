@@ -13,7 +13,7 @@ public class Membership
     /// <summary>
     /// The unique identifier of the user who is a member of the context, as defined by the LTI 1.3 specification.
     /// </summary>
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
 
     /// <summary>
     /// The status of the membership (active or inactive) as defined by the LTI 1.3 specification.

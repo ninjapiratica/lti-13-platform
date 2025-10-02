@@ -459,7 +459,7 @@ public static class Startup
             .WithDescription("Deletes a line item within a context.");
 
         endpointRouteBuilder.MapGet($"{config.LineItemUrl}/results",
-            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string lineItemId, string? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
+            async (IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13AssignmentGradeDataService assignmentGradeDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string lineItemId, UserId? user_id, int? limit, int? pageIndex, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -670,7 +670,7 @@ public static class Startup
 
 internal record LineItemRequest(decimal ScoreMaximum, string Label, string? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-internal record ScoreRequest(string UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
+internal record ScoreRequest(UserId UserId, string ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
 
@@ -678,7 +678,7 @@ internal record LineItemResultResponse
 {
     public required string Id { get; set; }
     public required string ScoreOf { get; set; }
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
     public decimal? ResultScore { get; set; }
     public required decimal ResultMaximum { get; set; }
     public string? ScoringUserId { get; set; }

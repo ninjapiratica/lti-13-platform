@@ -17,7 +17,7 @@ public class Grade
     /// <summary>
     /// The user to whom this grade applies. This should correspond to a user ID in the platform.
     /// </summary>
-    public required string UserId { get; set; }
+    public required UserId UserId { get; set; }
 
     /// <summary>
     /// The user who created or last modified this grade (typically an instructor or grader).

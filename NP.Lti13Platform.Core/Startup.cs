@@ -400,9 +400,9 @@ public static class Startup
         }
 
         User? actualUser = null; ;
-        if (!string.IsNullOrWhiteSpace(actualUserId))
+        if (actualUserId != null && actualUserId != UserId.Empty)
         {
-            actualUser = await dataService.GetUserAsync(actualUserId, cancellationToken);
+            actualUser = await dataService.GetUserAsync(actualUserId.GetValueOrDefault(), cancellationToken);
 
             if (actualUser == null)
             {
@@ -430,7 +430,7 @@ public static class Startup
         {
             var userPermissions = await dataService.GetUserPermissionsAsync(deployment.Id, contextId, user.Id, cancellationToken);
 
-            ltiMessage.Subject = user.Id;
+            ltiMessage.Subject = user.Id.ToString();
 
             ltiMessage.Address = user.Address == null || !userPermissions.Address ? null : new AddressClaim
             {

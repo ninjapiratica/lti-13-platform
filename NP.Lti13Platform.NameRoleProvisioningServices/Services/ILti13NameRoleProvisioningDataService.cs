@@ -29,5 +29,5 @@ public interface ILti13NameRoleProvisioningDataService
     /// <param name="userIds">The user identifiers to get permissions for.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a collection of user permissions.</returns>
-    Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, IEnumerable<string> userIds, CancellationToken cancellationToken = default);
+    Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default);
 }

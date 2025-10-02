@@ -92,14 +92,14 @@ public class CustomPopulator(ILti13PlatformService platformService, ILti13CoreDa
             // TODO: LIS variables
             customDictionary[kvp.Key] = kvp.Value switch
             {
-                Lti13UserVariables.Id when customPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id,
+                Lti13UserVariables.Id when customPermissions.UserId && !scope.UserScope.IsAnonymous => scope.UserScope.User.Id.ToString(),
                 Lti13UserVariables.Image when customPermissions.UserImage && !scope.UserScope.IsAnonymous => scope.UserScope.User.Picture?.OriginalString,
                 Lti13UserVariables.Username when customPermissions.UserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.User.Username,
                 Lti13UserVariables.Org when customPermissions.UserOrg && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.Orgs),
                 Lti13UserVariables.ScopeMentor when customPermissions.UserScopeMentor && !scope.UserScope.IsAnonymous => string.Join(',', mentoredUserIds),
                 Lti13UserVariables.GradeLevelsOneRoster when customPermissions.UserGradeLevelsOneRoster && !scope.UserScope.IsAnonymous => string.Join(',', scope.UserScope.User.OneRosterGrades),
 
-                Lti13ActualUserVariables.Id when customPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id,
+                Lti13ActualUserVariables.Id when customPermissions.ActualUserId && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Id.ToString(),
                 Lti13ActualUserVariables.Image when customPermissions.ActualUserImage && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Picture?.OriginalString,
                 Lti13ActualUserVariables.Username when customPermissions.ActualUserUsername && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser?.Username,
                 Lti13ActualUserVariables.Org when customPermissions.ActualUserOrg && !scope.UserScope.IsAnonymous => scope.UserScope.ActualUser != null ? string.Join(',', scope.UserScope.ActualUser.Orgs) : string.Empty,
