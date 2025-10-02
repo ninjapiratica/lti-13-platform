@@ -271,13 +271,13 @@ public static class Startup
                 }
                 else
                 {
-                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, validatedToken.SecurityToken.Id, cancellationToken);
+                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, new ServiceTokenId(validatedToken.SecurityToken.Id), cancellationToken);
                     if (serviceToken?.Expiration > DateTime.UtcNow)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "jti has already been used and is not expired", Error_Uri = AUTH_SPEC_URI });
                     }
 
-                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = validatedToken.SecurityToken.Id, ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
+                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = new ServiceTokenId(validatedToken.SecurityToken.Id), ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
                 }
 
                 var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);

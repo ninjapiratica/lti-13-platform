@@ -96,7 +96,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="id">The token ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The service token.</returns>
-        Task<ServiceToken?> GetServiceTokenAsync(ClientId clientId, string id, CancellationToken cancellationToken = default);
+        Task<ServiceToken?> GetServiceTokenAsync(ClientId clientId, ServiceTokenId id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Saves a service token.

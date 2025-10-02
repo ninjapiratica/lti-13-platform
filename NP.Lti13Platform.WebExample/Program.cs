@@ -281,7 +281,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenAsync(ClientId clientId, string serviceTokenId, CancellationToken cancellationToken)
+        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenAsync(ClientId clientId, ServiceTokenId serviceTokenId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ServiceTokens.FirstOrDefault(x => x.ClientId == clientId && x.Id == serviceTokenId));
         }
