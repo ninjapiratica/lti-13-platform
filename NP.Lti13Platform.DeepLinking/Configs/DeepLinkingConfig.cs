@@ -43,24 +43,19 @@ namespace NP.Lti13Platform.DeepLinking.Configs
         /// <summary>
         /// Gets the mapping of content item types.
         /// </summary>
-        public IDictionary<(ClientId? ClientId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary();
+        public IDictionary<(ClientId? ClientId, string ContentItemType), Type> ContentItemTypes { get; } = new ContentItemDictionary()
+        {
+            { (null, ContentItemType.File), typeof(FileContentItem) },
+            { (null, ContentItemType.Html), typeof(HtmlContentItem) },
+            { (null, ContentItemType.Image), typeof(ImageContentItem) },
+            { (null, ContentItemType.Link), typeof(LinkContentItem) },
+            { (null, ContentItemType.LtiResourceLink), typeof(LtiResourceLinkContentItem) }
+        };
 
         /// <summary>
         /// Gets or sets the service address for deep linking.
         /// </summary>
         public Uri ServiceAddress { get; set; } = DefaultUri;
-
-        /// <summary>
-        /// Adds default mappings for content item types.
-        /// </summary>
-        public void AddDefaultContentItemMapping()
-        {
-            ContentItemTypes.Add((null, ContentItemType.File), typeof(FileContentItem));
-            ContentItemTypes.Add((null, ContentItemType.Html), typeof(HtmlContentItem));
-            ContentItemTypes.Add((null, ContentItemType.Image), typeof(ImageContentItem));
-            ContentItemTypes.Add((null, ContentItemType.Link), typeof(LinkContentItem));
-            ContentItemTypes.Add((null, ContentItemType.LtiResourceLink), typeof(LtiResourceLinkContentItem));
-        }
 
         /// <summary>
         /// The default URI for the service.

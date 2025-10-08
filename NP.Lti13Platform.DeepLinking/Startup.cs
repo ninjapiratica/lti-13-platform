@@ -31,6 +31,8 @@ public static class Startup
     /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
     {
+        builder.Services.AddTransient<IDeepLinkingUrlService, DeepLinkingUrlService>();
+
         builder
             .ExtendLti13Message<IDeepLinkingMessage, DeepLinkingPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
             .ExtendLti13Message<IPlatformMessage, PlatformPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
@@ -39,8 +41,8 @@ public static class Startup
             .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
         builder.Services.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
-        builder.Services.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
-        builder.Services.TryAddSingleton<ILti13DeepLinkingHandler, DefaultDeepLinkingHandler>();
+        builder.Services.TryAddSingleton<IDeepLinkingConfigService, DefaultDeepLinkingConfigService>();
+        builder.Services.TryAddSingleton<IDeepLinkingHandler, DefaultDeepLinkingHandler>();
 
         return builder;
     }
@@ -65,9 +67,9 @@ public static class Startup
     /// <param name="builder">The LTI 1.3 platform builder.</param>
     /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
     /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
-    public static Lti13PlatformBuilder WithLti13DeepLinkingConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingConfigService
+    public static Lti13PlatformBuilder WithLti13DeepLinkingConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : IDeepLinkingConfigService
     {
-        builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingConfigService), typeof(T), serviceLifetime));
+        builder.Services.Add(new ServiceDescriptor(typeof(IDeepLinkingConfigService), typeof(T), serviceLifetime));
         return builder;
     }
 
@@ -78,9 +80,9 @@ public static class Startup
     /// <param name="builder">The LTI 1.3 platform builder.</param>
     /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
     /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
-    public static Lti13PlatformBuilder WithLti13DeepLinkingHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingHandler
+    public static Lti13PlatformBuilder WithLti13DeepLinkingHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : IDeepLinkingHandler
     {
-        builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingHandler), typeof(T), serviceLifetime));
+        builder.Services.Add(new ServiceDescriptor(typeof(IDeepLinkingHandler), typeof(T), serviceLifetime));
         return builder;
     }
 
@@ -98,7 +100,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         _ = endpointRouteBuilder.MapPost(config.DeepLinkingResponseUrl,
-            async ([FromForm] DeepLinkResponseRequest request, ContextId? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
+            async ([FromForm] DeepLinkResponseRequest request, ContextId? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, IDeepLinkingConfigService deepLinkingService, IDeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
             {
                 const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                 const string INVALID_REQUEST = "invalid_request";
@@ -154,15 +156,13 @@ public static class Startup
 
                 var deepLinkingConfig = await deepLinkingService.GetConfigAsync(tool.ClientId, cancellationToken);
 
-                List<(ContentItem ContentItem, LtiResourceLinkContentItem? LtiResourceLink)> contentItems =
+                List<ContentItem> contentItems =
                     [
                         .. validatedToken.ClaimsIdentity.FindAll("https://purl.imsglobal.org/spec/lti-dl/claim/content_items")
                             .Select((x, ix) =>
                             {
                                 var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
-                                var customItem = (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
-
-                                return (customItem, type == ContentItemType.LtiResourceLink ? JsonSerializer.Deserialize<LtiResourceLinkContentItem>(x.Value) : null);
+                                return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
                             })
                     ];
 
@@ -173,7 +173,7 @@ public static class Startup
                     Log = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/log")?.Value,
                     ErrorMessage = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errormsg")?.Value,
                     ErrorLog = validatedToken.ClaimsIdentity.FindFirst("https://purl.imsglobal.org/spec/lti-dl/claim/errorlog")?.Value,
-                    ContentItems = contentItems.Select(ci => ci.ContentItem),
+                    ContentItems = contentItems,
                 };
 
                 if (!string.IsNullOrWhiteSpace(response.Log))
@@ -190,24 +190,36 @@ public static class Startup
                 {
                     var saveTasks = contentItems.Select(async ci =>
                     {
-                        var id = await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci.ContentItem);
-
-                        if (deepLinkingConfig.AcceptLineItem == true && contextId != null && ci.LtiResourceLink?.LineItem != null)
+                        if (ci.Type == ContentItemType.LtiResourceLink)
                         {
-                            await deepLinkingDataService.SaveLineItemAsync(new LineItem
+                            if (ci is not LtiResourceLinkContentItem ltiResourceLinkItem)
                             {
-                                Id = LineItemId.Empty,
-                                DeploymentId = deployment.Id,
-                                ContextId = contextId.GetValueOrDefault(),
-                                Label = ci.LtiResourceLink.LineItem!.Label ?? ci.LtiResourceLink.Title ?? ci.LtiResourceLink.Type,
-                                ScoreMaximum = ci.LtiResourceLink.LineItem.ScoreMaximum,
-                                GradesReleased = ci.LtiResourceLink.LineItem.GradesReleased,
-                                Tag = ci.LtiResourceLink.LineItem.Tag,
-                                ResourceId = ci.LtiResourceLink.LineItem.ResourceId,
-                                ResourceLinkId = id,
-                                StartDateTime = ci.LtiResourceLink.Submission?.StartDateTime?.UtcDateTime,
-                                EndDateTime = ci.LtiResourceLink.Submission?.EndDateTime?.UtcDateTime
-                            });
+                                ltiResourceLinkItem = JsonSerializer.Deserialize<LtiResourceLinkContentItem>(JsonSerializer.Serialize(ci))!;
+                            }
+
+                            var id = await deepLinkingDataService.SaveResourceLinkAsync(deployment.Id, contextId, ltiResourceLinkItem);
+
+                            if (deepLinkingConfig.AcceptLineItem == true && contextId != null && ltiResourceLinkItem?.LineItem != null)
+                            {
+                                await deepLinkingDataService.SaveLineItemAsync(new LineItem
+                                {
+                                    Id = LineItemId.Empty,
+                                    DeploymentId = deployment.Id,
+                                    ContextId = contextId.GetValueOrDefault(),
+                                    Label = ltiResourceLinkItem.LineItem!.Label ?? ltiResourceLinkItem.Title ?? ltiResourceLinkItem.Type,
+                                    ScoreMaximum = ltiResourceLinkItem.LineItem.ScoreMaximum,
+                                    GradesReleased = ltiResourceLinkItem.LineItem.GradesReleased,
+                                    Tag = ltiResourceLinkItem.LineItem.Tag,
+                                    ResourceId = ltiResourceLinkItem.LineItem.ResourceId,
+                                    ResourceLinkId = id,
+                                    StartDateTime = ltiResourceLinkItem.Submission?.StartDateTime?.UtcDateTime,
+                                    EndDateTime = ltiResourceLinkItem.Submission?.EndDateTime?.UtcDateTime
+                                });
+                            }
+                        }
+                        else
+                        {
+                            await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci);
                         }
                     });
 

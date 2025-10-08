@@ -55,7 +55,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="resourceLinkId">The resource link ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The resource link.</returns>
-        Task<ResourceLink?> GetResourceLinkAsync(ContentItemId resourceLinkId, CancellationToken cancellationToken = default);
+        Task<ResourceLink?> GetResourceLinkAsync(ResourceLinkId resourceLinkId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a paginated list of line items.
@@ -69,7 +69,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="tag">The tag.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A partial list of line items.</returns>
-        Task<PartialList<LineItem>> GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId = null, ContentItemId? resourceLinkId = null, string? tag = null, CancellationToken cancellationToken = default);
+        Task<PartialList<LineItem>> GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId = null, ResourceLinkId? resourceLinkId = null, string? tag = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets an attempt by resource link and user IDs.
@@ -78,7 +78,7 @@ namespace NP.Lti13Platform.Core.Services
         /// <param name="userId">The user ID.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The attempt.</returns>
-        Task<Attempt?> GetAttemptAsync(ContentItemId resourceLinkId, UserId userId, CancellationToken cancellationToken = default);
+        Task<Attempt?> GetAttemptAsync(ResourceLinkId resourceLinkId, UserId userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a grade by line item and user IDs.

@@ -22,7 +22,7 @@ public class Deployment
 }
 
 /// <summary>
-/// Represents a unique identifier for a deployment.
+/// Represents a unique identifier for a <see cref="Deployment"/>.
 /// </summary>
 [StringId]
 public readonly partial record struct DeploymentId;

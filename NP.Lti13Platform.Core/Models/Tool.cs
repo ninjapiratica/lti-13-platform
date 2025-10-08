@@ -20,12 +20,6 @@ public record Tool
     public required Uri OidcInitiationUrl { get; set; }
 
     /// <summary>
-    /// Gets or sets the deep link URL for the tool.
-    /// The URL that the platform should use when launching the tool in deep linking mode. This is used for content selection as defined in the LTI Deep Linking specification.
-    /// </summary>
-    public required Uri DeepLinkUrl { get; set; }
-
-    /// <summary>
     /// Gets or sets the launch URL for the tool.
     /// The URL that the platform should use when launching the tool for a standard LTI launch. This is the target of the OpenID Connect Authentication Response.
     /// </summary>
@@ -35,7 +29,7 @@ public record Tool
     /// Gets the redirect URLs for the tool.
     /// The collection of URLs that the platform may redirect to after initiating an LTI launch. As specified in the LTI 1.3 specification, these should include at minimum the deep linking URL and the launch URL.
     /// </summary>
-    public IEnumerable<Uri> RedirectUrls => [DeepLinkUrl, LaunchUrl];
+    public IEnumerable<Uri> RedirectUrls => [LaunchUrl];
 
     /// <summary>
     /// Gets or sets the JSON Web Key Set (JWKS) for the tool.
@@ -57,7 +51,7 @@ public record Tool
 }
 
 /// <summary>
-/// Represents a unique identifier for a tool.
+/// Represents a unique identifier for a <see cref="Tool"/>.
 /// </summary>
 [StringId]
 public readonly partial record struct ClientId;

@@ -160,7 +160,7 @@ public class Address
 }
 
 /// <summary>
-/// Represents a unique identifier for a user.
+/// Represents a unique identifier for a <see cref="User"/>.
 /// </summary>
 [StringId]
 public readonly partial record struct UserId;

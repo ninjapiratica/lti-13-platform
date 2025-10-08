@@ -15,8 +15,8 @@ public class Lti13PlatformCoreEndpointsConfig
     /// Gets or sets the endpoint for getting a set of public JWKs.
     /// </summary>
     /// <para>Must include route parameter for {clientId}.</para>
-    /// <value>Default: /lti13/{clientId}/jwks</value>
-    public string JwksUrl { get; set; } = "/lti13/{clientId}/jwks";
+    /// <value>Default: /lti13/jwks/{clientId}</value>
+    public string JwksUrl { get; set; } = "/lti13/jwks/{clientId}";
 
     /// <summary>
     /// Gets or sets the endpoint used to get auth tokens used for service calls.
