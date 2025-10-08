@@ -91,6 +91,48 @@ jobs:
           echo "Computed version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Set package list and derive package names
+        id: package-list
+        run: |
+          # Single authoritative list: one project per array entry (easy to read)
+          PROJS=(
+            "NP.Lti13Platform.Core/NP.Lti13Platform.Core.csproj"
+            "NP.Lti13Platform.AssignmentGradeServices/NP.Lti13Platform.AssignmentGradeServices.csproj"
+            "NP.Lti13Platform.DeepLinking/NP.Lti13Platform.DeepLinking.csproj"
+            "NP.Lti13Platform.NameRoleProvisioningServices/NP.Lti13Platform.NameRoleProvisioningServices.csproj"
+            "NP.Lti13Platform/NP.Lti13Platform.csproj"
+          )
+
+          # Export a space-separated single-line output for downstream steps
+          PROJECTS_SINGLE="$(printf "%s " "${PROJS[@]}")"
+          PROJECTS_SINGLE=${PROJECTS_SINGLE% } # trim trailing space
+          echo "projects=$PROJECTS_SINGLE" >> $GITHUB_OUTPUT
+
+          # Derive package ids (prefer <PackageId>, then <AssemblyName>, then filename)
+          NAMES=()
+          for proj in "${PROJS[@]}"; do
+            # trim just in case
+            proj="$(echo "$proj" | xargs)"
+            [ -z "$proj" ] && continue
+            if [ -f "$proj" ]; then
+              pkg=$(grep -oPm1 "(?<=<PackageId>)[^<]+" "$proj" || true)
+              if [ -z "$pkg" ]; then
+                pkg=$(grep -oPm1 "(?<=<AssemblyName>)[^<]+" "$proj" || true)
+              fi
+              if [ -z "$pkg" ]; then
+                pkg=$(basename "$proj" .csproj)
+              fi
+            else
+              pkg=$(basename "$proj" .csproj)
+            fi
+            NAMES+=("$pkg")
+          done
+
+          joined="$(printf "%s " "${NAMES[@]}")"
+          joined=${joined% } # trim trailing space
+          echo "names=$joined" >> $GITHUB_OUTPUT
+          echo "Derived package names: $joined"
+
       - name: Restore dependencies
         run: dotnet restore
 
@@ -98,24 +140,25 @@ jobs:
         run: dotnet build --configuration Release --no-restore /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
 
       - name: Pack NuGet
-        run: dotnet pack --configuration Release -o ./artifacts /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          IFS=' ' read -r -a PROJS <<< "${{ steps.package-list.outputs.projects }}"
+          for proj in "${PROJS[@]}"; do
+            echo "Packing $proj..."
+            dotnet pack "$proj" --configuration Release -o ./artifacts /p:Version=$VERSION /p:PackageVersion=$VERSION
+          done
 
       - name: Push NuGet packages
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          PACKAGES=(
-            "NP.Lti13Platform.Core.$VERSION.nupkg"
-            "NP.Lti13Platform.AssignmentGradeServices.$VERSION.nupkg"
-            "NP.Lti13Platform.DeepLinking.$VERSION.nupkg"
-            "NP.Lti13Platform.NameRoleProvisioningServices.$VERSION.nupkg"
-            "NP.Lti13Platform.$VERSION.nupkg"
-          )
-          for pkg in "${PACKAGES[@]}"; do
+          IFS=' ' read -r -a PKG_NAMES <<< "${{ steps.package-list.outputs.names }}"
+          for name in "${PKG_NAMES[@]}"; do
+            pkg="${name}.${VERSION}.nupkg"
             if [ -f "./artifacts/$pkg" ]; then
               echo "Pushing $pkg..."
-              dotnet nuget push ./artifacts/$pkg --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
+              dotnet nuget push "./artifacts/$pkg" --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
             else
               echo "Warning: $pkg not found, skipping..."
             fi
