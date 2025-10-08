@@ -22,7 +22,7 @@ public class ServiceToken
 }
 
 /// <summary>
-/// Represents a unique identifier for a user.
+/// Represents a unique identifier for a <see cref="ServiceToken"/>.
 /// </summary>
 [StringId]
 public readonly partial record struct ServiceTokenId;

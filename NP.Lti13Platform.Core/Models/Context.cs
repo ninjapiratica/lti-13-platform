@@ -57,7 +57,7 @@ public class Context
 }
 
 /// <summary>
-/// Represents a unique identifier for a context.
+/// Represents a unique identifier for a <see cref="Context"/>.
 /// </summary>
 [StringId]
 public readonly partial record struct ContextId;

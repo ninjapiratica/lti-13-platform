@@ -8,7 +8,7 @@ public class Attempt
     /// <summary>
     /// The unique identifier of the resource link for which this attempt is made.
     /// </summary>
-    public required ContentItemId ResourceLinkId { get; set; }
+    public required ResourceLinkId ResourceLinkId { get; set; }
 
     /// <summary>
     /// The unique identifier of the user making the attempt.

@@ -111,7 +111,7 @@ public interface IDeepLinkingMessage : ILaunchPresentationMessage
 /// </summary>
 /// <param name="linkGenerator">The link generator used to create URLs.</param>
 /// <param name="deepLinkingService">The service that provides deep linking configuration.</param>
-public class DeepLinkingPopulator(LinkGenerator linkGenerator, ILti13DeepLinkingConfigService deepLinkingService) : Populator<IDeepLinkingMessage>
+public class DeepLinkingPopulator(LinkGenerator linkGenerator, IDeepLinkingConfigService deepLinkingService) : Populator<IDeepLinkingMessage>
 {
     /// <summary>
     /// Populates a deep linking message with the appropriate values based on the message scope.

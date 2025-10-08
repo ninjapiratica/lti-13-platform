@@ -4,16 +4,16 @@ using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
+using NP.Lti13Platform.DeepLinking.Services;
 
 namespace NP.Lti13Platform.WebExample.Controllers;
 
-public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper service, ILti13CoreDataService dataService) : Controller
+public class HomeController(ILogger<HomeController> logger, IUrlService service, IDeepLinkingUrlService deepLinkUrlService) : Controller
 {
     public async Task<IResult> Index(CancellationToken cancellationToken)
     {
-        var tool = await dataService.GetToolAsync(new ClientId("clientId"), cancellationToken);
-        var deployment = await dataService.GetDeploymentAsync(new DeploymentId("deploymentId"), cancellationToken);
-        var context = await dataService.GetContextAsync(new ContextId("contextId"), cancellationToken);
+        var deploymentId = new DeploymentId("deploymentId");
+        var contextId = new ContextId("contextId");
         var userId = new UserId("userId");
         var documentTarget = Lti13PresentationTargetDocuments.Window;
         var height = 200;
@@ -24,21 +24,18 @@ public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper se
 
         return Results.Ok(new
         {
-            deepLinkUrl = await service.GetDeepLinkInitiationUrlAsync(
-                tool!,
-                deployment!.Id,
+            deepLinkUrl = (await deepLinkUrlService.GetDeepLinkInitiationUrlAsync(
+                deploymentId,
                 userId,
                 false,
-                null,
-                context!.Id,
+                deepLinkUrl: null,
+                actualUserId: null,
+                contextId,
                 new DeepLinkSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
-                cancellationToken: cancellationToken),
+                cancellationToken: cancellationToken)).AsForm("form1"),
             resourceLinkUrls = DataService.ResourceLinks
-                .Select(async resourceLink => await service.GetResourceLinkInitiationUrlAsync(
-                    tool!,
-                    deployment!.Id,
-                    context!.Id,
-                    resourceLink,
+                .Select(async resourceLink => (await service.GetResourceLinkInitiationUrlAsync(
+                    resourceLink.Id,
                     userId,
                     false,
                     launchPresentation: new LaunchPresentationOverride
@@ -48,7 +45,7 @@ public class HomeController(ILogger<HomeController> logger, IUrlServiceHelper se
                         Width = width,
                         Locale = locale
                     },
-                    cancellationToken: cancellationToken))
+                    cancellationToken: cancellationToken)).AsForm("form1"))
                 .Select(t => t.Result)
         });
     }

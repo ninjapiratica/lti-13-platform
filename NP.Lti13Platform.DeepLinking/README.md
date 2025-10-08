@@ -153,14 +153,14 @@ The web address where the deep linking responses will be handled. If not set, th
 
 ***
 
-`ContentItemTypes` Default: `[]`{:csharp}
+`ContentItemTypes` Default Keys: `["file", "html", "image", "link", "ltiResourceLink"]`{:csharp}
 
-A dictionary of type configurations to be used when deserialzing the content items. If not set, the content items will be deserialized as `Dictionary<string, JsonElement>`{:csharp} objects. A convenience method to add the known content items to this dictionary is provided.
+A dictionary of type configurations to be used when deserialzing the content items. If not set, the content items will be deserialized as `Dictionary<string, JsonElement>`{:csharp} objects. Common known content items are already added to this dictionary. Additional types can be added.
 
 ```csharp
 builder.Services.Configure<DeepLinkingConfig>(x =>
 {
-    x.AddDefaultContentItemMapping();
+    x.ContentItemTypes.Add((null, "my.custom.type"), typeof(MyCustomType))
 });
 ```
 

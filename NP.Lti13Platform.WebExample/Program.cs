@@ -29,11 +29,6 @@ builder.Services.AddLti13OpenApi("lti");
 builder.Services.RemoveAll<IHttpContextAccessor>();
 builder.Services.AddSingleton<IHttpContextAccessor, DevTunnelHttpContextAccessor>();
 
-builder.Services.Configure<DeepLinkingConfig>(x =>
-{
-    x.AddDefaultContentItemMapping();
-});
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -141,8 +136,7 @@ namespace NP.Lti13Platform.WebExample
                 ClientId = new ClientId("clientId"),
                 OidcInitiationUrl = new Uri("https://saltire.lti.app/tool"),
                 LaunchUrl = new Uri("https://saltire.lti.app/tool"),
-                DeepLinkUrl = new Uri("https://saltire.lti.app/tool"),
-                Jwks = "https://saltire.lti.app/tool/jwks/sb86616b3bd1071dfbd24ff3b251e2570",
+                Jwks = "https://saltire.lti.app/tool/jwks/s7bf81185d64a040a0cc72385e4edbcfb",
                 ServiceScopes =
                 [
                     AssignmentGradeServices.ServiceScopes.LineItem,
@@ -156,7 +150,7 @@ namespace NP.Lti13Platform.WebExample
             Deployments.Add(new Deployment
             {
                 Id = new DeploymentId("deploymentId"),
-                ClientId = new ClientId("toolId")
+                ClientId = new ClientId("clientId")
             });
 
             Contexts.Add(new Context
@@ -207,12 +201,12 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Memberships.SingleOrDefault(m => m.ContextId == contextId && m.UserId == userId));
         }
 
-        Task<ResourceLink?> ILti13CoreDataService.GetResourceLinkAsync(ContentItemId resourceLinkId, CancellationToken cancellationToken)
+        Task<ResourceLink?> ILti13CoreDataService.GetResourceLinkAsync(ResourceLinkId resourceLinkId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ResourceLinks.SingleOrDefault(r => r.Id == resourceLinkId));
         }
 
-        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId, ContentItemId? resourceLinkId, string? tag, CancellationToken cancellationToken)
+        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId, ResourceLinkId? resourceLinkId, string? tag, CancellationToken cancellationToken)
         {
             var lineItems = LineItems.Where(li => li.DeploymentId == deploymentId && li.ContextId == contextId && (resourceId == null || li.ResourceId == resourceId) && (resourceLinkId == null || li.ResourceLinkId == resourceLinkId) && (tag == null || li.Tag == tag)).ToList();
 
@@ -245,7 +239,7 @@ namespace NP.Lti13Platform.WebExample
             }
         }
 
-        async Task<Attempt?> ILti13CoreDataService.GetAttemptAsync(ContentItemId resourceLinkId, UserId userId, CancellationToken cancellationToken)
+        async Task<Attempt?> ILti13CoreDataService.GetAttemptAsync(ResourceLinkId resourceLinkId, UserId userId, CancellationToken cancellationToken)
         {
             return await Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
@@ -329,7 +323,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult<SecurityKey>(securityKey);
         }
 
-        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, ContentItemId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
+        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
         {
             if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
@@ -346,26 +340,31 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(PartialList<(Membership, User)>.Empty);
         }
 
-        Task<ContentItemId> ILti13DeepLinkingDataService.SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken)
+        Task ILti13DeepLinkingDataService.SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken)
         {
-            var id = new ContentItemId(Guid.NewGuid().ToString());
+            return Task.CompletedTask;
+        }
 
-            if (contentItem is LtiResourceLinkContentItem ci && contextId != null)
+        Task<ResourceLinkId> ILti13DeepLinkingDataService.SaveResourceLinkAsync(DeploymentId deploymentId, ContextId? contextId, LtiResourceLinkContentItem resourceLinkContentItem, CancellationToken cancellationToken)
+        {
+            var id = new ResourceLinkId(Guid.NewGuid().ToString());
+
+            if (contextId != null)
             {
                 ResourceLinks.Add(new ResourceLink
                 {
                     ContextId = contextId.GetValueOrDefault(),
                     DeploymentId = deploymentId,
                     Id = id,
-                    AvailableEndDateTime = ci.Available?.EndDateTime?.UtcDateTime,
-                    AvailableStartDateTime = ci.Available?.StartDateTime?.UtcDateTime,
-                    SubmissionEndDateTime = ci.Submission?.EndDateTime?.UtcDateTime,
-                    SubmissionStartDateTime = ci.Submission?.StartDateTime?.UtcDateTime,
+                    AvailableEndDateTime = resourceLinkContentItem.Available?.EndDateTime?.UtcDateTime,
+                    AvailableStartDateTime = resourceLinkContentItem.Available?.StartDateTime?.UtcDateTime,
+                    SubmissionEndDateTime = resourceLinkContentItem.Submission?.EndDateTime?.UtcDateTime,
+                    SubmissionStartDateTime = resourceLinkContentItem.Submission?.StartDateTime?.UtcDateTime,
                     ClonedIdHistory = [],
-                    Custom = ci.Custom,
-                    Text = ci.Text,
-                    Title = ci.Title,
-                    Url = ci.Url
+                    Custom = resourceLinkContentItem.Custom,
+                    Text = resourceLinkContentItem.Text,
+                    Title = resourceLinkContentItem.Title,
+                    Url = resourceLinkContentItem.Url
                 });
             }
 
