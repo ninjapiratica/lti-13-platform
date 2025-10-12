@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.DeepLinking.Services;
 /// Implementations produce an <see cref="LtiLaunch"/> that contains the OIDC initiation parameters
 /// required to start a deep linking flow with a Tool configured in the platform.
 /// </remarks>
-public interface IDeepLinkingUrlService
+public interface ILti13DeepLinkingUrlService
 {
     /// <summary>
     /// Gets a Deep Link initiation URL asynchronously.
@@ -50,7 +50,7 @@ public interface IDeepLinkingUrlService
 /// </remarks>
 /// <param name="coreDataService">The core data service used to read tools and deployments.</param>
 /// <param name="urlService">The URL service used to build LTI messages and hints.</param>
-public class DeepLinkingUrlService(ILti13CoreDataService coreDataService, IUrlService urlService) : IDeepLinkingUrlService
+public class DeepLinkingUrlService(ILti13CoreDataService coreDataService, IUrlService urlService) : ILti13DeepLinkingUrlService
 {
     /// <inheritdoc />
     public async Task<LtiLaunch> GetDeepLinkInitiationUrlAsync(

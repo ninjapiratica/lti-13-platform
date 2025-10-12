@@ -8,7 +8,7 @@ namespace NP.Lti13Platform.DeepLinking.Services;
 /// <summary>
 /// Defines a service for retrieving configuration settings for deep linking in an LTI 1.3 platform.
 /// </summary>
-public interface IDeepLinkingConfigService
+public interface ILti13DeepLinkingConfigService
 {
     /// <summary>
     /// Gets the configuration for deep linking.
@@ -19,7 +19,7 @@ public interface IDeepLinkingConfigService
     Task<DeepLinkingConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultDeepLinkingConfigService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : IDeepLinkingConfigService
+internal class DefaultDeepLinkingConfigService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13DeepLinkingConfigService
 {
     public async Task<DeepLinkingConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default)
     {

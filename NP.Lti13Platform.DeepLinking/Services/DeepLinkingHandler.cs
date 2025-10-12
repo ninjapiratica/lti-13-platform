@@ -8,7 +8,7 @@ namespace NP.Lti13Platform.DeepLinking.Services;
 /// <summary>
 /// Defines a handler for deep linking responses in an LTI 1.3 platform.
 /// </summary>
-public interface IDeepLinkingHandler
+public interface ILti13DeepLinkingHandler
 {
     /// <summary>
     /// Handles a deep linking response from an LTI tool.
@@ -22,7 +22,7 @@ public interface IDeepLinkingHandler
     Task<IResult> HandleResponseAsync(ClientId clientId, DeploymentId deploymentId, ContextId? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultDeepLinkingHandler() : IDeepLinkingHandler
+internal class DefaultDeepLinkingHandler() : ILti13DeepLinkingHandler
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
@@ -30,7 +30,7 @@ internal class DefaultDeepLinkingHandler() : IDeepLinkingHandler
         Task.FromResult(Results.Content(@$"<!DOCTYPE html>
                 <html>
                 <body>
-                <p>This is the end of the Deep Linking flow. Please override the {nameof(IDeepLinkingHandler)} for a better experience.</p>
+                <p>This is the end of the Deep Linking flow. Please override the {nameof(ILti13DeepLinkingHandler)} for a better experience.</p>
                 <pre>{JsonSerializer.Serialize(response, SerializerOptions)}</pre>
                 </body>
                 </html>",
