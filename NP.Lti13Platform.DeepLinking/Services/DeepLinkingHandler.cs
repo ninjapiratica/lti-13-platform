@@ -27,12 +27,13 @@ internal class DefaultDeepLinkingHandler() : ILti13DeepLinkingHandler
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
     public Task<IResult> HandleResponseAsync(ClientId clientId, DeploymentId deploymentId, ContextId? contextId, DeepLinkResponse response, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Results.Content(@$"<!DOCTYPE html>
-                <html>
-                <body>
-                <p>This is the end of the Deep Linking flow. Please override the {nameof(ILti13DeepLinkingHandler)} for a better experience.</p>
-                <pre>{JsonSerializer.Serialize(response, SerializerOptions)}</pre>
-                </body>
-                </html>",
+        Task.FromResult(Results.Content($@"
+<!DOCTYPE html>
+<html>
+<body>
+    <p>This is the end of the Deep Linking flow. Please override the {nameof(ILti13DeepLinkingHandler)} for a better experience.</p>
+    <pre>{JsonSerializer.Serialize(response, SerializerOptions)}</pre>
+</body>
+</html>".TrimStart(),
             MediaTypeNames.Text.Html));
 }
