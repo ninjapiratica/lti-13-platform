@@ -11,6 +11,11 @@ public record ServicesConfig
     public Uri ServiceAddress { get; set; } = DefaultUri;
 
     /// <summary>
+    /// Gets or sets a value indicating whether to support membership differences.
+    /// </summary>
+    public bool SupportMembershipDifferences { get; set; } = true;
+
+    /// <summary>
     /// The default URI to use when no service address is provided.
     /// </summary>
     internal readonly static Uri DefaultUri = new("x://x.x.x");

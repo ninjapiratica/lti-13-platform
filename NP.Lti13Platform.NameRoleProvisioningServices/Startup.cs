@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
@@ -14,7 +15,6 @@ using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Populators;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
-using System.Collections.ObjectModel;
 using System.Net.Mime;
 using System.Security.Claims;
 using System.Text.Json;
@@ -156,16 +156,9 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.NamesAndRoleProvisioningServicesUrl,
-            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
+            async (IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService coreDataService, ILti13NameRoleProvisioningDataService nrpsDataService, IOptionsMonitor<ServicesConfig> config, LinkGenerator linkGenerator, DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? rlid, int? limit, int? pageIndex, long? since, CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
-                pageIndex ??= 0;
-
-                var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
-                if (context == null)
-                {
-                    return Results.NotFound();
-                }
 
                 var clientId = new ClientId(httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
                 var tool = await coreDataService.GetToolAsync(clientId, cancellationToken);
@@ -180,46 +173,98 @@ public static class Startup
                     return Results.NotFound();
                 }
 
-                var membersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, role, rlid, cancellationToken: cancellationToken);
-
-                var links = new Collection<string>();
-
-                if (membersResponse.TotalItems > limit * (pageIndex + 1))
+                var context = await coreDataService.GetContextAsync(contextId, cancellationToken);
+                if (context == null)
                 {
-                    links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, limit, pageIndex = pageIndex + 1 })}>; rel=\"next\"");
+                    return Results.NotFound();
                 }
 
-                links.Add($"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
-
-                httpContext.Response.Headers.Link = new StringValues([.. links]);
-
-                var currentUsers = membersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: true));
-
-                if (since.HasValue)
-                {
-                    var asOfDate = new DateTime(since.GetValueOrDefault());
-                    var oldMembersResponse = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, pageIndex.Value, limit ?? int.MaxValue, role, rlid, asOfDate, cancellationToken);
-
-                    var oldUsers = oldMembersResponse.Items.Select(x => (x.Membership, x.User, IsCurrent: false));
-
-                    currentUsers = oldUsers
-                        .Concat(currentUsers)
-                        .GroupBy(x => x.User.Id)
-                        .Where(x => x.Count() == 1 ||
-                            x.First().Membership.Status != x.Last().Membership.Status ||
-                            x.First().Membership.Roles.OrderBy(y => y).SequenceEqual(x.Last().Membership.Roles.OrderBy(y => y)))
-                        .Select(x => x.OrderByDescending(y => y.IsCurrent).First());
-                }
-
-                var messages = new Dictionary<UserId, IEnumerable<NameRoleProvisioningMessage>>();
+                ResourceLink? resourceLink = null;
                 if (rlid != null && rlid != ResourceLinkId.Empty)
                 {
-                    var resourceLink = await coreDataService.GetResourceLinkAsync(rlid.GetValueOrDefault(), cancellationToken);
-                    if (resourceLink == null || resourceLink.DeploymentId != deploymentId)
+                    resourceLink = await coreDataService.GetResourceLinkAsync(rlid.GetValueOrDefault(), cancellationToken);
+                    if (resourceLink == null || resourceLink.DeploymentId != deploymentId || resourceLink.ContextId != contextId)
                     {
                         return Results.BadRequest(new LtiBadRequest { Error = "resource link unavailable", Error_Description = "resource link does not exist in the context", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#access-restriction" });
                     }
+                }
 
+                if (!config.CurrentValue.SupportMembershipDifferences && since.HasValue)
+                {
+                    return Results.BadRequest(new LtiBadRequest { Error = "membership differences not supported", Error_Description = "the platform does not support membership differences", Error_Uri = "https://www.imsglobal.org/spec/lti-nrps/v2p0#membership-differences" });
+                }
+
+                if (config.CurrentValue.SupportMembershipDifferences)
+                {
+                    httpContext.Response.Headers.Append(nameof(httpContext.Response.Headers.Link), $"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, since = DateTime.UtcNow.Ticks })}>; rel=\"differences\"");
+                }
+
+                var currentMemberships = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, role, rlid, cancellationToken: cancellationToken);
+
+                var memberships = currentMemberships
+                    .Select(x => (
+                        Membership: x,
+                        Status: x.Status switch
+                        {
+                            MembershipStatus.Active => MemberInfoStatus.Active,
+                            MembershipStatus.Inactive => MemberInfoStatus.Inactive,
+                            _ => MemberInfoStatus.Deleted
+                        }));
+
+                // Figure out the membership differences since the provided time
+                if (since.HasValue)
+                {
+                    var oldMemberships = await nrpsDataService.GetMembershipsAsync(deploymentId, contextId, role, rlid, new DateTime(since.Value), cancellationToken);
+
+                    // Old memberships are considered deleted, if currentMemberships exist, it will override
+                    memberships = oldMemberships.Select(x => (Membership: x, Status: MemberInfoStatus.Deleted))
+                        .Concat(memberships)
+                        .GroupBy(x => x.Membership.UserId)
+                        .Where(x =>
+                            x.Count() == 1
+                            || x.First().Membership.Status != x.Last().Membership.Status
+                            || !x.First().Membership.Roles.OrderBy(y => y).SequenceEqual(x.Last().Membership.Roles.OrderBy(y => y)))
+                        .Select(x =>
+                        {
+                            var nonDeleted = x.FirstOrDefault(y => y.Status != MemberInfoStatus.Deleted);
+                            return nonDeleted == default ? x.First() : nonDeleted;
+                        });
+                }
+
+                // Apply pagination
+                if (limit.HasValue)
+                {
+                    if (memberships.Count() > limit * (pageIndex.GetValueOrDefault() + 1))
+                    {
+                        httpContext.Response.Headers.Append(nameof(httpContext.Response.Headers.Link), $"<{linkGenerator.GetUriByName(httpContext, RouteNames.GET_MEMBERSHIPS, new { deploymentId, contextId, role, rlid, limit, pageIndex = pageIndex.GetValueOrDefault() + 1 })}>; rel=\"next\"");
+                    }
+
+                    memberships = memberships
+                        .OrderBy(x => x.Membership.UserId)
+                        .Skip(limit.GetValueOrDefault() * pageIndex.GetValueOrDefault())
+                        .Take(limit.GetValueOrDefault());
+                }
+
+                // Append users and permissions to memberships
+                var users = await nrpsDataService.GetUsersAsync(memberships.Select(u => u.Membership.UserId), cancellationToken);
+                var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deploymentId, contextId, memberships.Select(x => x.Membership.UserId), cancellationToken);
+
+                var membershipUsers = memberships
+                    .Join(
+                        users,
+                        x => x.Membership.UserId,
+                        x => x.Id,
+                        (m, u) => (User: u, m.Membership, m.Status))
+                    .Join(
+                        userPermissions,
+                        x => x.Membership.UserId,
+                        x => x.UserId,
+                        (u, p) => (u.User, u.Membership, u.Status, UserPermissions: p));
+
+                // Create LTI messages for each user if resource link is provided
+                var messages = new Dictionary<UserId, IEnumerable<NameRoleProvisioningMessage>>();
+                if (resourceLink != null)
+                {
                     IEnumerable<(MessageType MessageType, NameRoleProvisioningMessage Message, MessageScope Scope)> GetUserMessages(User user)
                     {
                         var scope = new MessageScope(
@@ -242,7 +287,7 @@ public static class Startup
                         }
                     }
 
-                    var userMessages = currentUsers.SelectMany(currentUser => GetUserMessages(currentUser.User));
+                    var userMessages = membershipUsers.Where(x => x.Status != MemberInfoStatus.Deleted).SelectMany(currentUser => GetUserMessages(currentUser.User));
 
                     var tasks = userMessages.Select(async userMessage =>
                     {
@@ -259,12 +304,6 @@ public static class Startup
                     messages = (await Task.WhenAll(tasks)).GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.Select(y => y.Message));
                 }
 
-                var usersWithRoles = currentUsers.Where(u => u.Membership.Roles.Any());
-
-                var userPermissions = await nrpsDataService.GetUserPermissionsAsync(deploymentId, contextId, usersWithRoles.Select(u => u.User.Id), cancellationToken);
-
-                var users = usersWithRoles.Join(userPermissions, u => u.User.Id, p => p.UserId, (u, p) => (u.User, u.Membership, UserPermissions: p, u.IsCurrent));
-
                 return Results.Json(new MembershipContainer
                 {
                     Id = httpContext.Request.GetDisplayUrl(),
@@ -274,7 +313,7 @@ public static class Startup
                         Label = context.Label,
                         Title = context.Title
                     },
-                    Members = users.Select(x =>
+                    Members = membershipUsers.Select(x =>
                     {
                         return new MemberInfo
                         {
@@ -285,12 +324,7 @@ public static class Startup
                             FamilyName = x.UserPermissions.FamilyName ? x.User.FamilyName : null,
                             Email = x.UserPermissions.Email ? x.User.Email : null,
                             Picture = x.UserPermissions.Picture ? x.User.Picture : null,
-                            Status = x.Membership.Status switch
-                            {
-                                MembershipStatus.Active when x.IsCurrent => MemberInfoStatus.Active,
-                                MembershipStatus.Inactive when x.IsCurrent => MemberInfoStatus.Inactive,
-                                _ => MemberInfoStatus.Deleted
-                            },
+                            Status = x.Status,
                             Message = messages.TryGetValue(x.User.Id, out var message) ? message : null
                         };
                     })
