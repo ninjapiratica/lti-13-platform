@@ -1,4 +1,4 @@
-name: Pack, Tag & Publish
+﻿name: Pack, Tag & Publish
 
 on:
   workflow_dispatch:
@@ -30,6 +30,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write  # enable GitHub OIDC token issuance for this job
+    
     steps:
       - uses: actions/checkout@v4
         with:
@@ -198,22 +202,32 @@ jobs:
             dotnet pack "$proj" --configuration Release -o ./artifacts /p:Version=$VERSION /p:PackageVersion=$VERSION
           done
 
+      # Get a short-lived NuGet API key
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+    
       - name: Push NuGet packages
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
         if: ${{ github.event.inputs.dryrun != 'true' }}
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          IFS=' ' read -r -a PKG_NAMES <<< "${{ steps.package-list.outputs.names }}"
-          for name in "${PKG_NAMES[@]}"; do
-            pkg="${name}.${VERSION}.nupkg"
-            if [ -f "./artifacts/$pkg" ]; then
-              echo "Pushing $pkg..."
-              dotnet nuget push "./artifacts/$pkg" --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
-            else
-              echo "Warning: $pkg not found, skipping..."
-            fi
-          done
+          # For testing: print the NuGet API key (be careful, this will expose the key in logs)
+          echo "NUGET_API_KEY=$NUGET_API_KEY"
+
+          # VERSION=${{ steps.version.outputs.version }}
+          # IFS=' ' read -r -a PKG_NAMES <<< "${{ steps.package-list.outputs.names }}"
+          # for name in "${PKG_NAMES[@]}"; do
+          #   pkg="${name}.${VERSION}.nupkg"
+          #   if [ -f "./artifacts/$pkg" ]; then
+          #     echo "Pushing $pkg..."
+          #     dotnet nuget push "./artifacts/$pkg" --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
+          #   else
+          #     echo "Warning: $pkg not found, skipping..."
+          #   fi
+          # done
 
       - name: Create tag
         if: ${{ github.event.inputs.dryrun != 'true' }}
