@@ -208,26 +208,24 @@ jobs:
         id: nuget_login
         with:
           user: ${{ secrets.NUGET_USER }}
+        if: ${{ github.event.inputs.dryrun != 'true' }}
     
       - name: Push NuGet packages
         env:
           NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
         if: ${{ github.event.inputs.dryrun != 'true' }}
         run: |
-          # For testing: print the NuGet API key (be careful, this will expose the key in logs)
-          echo "NUGET_API_KEY=$NUGET_API_KEY"
-
-          # VERSION=${{ steps.version.outputs.version }}
-          # IFS=' ' read -r -a PKG_NAMES <<< "${{ steps.package-list.outputs.names }}"
-          # for name in "${PKG_NAMES[@]}"; do
-          #   pkg="${name}.${VERSION}.nupkg"
-          #   if [ -f "./artifacts/$pkg" ]; then
-          #     echo "Pushing $pkg..."
-          #     dotnet nuget push "./artifacts/$pkg" --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
-          #   else
-          #     echo "Warning: $pkg not found, skipping..."
-          #   fi
-          # done
+          VERSION=${{ steps.version.outputs.version }}
+          IFS=' ' read -r -a PKG_NAMES <<< "${{ steps.package-list.outputs.names }}"
+          for name in "${PKG_NAMES[@]}"; do
+            pkg="${name}.${VERSION}.nupkg"
+            if [ -f "./artifacts/$pkg" ]; then
+              echo "Pushing $pkg..."
+              dotnet nuget push "./artifacts/$pkg" --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
+            else
+              echo "Warning: $pkg not found, skipping..."
+            fi
+          done
 
       - name: Create tag
         if: ${{ github.event.inputs.dryrun != 'true' }}
