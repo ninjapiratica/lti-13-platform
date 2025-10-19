@@ -15,6 +15,10 @@ on:
         description: "Is this a preview release?"
         required: false
         default: "false"
+      dryrun:
+        description: "If true, print what would be done but don't perform any actions"
+        required: false
+        default: "false"
       version_override:
         description: "Override the computed version (use exact version string)"
         required: false
@@ -133,13 +137,31 @@ jobs:
           echo "names=$joined" >> $GITHUB_OUTPUT
           echo "Derived package names: $joined"
 
+      - name: Dry run - print planned values
+        if: ${{ github.event.inputs.dryrun == 'true' }}
+        run: |
+          echo "DRY RUN: no actions will be performed"
+          echo "--- Determined .NET version ---"
+          echo "DOTNET_VERSION=${{ steps.dotnet-version.outputs.DOTNET_VERSION }}"
+          echo "--- Computed semantic version ---"
+          echo "VERSION=${{ steps.version.outputs.version }}"
+          echo "--- Projects to pack ---"
+          echo "PROJECTS=${{ steps.package-list.outputs.projects }}"
+          echo "--- Derived package names ---"
+          echo "NAMES=${{ steps.package-list.outputs.names }}"
+          echo "--- Tag that would be created ---"
+          echo "TAG=v${{ steps.version.outputs.version }}"
+
       - name: Restore dependencies
+        if: ${{ github.event.inputs.dryrun != 'true' }}
         run: dotnet restore
 
       - name: Build
+        if: ${{ github.event.inputs.dryrun != 'true' }}
         run: dotnet build --configuration Release --no-restore /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
 
       - name: Pack NuGet
+        if: ${{ github.event.inputs.dryrun != 'true' }}
         run: |
           VERSION=${{ steps.version.outputs.version }}
           IFS=' ' read -r -a PROJS <<< "${{ steps.package-list.outputs.projects }}"
@@ -151,6 +173,7 @@ jobs:
       - name: Push NuGet packages
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        if: ${{ github.event.inputs.dryrun != 'true' }}
         run: |
           VERSION=${{ steps.version.outputs.version }}
           IFS=' ' read -r -a PKG_NAMES <<< "${{ steps.package-list.outputs.names }}"
@@ -165,12 +188,14 @@ jobs:
           done
 
       - name: Create tag
+        if: ${{ github.event.inputs.dryrun != 'true' }}
         run: |
           TAG="v${{ steps.version.outputs.version }}"
           git tag $TAG
           git push origin $TAG
 
       - name: Create GitHub Release
+        if: ${{ github.event.inputs.dryrun != 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
