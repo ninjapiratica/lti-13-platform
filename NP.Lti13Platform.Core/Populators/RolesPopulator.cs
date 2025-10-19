@@ -55,8 +55,13 @@ public class RolesPopulator(ILti13CoreDataService dataService, ILogger<RolesPopu
 
                         if (!membership.Roles.Contains(principalRole))
                         {
-                            logger.LogWarning("Whenever a platform specifies a sub-role, by best practice it should also include the associated principal role. https://www.imsglobal.org/spec/lti/v1p3/#context-sub-roles. Sub-role {SubRole} is missing its principal role {PrincipalRole}.", subRole, principalRole);
+                            logger.LogWarning("Sub-role {SubRole} is missing its principal role {PrincipalRole}. https://www.imsglobal.org/spec/lti/v1p3/#context-sub-roles", subRole, principalRole);
                         }
+                    }
+
+                    if (membership.Roles.SequenceEqual([Lti13SystemRoles.TestUser]))
+                    {
+                        logger.LogWarning("{TestUser} system role should be used only in conjunction with a 'real' role. https://www.imsglobal.org/spec/lti/v1p3/#lti-vocabulary-for-system-roles.", Lti13SystemRoles.TestUser);
                     }
                 }
 
