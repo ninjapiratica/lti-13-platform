@@ -31,7 +31,7 @@ public static class Startup
     /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
     public static Lti13PlatformBuilder AddLti13PlatformDeepLinking(this Lti13PlatformBuilder builder)
     {
-        builder.Services.AddTransient<IDeepLinkingUrlService, DeepLinkingUrlService>();
+        builder.Services.AddTransient<ILti13DeepLinkingUrlService, DeepLinkingUrlService>();
 
         builder
             .ExtendLti13Message<IDeepLinkingMessage, DeepLinkingPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
@@ -41,8 +41,8 @@ public static class Startup
             .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
         builder.Services.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
-        builder.Services.TryAddSingleton<IDeepLinkingConfigService, DefaultDeepLinkingConfigService>();
-        builder.Services.TryAddSingleton<IDeepLinkingHandler, DefaultDeepLinkingHandler>();
+        builder.Services.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
+        builder.Services.TryAddSingleton<ILti13DeepLinkingHandler, DefaultDeepLinkingHandler>();
 
         return builder;
     }
@@ -67,9 +67,9 @@ public static class Startup
     /// <param name="builder">The LTI 1.3 platform builder.</param>
     /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
     /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
-    public static Lti13PlatformBuilder WithLti13DeepLinkingConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : IDeepLinkingConfigService
+    public static Lti13PlatformBuilder WithLti13DeepLinkingConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingConfigService
     {
-        builder.Services.Add(new ServiceDescriptor(typeof(IDeepLinkingConfigService), typeof(T), serviceLifetime));
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingConfigService), typeof(T), serviceLifetime));
         return builder;
     }
 
@@ -80,9 +80,9 @@ public static class Startup
     /// <param name="builder">The LTI 1.3 platform builder.</param>
     /// <param name="serviceLifetime">The lifetime of the service in the dependency injection container.</param>
     /// <returns>The LTI 1.3 platform builder for further configuration.</returns>
-    public static Lti13PlatformBuilder WithLti13DeepLinkingHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : IDeepLinkingHandler
+    public static Lti13PlatformBuilder WithLti13DeepLinkingHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13DeepLinkingHandler
     {
-        builder.Services.Add(new ServiceDescriptor(typeof(IDeepLinkingHandler), typeof(T), serviceLifetime));
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingHandler), typeof(T), serviceLifetime));
         return builder;
     }
 
@@ -100,7 +100,7 @@ public static class Startup
         config = configure?.Invoke(config) ?? config;
 
         _ = endpointRouteBuilder.MapPost(config.DeepLinkingResponseUrl,
-            async ([FromForm] DeepLinkResponseRequest request, ContextId? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, IDeepLinkingConfigService deepLinkingService, IDeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
+            async ([FromForm] DeepLinkResponseRequest request, ContextId? contextId, ILogger<DeepLinkResponseRequest> logger, ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService, ILti13DeepLinkingDataService deepLinkingDataService, ILti13DeepLinkingConfigService deepLinkingService, ILti13DeepLinkingHandler deepLinkingHandler, CancellationToken cancellationToken) =>
             {
                 const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";
                 const string INVALID_REQUEST = "invalid_request";
@@ -214,12 +214,13 @@ public static class Startup
                                     ResourceLinkId = id,
                                     StartDateTime = ltiResourceLinkItem.Submission?.StartDateTime?.UtcDateTime,
                                     EndDateTime = ltiResourceLinkItem.Submission?.EndDateTime?.UtcDateTime
-                                });
+                                },
+                                cancellationToken);
                             }
                         }
                         else
                         {
-                            await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci);
+                            await deepLinkingDataService.SaveContentItemAsync(deployment.Id, contextId, ci, cancellationToken);
                         }
                     });
 

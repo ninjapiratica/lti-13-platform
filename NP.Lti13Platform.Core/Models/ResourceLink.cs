@@ -63,7 +63,7 @@ public class ResourceLink
     /// <summary>
     /// The list of resource links that this resource link was copied from. Enables platforms to maintain continuity when a link is copied.
     /// </summary>
-    public IEnumerable<string>? ClonedIdHistory { get; set; }
+    public IEnumerable<ResourceLinkId>? ClonedIdHistory { get; set; }
 
     /// <summary>
     /// A map of key/value custom parameters. Those parameters MUST be included in the LtiResourceLinkRequest payload. Value may include substitution parameters as defined in the LTI Core Specification. Map values must be strings. Note that "empty-string" is a valid value (""); however, null is not a valid value.

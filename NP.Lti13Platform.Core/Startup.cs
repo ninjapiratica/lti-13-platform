@@ -481,18 +481,19 @@ public static class Startup
             JsonSerializer.Serialize(ltiMessage, LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
             new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
-        return Results.Content(@$"<!DOCTYPE html>
-                        <html>
-                        <body>
-                        <form method=""post"" action=""{request.Redirect_Uri}"">
-                        <input type=""hidden"" name=""id_token"" value=""{token}""/>
-                        {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
-                        </form>
-                        <script type=""text/javascript"">
-                        document.getElementsByTagName('form')[0].submit();
-                        </script>
-                        </body>
-                        </html>",
+        return Results.Content($@"
+<!DOCTYPE html>
+<html>
+<body>
+    <form method=""post"" action=""{request.Redirect_Uri}"">
+        <input type=""hidden"" name=""id_token"" value=""{token}""/>
+        {(!string.IsNullOrWhiteSpace(request.State) ? @$"<input type=""hidden"" name=""state"" value=""{request.State}"" />" : null)}
+    </form>
+    <script type=""text/javascript"">
+        document.getElementsByTagName('form')[0].submit();
+    </script>
+</body>
+</html>".TrimStart(),
             MediaTypeNames.Text.Html);
     }
 

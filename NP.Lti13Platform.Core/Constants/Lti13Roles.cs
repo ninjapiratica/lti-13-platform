@@ -6,6 +6,7 @@
 public static class Lti13SystemRoles
 {
     // Core Roles
+
     /// <summary>
     /// Administrator system role.
     /// </summary>
@@ -16,6 +17,7 @@ public static class Lti13SystemRoles
     public static readonly string None = "http://purl.imsglobal.org/vocab/lis/v2/system/person#None";
 
     // Non-Core Roles
+
     /// <summary>
     /// AccountAdmin system role.
     /// </summary>
@@ -38,8 +40,10 @@ public static class Lti13SystemRoles
     public static readonly string User = "http://purl.imsglobal.org/vocab/lis/v2/system/person#User";
 
     // LTI Launch Only
+
     /// <summary>
-    /// TestUser system role.
+    /// TestUser system role. Should be used only for LTI launches and only in conjunction with a 'real' role.
+    /// <see href="https://www.imsglobal.org/spec/lti/v1p3/#lti-vocabulary-for-system-roles"/>.
     /// </summary>
     public static readonly string TestUser = "http://purl.imsglobal.org/vocab/lti/system/person#TestUser";
 }
@@ -50,6 +54,7 @@ public static class Lti13SystemRoles
 public static class Lti13InstitutionRoles
 {
     // Core Roles
+
     /// <summary>
     /// Administrator institution role.
     /// </summary>
@@ -80,6 +85,7 @@ public static class Lti13InstitutionRoles
     public static readonly string Student = "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student";
 
     // Non-Core Roles
+
     /// <summary>
     /// Alumni institution role.
     /// </summary>
@@ -116,6 +122,7 @@ public static class Lti13InstitutionRoles
 public static class Lti13ContextRoles
 {
     // Core Roles
+
     /// <summary>
     /// Administrator context role.
     /// </summary>
@@ -138,6 +145,7 @@ public static class Lti13ContextRoles
     public static readonly string Mentor = "http://purl.imsglobal.org/vocab/lis/v2/membership#Mentor";
 
     // Non-Core Roles
+
     /// <summary>
     /// Manager context role.
     /// </summary>

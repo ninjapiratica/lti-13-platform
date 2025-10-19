@@ -323,21 +323,22 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult<SecurityKey>(securityKey);
         }
 
-        Task<PartialList<(Membership, User)>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
+        Task<IEnumerable<Membership>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
         {
             if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
                 var memberships = Memberships.Where(m => m.ContextId == contextId && (role == null || m.Roles.Contains(role))).ToList();
-                var users = Users.Where(u => memberships.Select(m => m.UserId).Contains(u.Id)).ToList();
 
-                return Task.FromResult(new PartialList<(Membership, User)>
-                {
-                    Items = memberships.Join(users, m => m.UserId, u => u.Id, (m, u) => (m, u)).Skip(pageIndex * limit).Take(limit).ToList(),
-                    TotalItems = memberships.Count
-                });
+                return Task.FromResult(memberships.AsEnumerable());
             }
 
-            return Task.FromResult(PartialList<(Membership, User)>.Empty);
+            return Task.FromResult(Enumerable.Empty<Membership>());
+        }
+
+        Task<IEnumerable<User>> ILti13NameRoleProvisioningDataService.GetUsersAsync(IEnumerable<UserId> userIds, CancellationToken cancellationToken)
+        {
+            var users = Users.Where(u => userIds.Contains(u.Id)).ToList();
+            return Task.FromResult(users.AsEnumerable());
         }
 
         Task ILti13DeepLinkingDataService.SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken)

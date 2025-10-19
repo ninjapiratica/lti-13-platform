@@ -47,7 +47,7 @@ public class Context
     /// Gets or sets the history of cloned identifiers for the context.
     /// The list of context IDs that this context was copied from. Enables platforms to maintain continuity when a context is copied or reused.
     /// </summary>
-    public IEnumerable<string> ClonedIdHistory { get; set; } = [];
+    public IEnumerable<ContextId> ClonedIdHistory { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the OneRoster grades associated with the context.
