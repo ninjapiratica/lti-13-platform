@@ -1,4 +1,4 @@
-name: Pack, Tag & Publish
+﻿name: Pack, Tag & Publish
 
 on:
   workflow_dispatch:
@@ -30,6 +30,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write  # enable GitHub OIDC token issuance for this job
+    
     steps:
       - uses: actions/checkout@v4
         with:
@@ -198,9 +202,17 @@ jobs:
             dotnet pack "$proj" --configuration Release -o ./artifacts /p:Version=$VERSION /p:PackageVersion=$VERSION
           done
 
+      # Get a short-lived NuGet API key
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+        if: ${{ github.event.inputs.dryrun != 'true' }}
+    
       - name: Push NuGet packages
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
         if: ${{ github.event.inputs.dryrun != 'true' }}
         run: |
           VERSION=${{ steps.version.outputs.version }}
