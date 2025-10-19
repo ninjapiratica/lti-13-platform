@@ -1,7 +1,8 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.Extensions.Logging;
 using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
+using System.Text.Json.Serialization;
 
 namespace NP.Lti13Platform.Core.Populators;
 
@@ -26,7 +27,7 @@ public interface IRolesMessage
 /// <summary>
 /// Populates a roles message with information from the message scope.
 /// </summary>
-public class RolesPopulator(ILti13CoreDataService dataService) : Populator<IRolesMessage>
+public class RolesPopulator(ILti13CoreDataService dataService, ILogger<RolesPopulator> logger) : Populator<IRolesMessage>
 {
     /// <summary>
     /// Populates a roles message with information from the message scope.
@@ -42,6 +43,23 @@ public class RolesPopulator(ILti13CoreDataService dataService) : Populator<IRole
             var membership = await dataService.GetMembershipAsync(scope.Context.Id, scope.UserScope.User.Id, cancellationToken);
             if (membership != null)
             {
+                // Whenever a platform specifies a sub-role, by best practice it should also include the associated principal role.
+                // https://www.imsglobal.org/spec/lti/v1p3/#context-sub-roles
+                if (membership.Roles.Any())
+                {
+                    foreach (var subRole in membership.Roles.Where(r => r.StartsWith("http://purl.imsglobal.org/vocab/lis/v2/membership/") && r.Contains('#')))
+                    {
+                        var principalRole = subRole.Split('#').First();
+                        var index = principalRole.LastIndexOf('/');
+                        principalRole = $"{principalRole[..index]}#{principalRole[(index + 1)..]}";
+
+                        if (!membership.Roles.Contains(principalRole))
+                        {
+                            logger.LogWarning("Whenever a platform specifies a sub-role, by best practice it should also include the associated principal role. https://www.imsglobal.org/spec/lti/v1p3/#context-sub-roles. Sub-role {SubRole} is missing its principal role {PrincipalRole}.", subRole, principalRole);
+                        }
+                    }
+                }
+
                 obj.Roles = membership.Roles;
 
                 if (obj.Roles.Contains(Lti13ContextRoles.Mentor))
