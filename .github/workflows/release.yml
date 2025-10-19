@@ -33,6 +33,7 @@ jobs:
 
     permissions:
       id-token: write  # enable GitHub OIDC token issuance for this job
+      contents: write  # allow pushing tags and creating releases using GITHUB_TOKEN
     
     steps:
       - uses: actions/checkout@v4
