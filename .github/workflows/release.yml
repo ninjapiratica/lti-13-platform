@@ -16,7 +16,7 @@ on:
         required: false
         default: "false"
       dryrun:
-        description: "If true, print what would be done but don't perform any actions"
+        description: "Is this a dry-run?"
         required: false
         default: "false"
       version_override:
@@ -35,6 +35,15 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+
+      - name: Print workflow inputs
+        run: |
+          echo "Workflow inputs (as received)"
+          echo "new_major=${{ github.event.inputs.new_major }}"
+          echo "new_minor=${{ github.event.inputs.new_minor }}"
+          echo "preview=${{ github.event.inputs.preview }}"
+          echo "dryrun=${{ github.event.inputs.dryrun }}"
+          echo "version_override=${{ github.event.inputs.version_override }}"
 
       - name: Determine .NET version from csproj
         id: dotnet-version
@@ -69,14 +78,29 @@ jobs:
         id: version
         run: |
           if [ -n "${{ github.event.inputs.version_override }}" ]; then
+            # Use explicit override and ignore other rules
             VERSION="${{ github.event.inputs.version_override }}"
           else
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            # Find the latest non-preview tag (tags like v1.2.3). If none, default to v0.0.0
+            LAST_TAG=$(git tag --list --sort=-v:refname 'v*' | grep -v -E '-preview' | head -n1 || true)
+            if [ -z "$LAST_TAG" ]; then
+              LAST_TAG="v0.0.0"
+            fi
+
             CLEAN_TAG=${LAST_TAG#v}
-            CLEAN_TAG=${CLEAN_TAG%%-preview*}
+
+            # Ensure CLEAN_TAG is a valid semver x.y.z; otherwise fall back to 0.0.0
+            if ! echo "$CLEAN_TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              CLEAN_TAG="0.0.0"
+            fi
 
             IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_TAG"
 
+            MAJOR=${MAJOR:-0}
+            MINOR=${MINOR:-0}
+            PATCH=${PATCH:-0}
+
+            # Bump according to inputs, always based on the last non-preview version
             if [ "${{ github.event.inputs.new_major }}" = "true" ]; then
               MAJOR=$((MAJOR+1))
               MINOR=0
@@ -90,6 +114,7 @@ jobs:
 
             VERSION="$MAJOR.$MINOR.$PATCH"
 
+            # Append preview suffix when requested
             if [ "${{ github.event.inputs.preview }}" = "true" ]; then
               VERSION="$VERSION-preview.${{ github.run_number }}"
             fi
