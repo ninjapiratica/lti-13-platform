@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NP.Lti13Platform;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.DeepLinking.Configs;
+using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.WebExample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,11 +61,11 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapGet("", () => {
-    return new
-    {
-        clientId = new ClientId("asdfasdf")
-    };
+app.MapGet("security", async (ILti13ToolSecurityService securityService, IHttpContextAccessor httpContextAccessor) =>
+{
+    var security = await securityService.GetToolSecurityAsync(new ClientId("clientId"), new Uri(httpContextAccessor.HttpContext!.Request.GetDisplayUrl()));
+
+    return security;
 });
 
 app.Run();

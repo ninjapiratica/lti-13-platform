@@ -84,6 +84,8 @@ public static class Startup
             .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
         builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultLti13TokenConfigService>();
 
+        builder.Services.TryAddSingleton<ILti13ToolSecurityService, DefaultLti13ToolSecurityService>();
+
         return builder;
     }
 
@@ -175,6 +177,7 @@ public static class Startup
                 return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
+            .WithName(RouteNames.JWKS)
             .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the public keys used for JWT signing verification.")
@@ -185,14 +188,14 @@ public static class Startup
             {
                 return await HandleAuthentication(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthenticationEndpoint();
+            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_GET);
 
         endpointRouteBuilder.MapPost(config.AuthenticationUrl,
             async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
             {
                 return await HandleAuthentication(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthenticationEndpoint();
+            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_POST);
 
         endpointRouteBuilder.MapPost(config.TokenUrl,
             async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
@@ -497,9 +500,10 @@ public static class Startup
             MediaTypeNames.Text.Html);
     }
 
-    private static RouteHandlerBuilder ConfigureAuthenticationEndpoint(this RouteHandlerBuilder routeHandlerBuilder)
+    private static RouteHandlerBuilder ConfigureAuthenticationEndpoint(this RouteHandlerBuilder routeHandlerBuilder, string routeName)
     {
         return routeHandlerBuilder
+            .WithName(routeName)
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<string>(contentType: MediaTypeNames.Text.Html)
