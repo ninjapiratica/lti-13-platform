@@ -19,7 +19,7 @@ public interface ILti13ToolSecurityService
     /// <param name="baseUrl">The base url of the authentication, token and jwks endpoints.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the <see cref="Lti13ToolSecurity"/>
-    /// object  representing the security configuration for the specified client.</returns>
+    /// object representing the security configuration for the specified client.</returns>
     Task<Lti13ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri baseUrl, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -31,7 +31,7 @@ public interface ILti13ToolSecurityService
     /// <param name="jwksBaseUrl">The base url of the jwks endpoint.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the <see cref="Lti13ToolSecurity"/>
-    /// object  representing the security configuration for the specified client.</returns>
+    /// object representing the security configuration for the specified client.</returns>
     Task<Lti13ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri authenticationBaseUrl, Uri tokenBaseUrl, Uri jwksBaseUrl, CancellationToken cancellationToken = default);
 }
 
