@@ -6,10 +6,10 @@
 public class Lti13PlatformCoreEndpointsConfig
 {
     /// <summary>
-    /// Gets or sets the endpoint for the authorization of LTI 1.3 requests.
+    /// Gets or sets the endpoint for the authentication of LTI 1.3 requests.
     /// </summary>
-    /// <value>Default: /lti13/authorization</value>
-    public string AuthorizationUrl { get; set; } = "/lti13/authorization";
+    /// <value>Default: /lti13/authentication</value>
+    public string AuthenticationUrl { get; set; } = "/lti13/authentication";
 
     /// <summary>
     /// Gets or sets the endpoint for getting a set of public JWKs.

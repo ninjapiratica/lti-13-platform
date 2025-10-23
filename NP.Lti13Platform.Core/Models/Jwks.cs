@@ -9,13 +9,13 @@ namespace NP.Lti13Platform.Core.Models;
 public abstract class Jwks
 {
     /// <summary>
-    /// Create an instance of Jwks using the provided key or uri.
+    /// Create an instance of JWKS using the provided key or uri.
     /// </summary>
-    /// <param name="keyOrUri">The public key or JWKS uri to use.</param>
-    /// <returns>An instance of Jwks depending on the type of string provided.</returns>
-    static Jwks Create(string keyOrUri) => Uri.IsWellFormedUriString(keyOrUri, UriKind.Absolute) ?
-            new JwksUri { Uri = keyOrUri } :
-            new JwtPublicKey { PublicKey = keyOrUri };
+    /// <param name="keyOrUrl">The public key or JWKS uri to use.</param>
+    /// <returns>An instance of JWKS depending on the type of string provided.</returns>
+    static Jwks Create(string keyOrUrl) => Uri.IsWellFormedUriString(keyOrUrl, UriKind.Absolute) ?
+            new JwksUri { Url = new Uri(keyOrUrl) } :
+            new JwtPublicKey { PublicKey = keyOrUrl };
 
     /// <summary>
     /// Gets the security keys asynchronously.
@@ -27,8 +27,8 @@ public abstract class Jwks
     /// <summary>
     /// Implicitly converts a string to a <see cref="Jwks"/> instance.
     /// </summary>
-    /// <param name="keyOrUri">The public key or JWKS URI.</param>
-    public static implicit operator Jwks(string keyOrUri) => Create(keyOrUri);
+    /// <param name="keyOrUrl">The public key or JWKS URL.</param>
+    public static implicit operator Jwks(string keyOrUrl) => Create(keyOrUrl);
 }
 
 /// <summary>
@@ -49,21 +49,21 @@ public class JwtPublicKey : Jwks
 }
 
 /// <summary>
-/// Represents a JWKS with a URI.
+/// Represents a JWKS with a URL.
 /// </summary>
 public class JwksUri : Jwks
 {
     private static readonly HttpClient httpClient = new();
 
     /// <summary>
-    /// Gets or sets the URI of the JWKS.
+    /// Gets or sets the URL of the JWKS.
     /// </summary>
-    public required string Uri { get; set; }
+    public required Uri Url { get; set; }
 
     /// <inheritdoc />
     public override async Task<IEnumerable<SecurityKey>> GetKeysAsync(CancellationToken cancellationToken = default)
     {
-        var httpResponse = await httpClient.GetAsync(Uri, cancellationToken);
+        var httpResponse = await httpClient.GetAsync(Url, cancellationToken);
         var result = await httpResponse.Content.ReadFromJsonAsync<JsonWebKeySet>(cancellationToken);
 
         if (result != null)
