@@ -62,7 +62,7 @@ public static class Startup
     {
         var builder = new Lti13PlatformBuilder(serviceCollection);
 
-        builder.Services.AddTransient<IUrlService, UrlService>();
+        builder.Services.AddTransient<ILti13UrlService, DefaultLti13UrlService>();
 
         builder
             .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
@@ -77,12 +77,12 @@ public static class Startup
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddOptions<Platform>().BindConfiguration("Lti13Platform:Platform");
-        builder.Services.TryAddSingleton<ILti13PlatformService, DefaultPlatformService>();
+        builder.Services.TryAddSingleton<ILti13PlatformService, DefaultLti13PlatformService>();
 
         builder.Services.AddOptions<Lti13PlatformTokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
             .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
-        builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
+        builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultLti13TokenConfigService>();
 
         return builder;
     }
@@ -181,14 +181,14 @@ public static class Startup
             .WithDescription("Gets the public keys used for JWT signing verification.");
 
         endpointRouteBuilder.MapGet(config.AuthorizationUrl,
-            async ([AsParameters] AuthenticationRequest queryString, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlService urlServiceHelper, CancellationToken cancellationToken) =>
+            async ([AsParameters] AuthenticationRequest queryString, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
             {
                 return await HandleAuthorization(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
             .ConfigureAuthorizationEndpoint();
 
         endpointRouteBuilder.MapPost(config.AuthorizationUrl,
-            async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlService urlServiceHelper, CancellationToken cancellationToken) =>
+            async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
             {
                 return await HandleAuthorization(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
@@ -314,7 +314,7 @@ public static class Startup
         return endpointRouteBuilder;
     }
 
-    private static async Task<IResult> HandleAuthorization(AuthenticationRequest request, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlService urlServiceHelper, CancellationToken cancellationToken)
+    private static async Task<IResult> HandleAuthorization(AuthenticationRequest request, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";
         const string INVALID_CLIENT = "invalid_client";

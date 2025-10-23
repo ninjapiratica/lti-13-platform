@@ -46,11 +46,11 @@ public interface ILti13DeepLinkingUrlService
 /// <remarks>
 /// This class extends URL-building to support the creation of deep link initiation
 /// requests for LTI 1.3-compliant tools. It relies on the provided <see cref="ILti13CoreDataService"/>
-/// to retrieve deployment and tool information and on <see cref="IUrlService"/> to build the final URL.
+/// to retrieve deployment and tool information and on <see cref="ILti13UrlService"/> to build the final URL.
 /// </remarks>
 /// <param name="coreDataService">The core data service used to read tools and deployments.</param>
 /// <param name="urlService">The URL service used to build LTI messages and hints.</param>
-public class DeepLinkingUrlService(ILti13CoreDataService coreDataService, IUrlService urlService) : ILti13DeepLinkingUrlService
+public class DeepLinkingUrlService(ILti13CoreDataService coreDataService, ILti13UrlService urlService) : ILti13DeepLinkingUrlService
 {
     /// <inheritdoc />
     public async Task<LtiLaunch> GetDeepLinkInitiationUrlAsync(
