@@ -10,7 +10,7 @@ namespace NP.Lti13Platform.Core.Services;
 /// <summary>
 /// Defines the contract for a helper service that builds LTI 1.3 URLs.
 /// </summary>
-public interface IUrlService
+public interface ILti13UrlService
 {
     /// <summary>
     /// Gets the resource link initiation URL.
@@ -85,7 +85,7 @@ public interface IUrlService
 /// </summary>
 /// <param name="tokenService">The token service.</param>
 /// <param name="coreDataService">The core data service.</param>
-public class UrlService(ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService) : IUrlService
+public class DefaultLti13UrlService(ILti13TokenConfigService tokenService, ILti13CoreDataService coreDataService) : ILti13UrlService
 {
     /// <inheritdoc />
     public async Task<LtiLaunch> GetResourceLinkInitiationUrlAsync(ResourceLinkId resourceLinkId, UserId userId, bool isAnonymous, UserId? actualUserId = null, LaunchPresentationOverride? launchPresentation = null, CancellationToken cancellationToken = default)

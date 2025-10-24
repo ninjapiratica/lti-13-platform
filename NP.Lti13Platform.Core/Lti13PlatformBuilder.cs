@@ -1,111 +1,109 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NP.Lti13Platform.Core.Populators;
 
-namespace NP.Lti13Platform.Core
+namespace NP.Lti13Platform.Core;
+
+/// <summary>
+/// Represents a message type in the LTI 1.3 platform.
+/// </summary>
+internal record MessageType(string Name, HashSet<Type> Interfaces);
+
+/// <summary>
+/// A builder for configuring LTI 1.3 platform services.
+/// </summary>
+/// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+public partial class Lti13PlatformBuilder(IServiceCollection services)
 {
+    private static readonly HashSet<Type> GlobalInterfaces = [];
+    private static readonly HashSet<Type> GlobalPopulators = [];
+    private static readonly Dictionary<string, MessageType> MessageTypes = [];
+    private static readonly Dictionary<string, Type> LtiMessageTypes = [];
 
     /// <summary>
-    /// Represents a message type in the LTI 1.3 platform.
+    /// Extends an existing LTI 1.3 message type with additional interfaces and a populator.
     /// </summary>
-    internal record MessageType(string Name, HashSet<Type> Interfaces);
-
-    /// <summary>
-    /// A builder for configuring LTI 1.3 platform services.
-    /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-    public partial class Lti13PlatformBuilder(IServiceCollection services)
+    /// <typeparam name="T">The type of the LTI message to extend.</typeparam>
+    /// <typeparam name="U">The type of the populator to use.</typeparam>
+    /// <param name="messageType">The message type to extend. If null, the extension applies to all message types.</param>
+    /// <returns>The <see cref="Lti13PlatformBuilder"/>.</returns>
+    public Lti13PlatformBuilder ExtendLti13Message<T, U>(string? messageType = null)
+        where T : class
+        where U : Populator<T>
     {
-        private static readonly HashSet<Type> GlobalInterfaces = [];
-        private static readonly HashSet<Type> GlobalPopulators = [];
-        private static readonly Dictionary<string, MessageType> MessageTypes = [];
-        private static readonly Dictionary<string, Type> LtiMessageTypes = [];
+        var tType = typeof(T);
+        List<Type> interfaceTypes = [tType, .. tType.GetInterfaces()];
 
-        /// <summary>
-        /// Extends an existing LTI 1.3 message type with additional interfaces and a populator.
-        /// </summary>
-        /// <typeparam name="T">The type of the LTI message to extend.</typeparam>
-        /// <typeparam name="U">The type of the populator to use.</typeparam>
-        /// <param name="messageType">The message type to extend. If null, the extension applies to all message types.</param>
-        /// <returns>The <see cref="Lti13PlatformBuilder"/>.</returns>
-        public Lti13PlatformBuilder ExtendLti13Message<T, U>(string? messageType = null)
-            where T : class
-            where U : Populator<T>
+        foreach (var interfaceType in interfaceTypes)
         {
-            var tType = typeof(T);
-            List<Type> interfaceTypes = [tType, .. tType.GetInterfaces()];
-
-            foreach (var interfaceType in interfaceTypes)
+            if (!interfaceType.IsInterface)
             {
-                if (!interfaceType.IsInterface)
-                {
-                    throw new Exception("T must be an interface");
-                }
-
-                if (interfaceType.GetMethods().Any(m => !m.IsSpecialName))
-                {
-                    throw new Exception("Interfaces may only have properties.");
-                }
+                throw new Exception("T must be an interface");
             }
 
-            if (string.IsNullOrWhiteSpace(messageType))
+            if (interfaceType.GetMethods().Any(m => !m.IsSpecialName))
             {
-                var uType = typeof(U);
-                GlobalPopulators.Add(uType);
-
-                interfaceTypes.ForEach(t => GlobalInterfaces.Add(t));
-
-                foreach (var mt in MessageTypes.Values)
-                {
-                    interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
-
-                    services.AddKeyedTransient<Populator, U>(mt.Name);
-                }
+                throw new Exception("Interfaces may only have properties.");
             }
-            else
+        }
+
+        if (string.IsNullOrWhiteSpace(messageType))
+        {
+            var uType = typeof(U);
+            GlobalPopulators.Add(uType);
+
+            interfaceTypes.ForEach(t => GlobalInterfaces.Add(t));
+
+            foreach (var mt in MessageTypes.Values)
             {
-                if (!MessageTypes.TryGetValue(messageType, out var mt))
-                {
-                    MessageTypes.TryAdd(messageType, new MessageType(messageType, [.. GlobalInterfaces]));
-
-                    foreach (var globalPopulator in GlobalPopulators)
-                    {
-                        services.AddKeyedTransient(typeof(Populator), messageType, globalPopulator);
-                    }
-
-                    services.AddKeyedTransient(messageType, (sp, obj) =>
-                    {
-                        return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
-                    });
-
-                    mt = MessageTypes[messageType];
-                }
-
                 interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
-                services.AddKeyedTransient<Populator, U>(messageType);
+
+                services.AddKeyedTransient<Populator, U>(mt.Name);
             }
-
-            return this;
         }
-
-        /// <summary>
-        /// Creates types for LTI messages based on their message types and interfaces.
-        /// </summary>
-        internal static void CreateTypes()
+        else
         {
-            if (LtiMessageTypes.Count == 0)
+            if (!MessageTypes.TryGetValue(messageType, out var mt))
             {
-                foreach (var messageType in MessageTypes.Select(mt => mt.Value))
+                MessageTypes.TryAdd(messageType, new MessageType(messageType, [.. GlobalInterfaces]));
+
+                foreach (var globalPopulator in GlobalPopulators)
                 {
-                    var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(LtiMessage));
-                    LtiMessageTypeResolver.AddDerivedType(type);
-                    LtiMessageTypes.TryAdd(messageType.Name, type);
+                    services.AddKeyedTransient(typeof(Populator), messageType, globalPopulator);
                 }
+
+                services.AddKeyedTransient(messageType, (sp, obj) =>
+                {
+                    return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
+                });
+
+                mt = MessageTypes[messageType];
             }
+
+            interfaceTypes.ForEach(t => mt.Interfaces.Add(t));
+            services.AddKeyedTransient<Populator, U>(messageType);
         }
 
-        /// <summary>
-        /// Gets the <see cref="IServiceCollection"/> where LTI 1.3 services are configured.
-        /// </summary>
-        public IServiceCollection Services => services;
+        return this;
     }
+
+    /// <summary>
+    /// Creates types for LTI messages based on their message types and interfaces.
+    /// </summary>
+    internal static void CreateTypes()
+    {
+        if (LtiMessageTypes.Count == 0)
+        {
+            foreach (var messageType in MessageTypes.Select(mt => mt.Value))
+            {
+                var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(LtiMessage));
+                LtiMessageTypeResolver.AddDerivedType(type);
+                LtiMessageTypes.TryAdd(messageType.Name, type);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the <see cref="IServiceCollection"/> where LTI 1.3 services are configured.
+    /// </summary>
+    public IServiceCollection Services => services;
 }

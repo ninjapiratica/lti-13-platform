@@ -62,7 +62,7 @@ public static class Startup
     {
         var builder = new Lti13PlatformBuilder(serviceCollection);
 
-        builder.Services.AddTransient<IUrlService, UrlService>();
+        builder.Services.AddTransient<ILti13UrlService, DefaultLti13UrlService>();
 
         builder
             .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
@@ -77,12 +77,14 @@ public static class Startup
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddOptions<Platform>().BindConfiguration("Lti13Platform:Platform");
-        builder.Services.TryAddSingleton<ILti13PlatformService, DefaultPlatformService>();
+        builder.Services.TryAddSingleton<ILti13PlatformService, DefaultLti13PlatformService>();
 
         builder.Services.AddOptions<Lti13PlatformTokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
             .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
-        builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultTokenConfigService>();
+        builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultLti13TokenConfigService>();
+
+        builder.Services.TryAddSingleton<ILti13ToolSecurityService, DefaultLti13ToolSecurityService>();
 
         return builder;
     }
@@ -143,7 +145,7 @@ public static class Startup
         {
             appBuilder.Use((context, next) =>
             {
-                if (context.Request.Path == config.AuthorizationUrl && new HttpMethod(context.Request.Method) == HttpMethod.Get)
+                if (context.Request.Path == config.AuthenticationUrl && new HttpMethod(context.Request.Method) == HttpMethod.Get)
                 {
                     context.Request.Form = new FormCollection([]);
                 }
@@ -175,24 +177,25 @@ public static class Startup
                 return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
+            .WithName(RouteNames.JWKS)
             .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the public keys used for JWT signing verification.")
             .WithDescription("Gets the public keys used for JWT signing verification.");
 
-        endpointRouteBuilder.MapGet(config.AuthorizationUrl,
-            async ([AsParameters] AuthenticationRequest queryString, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlService urlServiceHelper, CancellationToken cancellationToken) =>
+        endpointRouteBuilder.MapGet(config.AuthenticationUrl,
+            async ([AsParameters] AuthenticationRequest queryString, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
             {
-                return await HandleAuthorization(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
+                return await HandleAuthentication(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthorizationEndpoint();
+            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_GET);
 
-        endpointRouteBuilder.MapPost(config.AuthorizationUrl,
-            async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlService urlServiceHelper, CancellationToken cancellationToken) =>
+        endpointRouteBuilder.MapPost(config.AuthenticationUrl,
+            async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
             {
-                return await HandleAuthorization(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
+                return await HandleAuthentication(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
             })
-            .ConfigureAuthorizationEndpoint();
+            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_POST);
 
         endpointRouteBuilder.MapPost(config.TokenUrl,
             async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
@@ -314,7 +317,7 @@ public static class Startup
         return endpointRouteBuilder;
     }
 
-    private static async Task<IResult> HandleAuthorization(AuthenticationRequest request, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, IUrlService urlServiceHelper, CancellationToken cancellationToken)
+    private static async Task<IResult> HandleAuthentication(AuthenticationRequest request, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";
         const string INVALID_CLIENT = "invalid_client";
@@ -497,16 +500,17 @@ public static class Startup
             MediaTypeNames.Text.Html);
     }
 
-    private static RouteHandlerBuilder ConfigureAuthorizationEndpoint(this RouteHandlerBuilder routeHandlerBuilder)
+    private static RouteHandlerBuilder ConfigureAuthenticationEndpoint(this RouteHandlerBuilder routeHandlerBuilder, string routeName)
     {
         return routeHandlerBuilder
+            .WithName(routeName)
             .DisableAntiforgery()
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces<string>(contentType: MediaTypeNames.Text.Html)
             .WithGroupName(OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
-            .WithSummary("Callback that handles the authorization request from the tool")
-            .WithDescription("After the tool receives the initial request, it will call back to this endpoint for authorization and to get the message it should handle. This endpoint will verify everything and post back to the tool with the correct message that was initially requested. Can be called as a get with query parameters or a post with a form.");
+            .WithSummary("Callback that handles the authentication request from the tool")
+            .WithDescription("After the tool receives the initial request, it will call back to this endpoint for authentication and to get the message it should handle. This endpoint will verify everything and post back to the tool with the correct message that was initially requested. Can be called as a get with query parameters or a post with a form.");
     }
 }
 

@@ -5,5 +5,8 @@
 /// </summary>
 internal static class RouteNames
 {
+    public static readonly string AUTHENTICATION_GET = "3fe8fd87-ad6f-43d4-b138-91c268bd37bb";
+    public static readonly string AUTHENTICATION_POST = "c788c549-e860-4317-aaa1-be150806ba33";
     public static readonly string TOKEN = "42193785-5540-4f9f-86eb-9289115c826e";
+    public static readonly string JWKS = "bc5c29b0-58fb-42b6-b3a2-a502ef3ead32";
 }

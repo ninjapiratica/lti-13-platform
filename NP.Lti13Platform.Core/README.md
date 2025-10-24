@@ -43,6 +43,14 @@ The `ILti13CoreDataService` interface is used to manage the persistance of most 
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
+## ILti13ToolSecurityService
+
+Tools and platforms must exchange information out of band to establish trust. This includes keys, client ids, and deployment ids.
+
+In order to assist with this, the `ILti13ToolSecurityService` is available to help with getting this information to send to the tool from the platform.
+This service does not guarantee it has all the information necessary to fully establish trust with the tool, it only contains the bare minimum defined in the spec.
+A tool may require additional information.
+
 ## Defaults
 
 ### Routing
@@ -51,7 +59,7 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 
 ```csharp
 app.UseLti13PlatformCore(config => {
-    config.AuthorizationUrl = "/lti13/authorization";
+    config.AuthenticationUrl = "/lti13/authentication";
     config.JwksUrl = "/lti13/jwks/{clientId}"; // {clientId} is required
     config.TokenUrl = "/lti13/token";
     return config;
