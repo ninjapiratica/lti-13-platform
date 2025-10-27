@@ -50,7 +50,7 @@ public static class Startup
         builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
         builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:NameRoleProvisioningServices");
-        builder.Services.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
+        builder.Services.TryAddTransient<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
 
         return builder;
     }

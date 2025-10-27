@@ -43,7 +43,7 @@ public static class Startup
         builder.ExtendLti13Message<IServiceEndpoints, ServiceEndpointsPopulator>();
 
         builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:AssignmentGradeServices");
-        builder.Services.TryAddSingleton<ILti13AssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
+        builder.Services.TryAddTransient<ILti13AssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
 
         return builder;
     }

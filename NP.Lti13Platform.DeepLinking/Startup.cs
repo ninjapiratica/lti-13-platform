@@ -41,8 +41,8 @@ public static class Startup
             .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
         builder.Services.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
-        builder.Services.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
-        builder.Services.TryAddSingleton<ILti13DeepLinkingHandler, DefaultDeepLinkingHandler>();
+        builder.Services.TryAddTransient<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
+        builder.Services.TryAddTransient<ILti13DeepLinkingHandler, DefaultDeepLinkingHandler>();
 
         return builder;
     }

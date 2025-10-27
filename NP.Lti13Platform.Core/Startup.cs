@@ -77,14 +77,14 @@ public static class Startup
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddOptions<Platform>().BindConfiguration("Lti13Platform:Platform");
-        builder.Services.TryAddSingleton<ILti13PlatformService, DefaultLti13PlatformService>();
+        builder.Services.TryAddTransient<ILti13PlatformService, DefaultLti13PlatformService>();
 
         builder.Services.AddOptions<Lti13PlatformTokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
             .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
-        builder.Services.TryAddSingleton<ILti13TokenConfigService, DefaultLti13TokenConfigService>();
+        builder.Services.TryAddTransient<ILti13TokenConfigService, DefaultLti13TokenConfigService>();
 
-        builder.Services.TryAddSingleton<ILti13ToolSecurityService, DefaultLti13ToolSecurityService>();
+        builder.Services.TryAddTransient<ILti13ToolSecurityService, DefaultLti13ToolSecurityService>();
 
         return builder;
     }
