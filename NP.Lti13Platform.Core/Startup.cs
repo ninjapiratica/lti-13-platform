@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Scopes;
 using NP.Lti13Platform.Core.Services;
 using System.Collections;
 using System.Net.Mime;
@@ -141,37 +141,21 @@ public static class Startup
         Lti13PlatformCoreEndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
-        if (endpointRouteBuilder is IApplicationBuilder appBuilder)
-        {
-            appBuilder.Use((context, next) =>
-            {
-                if (context.Request.Path == config.AuthenticationUrl && new HttpMethod(context.Request.Method) == HttpMethod.Get)
-                {
-                    context.Request.Form = new FormCollection([]);
-                }
-
-                return next(context);
-            });
-        }
-
         endpointRouteBuilder.MapGet(config.JwksUrl,
-            async (ILti13CoreDataService dataService, ClientId clientId, CancellationToken cancellationToken) =>
+            async (ClientId clientId,
+                ILti13CoreDataService dataService,
+                CancellationToken cancellationToken) =>
             {
                 var keySet = new JsonWebKeySet();
 
-                var tool = await dataService.GetToolAsync(clientId, cancellationToken);
+                var keys = await dataService.GetPublicKeysAsync(clientId, cancellationToken);
 
-                if (tool != null)
+                foreach (var key in keys)
                 {
-                    var keys = await dataService.GetPublicKeysAsync(tool.ClientId, cancellationToken);
-
-                    foreach (var key in keys)
-                    {
-                        var jwk = JsonWebKeyConverter.ConvertFromSecurityKey(key);
-                        jwk.Use = JsonWebKeyUseNames.Sig;
-                        jwk.Alg = SecurityAlgorithms.RsaSha256;
-                        keySet.Keys.Add(jwk);
-                    }
+                    var jwk = JsonWebKeyConverter.ConvertFromSecurityKey(key);
+                    jwk.Use = JsonWebKeyUseNames.Sig;
+                    jwk.Alg = SecurityAlgorithms.RsaSha256;
+                    keySet.Keys.Add(jwk);
                 }
 
                 return Results.Json(keySet, JSON_SERIALIZER_OPTIONS);
@@ -183,22 +167,13 @@ public static class Startup
             .WithSummary("Gets the public keys used for JWT signing verification.")
             .WithDescription("Gets the public keys used for JWT signing verification.");
 
-        endpointRouteBuilder.MapGet(config.AuthenticationUrl,
-            async ([AsParameters] AuthenticationRequest queryString, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
-            {
-                return await HandleAuthentication(queryString, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
-            })
-            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_GET);
-
-        endpointRouteBuilder.MapPost(config.AuthenticationUrl,
-            async ([FromForm] AuthenticationRequest form, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken) =>
-            {
-                return await HandleAuthentication(form, serviceProvider, tokenService, dataService, urlServiceHelper, cancellationToken);
-            })
-            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_POST);
-
         endpointRouteBuilder.MapPost(config.TokenUrl,
-            async ([FromForm] TokenRequest request, LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor, ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, CancellationToken cancellationToken) =>
+            async ([FromForm] TokenRequest request,
+                LinkGenerator linkGenerator,
+                IHttpContextAccessor httpContextAccessor,
+                ILti13CoreDataService dataService,
+                ILti13TokenConfigService tokenService,
+                CancellationToken cancellationToken) =>
             {
                 const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
                 const string SCOPE_SPEC_URI = "https://www.imsglobal.org/spec/lti-ags/v2p0";
@@ -209,82 +184,135 @@ public static class Startup
                 const string CLIENT_ASSERTION_INVALID = "client_assertion must be a valid jwt";
                 const string INVALID_REQUEST = "invalid_request";
 
-                var httpContext = httpContextAccessor.HttpContext!;
                 if (request == null)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "request body is missing", Error_Uri = AUTH_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_REQUEST,
+                        Error_Description = "request body is missing",
+                        Error_Uri = AUTH_SPEC_URI
+                    });
                 }
 
                 if (request.Grant_Type != "client_credentials")
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "unsupported_grant_type", Error_Description = "grant_type must be 'client_credentials'", Error_Uri = AUTH_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "unsupported_grant_type",
+                        Error_Description = "grant_type must be 'client_credentials'",
+                        Error_Uri = AUTH_SPEC_URI
+                    });
                 }
 
                 if (request.Client_Assertion_Type != "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = "client_assertion_type must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'", Error_Uri = AUTH_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_GRANT,
+                        Error_Description = "client_assertion_type must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'",
+                        Error_Uri = AUTH_SPEC_URI
+                    });
                 }
 
                 if (string.IsNullOrWhiteSpace(request.Scope))
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_SCOPE,
+                        Error_Description = SCOPE_REQUIRED,
+                        Error_Uri = SCOPE_SPEC_URI
+                    });
                 }
 
                 if (string.IsNullOrWhiteSpace(request.Client_Assertion))
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = AUTH_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_GRANT,
+                        Error_Description = CLIENT_ASSERTION_INVALID,
+                        Error_Uri = AUTH_SPEC_URI
+                    });
                 }
 
                 var jwt = new JsonWebToken(request.Client_Assertion);
-
                 if (jwt.Issuer != jwt.Subject)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_GRANT,
+                        Error_Description = CLIENT_ASSERTION_INVALID,
+                        Error_Uri = TOKEN_SPEC_URI
+                    });
                 }
 
                 var tool = await dataService.GetToolAsync(new ClientId(jwt.Issuer), cancellationToken);
                 if (tool?.Jwks == null)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_GRANT, Error_Description = CLIENT_ASSERTION_INVALID, Error_Uri = TOKEN_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_GRANT,
+                        Error_Description = CLIENT_ASSERTION_INVALID,
+                        Error_Uri = TOKEN_SPEC_URI
+                    });
                 }
 
                 var scopes = HttpUtility.UrlDecode(request.Scope)
                     .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                     .Intersect(tool.ServiceScopes)
                     .ToList();
-
                 if (scopes.Count == 0)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_SCOPE, Error_Description = SCOPE_REQUIRED, Error_Uri = SCOPE_SPEC_URI });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_SCOPE,
+                        Error_Description = SCOPE_REQUIRED,
+                        Error_Uri = SCOPE_SPEC_URI
+                    });
                 }
 
-                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
+                var jsonWebTokenHandler = new JsonWebTokenHandler();
 
-                var validatedToken = await new JsonWebTokenHandler().ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
+                var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
+                var validatedToken = await jsonWebTokenHandler.ValidateTokenAsync(request.Client_Assertion, new TokenValidationParameters
                 {
                     IssuerSigningKeys = await tool.Jwks.GetKeysAsync(cancellationToken),
-                    ValidAudience = tokenConfig.TokenAudience ?? linkGenerator.GetUriByName(httpContext, RouteNames.TOKEN),
+                    ValidAudience = tokenConfig.TokenAudience
+                        ?? linkGenerator.GetUriByName(httpContextAccessor.HttpContext!, RouteNames.TOKEN),
                     ValidIssuer = tool.ClientId.ToString()
                 });
 
                 if (!validatedToken.IsValid)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = validatedToken.Exception.Message, Error_Uri = AUTH_SPEC_URI });
-                }
-                else
-                {
-                    var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, new ServiceTokenId(validatedToken.SecurityToken.Id), cancellationToken);
-                    if (serviceToken?.Expiration > DateTime.UtcNow)
+                    return Results.BadRequest(new LtiBadRequest
                     {
-                        return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "jti has already been used and is not expired", Error_Uri = AUTH_SPEC_URI });
-                    }
-
-                    await dataService.SaveServiceTokenAsync(new ServiceToken { Id = new ServiceTokenId(validatedToken.SecurityToken.Id), ClientId = tool.ClientId, Expiration = validatedToken.SecurityToken.ValidTo }, cancellationToken);
+                        Error = INVALID_REQUEST,
+                        Error_Description = validatedToken.Exception.Message,
+                        Error_Uri = AUTH_SPEC_URI
+                    });
                 }
+
+                var serviceTokenId = new ServiceTokenId(validatedToken.SecurityToken.Id);
+
+                var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, serviceTokenId, cancellationToken);
+                if (serviceToken?.Expiration > DateTime.UtcNow)
+                {
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = INVALID_REQUEST,
+                        Error_Description = "jti has already been used and is not expired",
+                        Error_Uri = AUTH_SPEC_URI
+                    });
+                }
+                await dataService.SaveServiceTokenAsync(new ServiceToken
+                {
+                    Id = serviceTokenId,
+                    ClientId = tool.ClientId,
+                    Expiration = validatedToken.SecurityToken.ValidTo
+                }, cancellationToken);
 
                 var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
-                var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
+                var token = jsonWebTokenHandler.CreateToken(new SecurityTokenDescriptor
                 {
                     Subject = validatedToken.ClaimsIdentity,
                     Issuer = tokenConfig.Issuer.OriginalString,
@@ -314,16 +342,32 @@ public static class Startup
             .WithSummary("Gets a token to be used with platform services.")
             .WithDescription("The tool will request from this endpoint a token that will be used to authorize calls into other LTI 1.3 services.");
 
+        endpointRouteBuilder.MapGet(config.AuthenticationUrl,
+            async ([AsParameters] AuthenticationRequest queryString, ILti13CoreDataService dataService, IEnumerable<ILtiMessageHandler> ltiMessageHandlers, CancellationToken cancellationToken) =>
+            {
+                return await HandleAuthentication(queryString, dataService, ltiMessageHandlers, cancellationToken);
+            })
+            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_GET);
+
+        endpointRouteBuilder.MapPost(config.AuthenticationUrl,
+            async ([FromForm] AuthenticationRequest form, ILti13CoreDataService dataService, IEnumerable<ILtiMessageHandler> ltiMessageHandlers, CancellationToken cancellationToken) =>
+            {
+                return await HandleAuthentication(form, dataService, ltiMessageHandlers, cancellationToken);
+            })
+            .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_POST);
+
         return endpointRouteBuilder;
     }
 
-    private static async Task<IResult> HandleAuthentication(AuthenticationRequest request, IServiceProvider serviceProvider, ILti13TokenConfigService tokenService, ILti13CoreDataService dataService, ILti13UrlService urlServiceHelper, CancellationToken cancellationToken)
+    private static async Task<IResult> HandleAuthentication(
+        AuthenticationRequest request,
+        ILti13CoreDataService dataService,
+        IEnumerable<ILtiMessageHandler> ltiMessageHandlers,
+        CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";
         const string INVALID_CLIENT = "invalid_client";
-        const string UNAUTHORIZED_CLIENT = "unauthorized_client";
         const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request";
-        const string USER_CLIENT_MISMATCH = "client is not authorized for user";
 
         /* https://datatracker.ietf.org/doc/html/rfc6749#section-5.2 */
         /* https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request */
@@ -340,142 +384,121 @@ public static class Startup
 
         if (request.Response_Type != "id_token")
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "response_type must be 'id_token'.", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = "response_type must be 'id_token'.",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         if (request.Response_Mode != "form_post")
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "response_mode must be 'form_post'.", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = "response_mode must be 'form_post'.",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         if (request.Prompt != "none")
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "prompt must be 'none'.", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = "prompt must be 'none'.",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         if (string.IsNullOrWhiteSpace(request.Nonce))
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "nonce is required.", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = "nonce is required.",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         if (string.IsNullOrWhiteSpace(request.Login_Hint))
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "login_hint is required", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = "login_hint is required",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         if (string.IsNullOrWhiteSpace(request.Client_Id))
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_CLIENT, Error_Description = "client_id is required.", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_CLIENT,
+                Error_Description = "client_id is required.",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         var tool = await dataService.GetToolAsync(new ClientId(request.Client_Id), cancellationToken);
-
         if (tool == null)
         {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_CLIENT, Error_Description = "client_id is unknown", Error_Uri = AUTH_SPEC_URI });
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_CLIENT,
+                Error_Description = "client_id is unknown",
+                Error_Uri = AUTH_SPEC_URI
+            });
         }
 
         if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
         {
-            return Results.BadRequest(new LtiBadRequest { Error = "invalid_grant", Error_Description = "redirect_uri is unknown", Error_Uri = AUTH_SPEC_URI });
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Lti_Message_Hint))
-        {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "lti_message_hint is invalid", Error_Uri = "https://www.imsglobal.org/spec/lti/v1p3/#lti_message_hint-login-parameter" });
-        }
-
-        var (messageTypeString, deploymentId, contextId, resourceLinkId, messageHintString) = await urlServiceHelper.ParseLtiMessageHintAsync(request.Lti_Message_Hint, cancellationToken);
-
-        var deployment = await dataService.GetDeploymentAsync(deploymentId, cancellationToken);
-        if (deployment?.ClientId != tool.ClientId)
-        {
-            return Results.BadRequest(new LtiBadRequest { Error = INVALID_REQUEST, Error_Description = "deployment is not for client", Error_Uri = AUTH_SPEC_URI });
-        }
-
-        var (userId, actualUserId, isAnonymous) = await urlServiceHelper.ParseLoginHintAsync(request.Login_Hint, cancellationToken);
-
-        var user = await dataService.GetUserAsync(userId, cancellationToken);
-        if (user == null)
-        {
-            return Results.BadRequest(new LtiBadRequest { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH, Error_Uri = string.Empty });
-        }
-
-        User? actualUser = null; ;
-        if (actualUserId != null && actualUserId != UserId.Empty)
-        {
-            actualUser = await dataService.GetUserAsync(actualUserId.GetValueOrDefault(), cancellationToken);
-
-            if (actualUser == null)
+            return Results.BadRequest(new LtiBadRequest
             {
-                return Results.BadRequest(new LtiBadRequest { Error = UNAUTHORIZED_CLIENT, Error_Description = USER_CLIENT_MISMATCH, Error_Uri = string.Empty });
+                Error = "invalid_grant",
+                Error_Description = "redirect_uri is unknown",
+                Error_Uri = AUTH_SPEC_URI
+            });
+        }
+
+        ILtiMessage? ltiMessage = null;
+        LtiBadRequest? failedLtiMessageResult = null;
+        foreach (var ltiMessageHandler in ltiMessageHandlers)
+        {
+            var result = await ltiMessageHandler.HandleLtiMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, cancellationToken);
+
+            if (result.IsSuccess)
+            {
+                ltiMessage = result.LtiMessage;
+                failedLtiMessageResult = null;
+                break;
+            }
+            else if (result.IsFailure)
+            {
+                failedLtiMessageResult = new LtiBadRequest
+                {
+                    Error = INVALID_REQUEST,
+                    Error_Description = result.ErrorMessage,
+                    Error_Uri = "https://www.1edtech.org/standards/lti"
+                };
             }
         }
 
-        var context = contextId == null || contextId == ContextId.Empty ? null : await dataService.GetContextAsync(contextId.GetValueOrDefault(), cancellationToken);
-
-        var resourceLink = resourceLinkId == null || resourceLinkId == ResourceLinkId.Empty ? null : await dataService.GetResourceLinkAsync(resourceLinkId.GetValueOrDefault(), cancellationToken);
-
-        var tokenConfig = await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
-
-        var ltiMessage = serviceProvider.GetKeyedService<LtiMessage>(messageTypeString) ?? throw new NotImplementedException($"LTI Message Type {messageTypeString} has not been registered.");
-
-        ltiMessage.MessageType = messageTypeString;
-
-        ltiMessage.Audience = tool.ClientId.ToString();
-        ltiMessage.IssuedDate = DateTime.UtcNow;
-        ltiMessage.Issuer = tokenConfig.Issuer.OriginalString;
-        ltiMessage.Nonce = request.Nonce!;
-        ltiMessage.ExpirationDate = DateTime.UtcNow.AddSeconds(tokenConfig.MessageTokenExpirationSeconds);
-
-        if (!isAnonymous)
+        if (failedLtiMessageResult != null)
         {
-            var userPermissions = await dataService.GetUserPermissionsAsync(deployment.Id, contextId, user.Id, cancellationToken);
-
-            ltiMessage.Subject = user.Id.ToString();
-
-            ltiMessage.Address = user.Address == null || !userPermissions.Address ? null : new AddressClaim
-            {
-                Country = userPermissions.AddressCountry ? user.Address.Country : null,
-                Formatted = userPermissions.AddressFormatted ? user.Address.Formatted : null,
-                Locality = userPermissions.AddressLocality ? user.Address.Locality : null,
-                PostalCode = userPermissions.AddressPostalCode ? user.Address.PostalCode : null,
-                Region = userPermissions.AddressRegion ? user.Address.Region : null,
-                StreetAddress = userPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
-            };
-
-            ltiMessage.Birthdate = userPermissions.Birthdate ? user.Birthdate : null;
-            ltiMessage.Email = userPermissions.Email ? user.Email : null;
-            ltiMessage.EmailVerified = userPermissions.EmailVerified ? user.EmailVerified : null;
-            ltiMessage.FamilyName = userPermissions.FamilyName ? user.FamilyName : null;
-            ltiMessage.Gender = userPermissions.Gender ? user.Gender : null;
-            ltiMessage.GivenName = userPermissions.GivenName ? user.GivenName : null;
-            ltiMessage.Locale = userPermissions.Locale ? user.Locale : null;
-            ltiMessage.MiddleName = userPermissions.MiddleName ? user.MiddleName : null;
-            ltiMessage.Name = userPermissions.Name ? user.Name : null;
-            ltiMessage.Nickname = userPermissions.Nickname ? user.Nickname : null;
-            ltiMessage.PhoneNumber = userPermissions.PhoneNumber ? user.PhoneNumber : null;
-            ltiMessage.PhoneNumberVerified = userPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
-            ltiMessage.Picture = userPermissions.Picture ? user.Picture?.OriginalString : null;
-            ltiMessage.PreferredUsername = userPermissions.PreferredUsername ? user.PreferredUsername : null;
-            ltiMessage.Profile = userPermissions.Profile ? user.Profile?.OriginalString : null;
-            ltiMessage.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
-            ltiMessage.Website = userPermissions.Website ? user.Website?.OriginalString : null;
-            ltiMessage.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
+            return Results.BadRequest(failedLtiMessageResult);
         }
 
-        var scope = new MessageScope(
-            new UserScope(user, actualUser, isAnonymous),
-            tool,
-            deployment,
-            context,
-            resourceLink,
-            messageHintString);
-
-        var services = serviceProvider.GetKeyedServices<Populator>(messageTypeString);
-        foreach (var service in services)
+        if (ltiMessage == null)
         {
-            await service.PopulateAsync(ltiMessage, scope, cancellationToken);
+            return Results.BadRequest(new LtiBadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = "unsupported message type",
+                Error_Uri = "https://www.1edtech.org/standards/lti"
+            });
         }
 
         var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
@@ -516,31 +539,15 @@ public static class Startup
 
 internal record AuthenticationRequest
 {
-    [FromQuery(Name = "scope")]
     public string? Scope { get; set; }
-    [JsonPropertyName("response_type")]
-    [FromQuery(Name = "response_type")]
     public string? Response_Type { get; set; }
-    [JsonPropertyName("response_mode")]
-    [FromQuery(Name = "response_mode")]
     public string? Response_Mode { get; set; }
-    [FromQuery(Name = "prompt")]
     public string? Prompt { get; set; }
-    [FromQuery(Name = "nonce")]
     public string? Nonce { get; set; }
-    [FromQuery(Name = "state")]
     public string? State { get; set; }
-    [JsonPropertyName("client_id")]
-    [FromQuery(Name = "client_id")]
     public string? Client_Id { get; set; }
-    [JsonPropertyName("redirect_uri")]
-    [FromQuery(Name = "redirect_uri")]
     public Uri? Redirect_Uri { get; set; }
-    [JsonPropertyName("login_hint")]
-    [FromQuery(Name = "login_hint")]
     public string? Login_Hint { get; set; }
-    [JsonPropertyName("lti_message_hint")]
-    [FromQuery(Name = "lti_message_hint")]
     public string? Lti_Message_Hint { get; set; }
 }
 

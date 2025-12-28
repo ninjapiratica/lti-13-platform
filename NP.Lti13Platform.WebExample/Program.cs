@@ -137,7 +137,7 @@ namespace NP.Lti13Platform.WebExample
                 ClientId = new ClientId("clientId"),
                 OidcInitiationUrl = new Uri("https://saltire.lti.app/tool"),
                 LaunchUrl = new Uri("https://saltire.lti.app/tool"),
-                Jwks = "https://saltire.lti.app/tool/jwks/s7bf81185d64a040a0cc72385e4edbcfb",
+                Jwks = "https://saltire.lti.app/tool/jwks/s8cd1a33052f22f98e58369762c6373aa",
                 ServiceScopes =
                 [
                     AssignmentGradeServices.ServiceScopes.LineItem,

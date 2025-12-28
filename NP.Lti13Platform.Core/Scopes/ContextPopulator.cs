@@ -1,7 +1,7 @@
 ﻿using NP.Lti13Platform.Core.Models;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Populators;
+namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Defines the contract for a message containing LTI context information.

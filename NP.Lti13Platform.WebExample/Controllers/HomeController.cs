@@ -32,6 +32,15 @@ public class HomeController(ILogger<HomeController> logger, ILti13UrlService ser
                 actualUserId: null,
                 contextId,
                 new DeepLinkSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
+                cancellationToken: cancellationToken)).AsUri(),
+            deepLinkForm = (await deepLinkUrlService.GetDeepLinkInitiationUrlAsync(
+                deploymentId,
+                userId,
+                false,
+                deepLinkUrl: null,
+                actualUserId: null,
+                contextId,
+                new DeepLinkSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
                 cancellationToken: cancellationToken)).AsForm("form1"),
             resourceLinkUrls = DataService.ResourceLinks
                 .Select(async resourceLink => (await service.GetResourceLinkInitiationUrlAsync(

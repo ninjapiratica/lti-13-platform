@@ -1,4 +1,4 @@
-﻿namespace NP.Lti13Platform.Core.Populators;
+﻿namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Base class for populators.

@@ -4,7 +4,7 @@ using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Populators;
+namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Defines the contract for a roles message in LTI 1.3.

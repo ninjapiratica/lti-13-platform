@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Populators;
+namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Defines the contract for a resource link message in LTI 1.3.
@@ -14,25 +14,25 @@ public interface IResourceLinkMessage : ILaunchPresentationMessage
     /// Gets or sets the LTI version.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/version")]
-    public string LtiVersion { get; set; }
+    public string LtiVersion { get; }
 
     /// <summary>
     /// Gets or sets the deployment Id.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/deployment_id")]
-    public DeploymentId DeploymentId { get; set; }
+    public DeploymentId DeploymentId { get; }
 
     /// <summary>
     /// Gets or sets the target link URI.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/target_link_uri")]
-    public string TargetLinkUri { get; set; }
+    public string TargetLinkUri { get; }
 
     /// <summary>
     /// Gets or sets the resource link information.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/resource_link")]
-    public ResourceLinkMessage ResourceLink { get; set; }
+    public ResourceLinkMessage ResourceLink { get; }
 
     /// <summary>
     /// Represents resource link information in an LTI message.

@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using NP.Lti13Platform.Core.Constants;
 
-namespace NP.Lti13Platform.Core.Populators;
+namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Defines the contract for an LTI launch presentation message.

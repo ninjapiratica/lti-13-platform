@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Scopes;
 using NP.Lti13Platform.Core.Services;
 using System.Text.Json.Serialization;
 

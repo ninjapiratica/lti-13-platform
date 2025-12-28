@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Scopes;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 using System.Text.Json.Serialization;
 

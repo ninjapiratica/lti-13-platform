@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Scopes;
 
 namespace NP.Lti13Platform.Core;
 
@@ -12,7 +12,7 @@ internal class LtiMessageTypeResolver : DefaultJsonTypeInfoResolver
     {
         var jsonTypeInfo = base.GetTypeInfo(type, options);
 
-        var baseType = typeof(LtiMessage);
+        var baseType = typeof(ILtiMessage);
         if (jsonTypeInfo.Type == baseType)
         {
             jsonTypeInfo.PolymorphismOptions = new JsonPolymorphismOptions

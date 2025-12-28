@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Scopes;
 
 namespace NP.Lti13Platform.Core;
 
@@ -73,7 +73,7 @@ public partial class Lti13PlatformBuilder(IServiceCollection services)
 
                 services.AddKeyedTransient(messageType, (sp, obj) =>
                 {
-                    return (LtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
+                    return (ILtiMessage)Activator.CreateInstance(LtiMessageTypes[messageType])!;
                 });
 
                 mt = MessageTypes[messageType];
@@ -95,7 +95,7 @@ public partial class Lti13PlatformBuilder(IServiceCollection services)
         {
             foreach (var messageType in MessageTypes.Select(mt => mt.Value))
             {
-                var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(LtiMessage));
+                var type = TypeGenerator.CreateType(messageType.Name, messageType.Interfaces, typeof(ILtiMessage));
                 LtiMessageTypeResolver.AddDerivedType(type);
                 LtiMessageTypes.TryAdd(messageType.Name, type);
             }

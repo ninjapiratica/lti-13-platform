@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Populators;
+using NP.Lti13Platform.Core.Scopes;
 using NP.Lti13Platform.DeepLinking.Services;
 using System.Text;
 using System.Text.Json;

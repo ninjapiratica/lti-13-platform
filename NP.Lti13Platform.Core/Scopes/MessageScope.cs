@@ -1,6 +1,6 @@
 ﻿using NP.Lti13Platform.Core.Models;
 
-namespace NP.Lti13Platform.Core.Populators;
+namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Represents the scope of an LTI message, including user, tool, deployment, context, and resource link information.

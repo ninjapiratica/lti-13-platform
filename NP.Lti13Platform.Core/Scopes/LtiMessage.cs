@@ -1,13 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Populators;
+namespace NP.Lti13Platform.Core.Scopes;
 
 /// <summary>
 /// Represents an LTI message that can be sent between a platform and tool.
 /// This follows the JWT format as defined in the LTI 1.3 Core specification and includes
 /// standard OpenID Connect claims along with LTI-specific claims.
 /// </summary>
-public class LtiMessage
+public interface ILtiMessage
 {
     /// <summary>
     /// Gets or sets the issuer of the message.
@@ -15,7 +16,7 @@ public class LtiMessage
     /// Required for all messages.
     /// </summary>
     [JsonPropertyName("iss")]
-    public required string Issuer { get; set; }
+    public string Issuer { get; }
 
     /// <summary>
     /// Gets or sets the audience of the message.
@@ -23,7 +24,7 @@ public class LtiMessage
     /// Required for all messages.
     /// </summary>
     [JsonPropertyName("aud")]
-    public required string Audience { get; set; }
+    public string Audience { get; }
 
     /// <summary>
     /// Gets the expiration date as a Unix timestamp.
@@ -37,7 +38,7 @@ public class LtiMessage
     /// Gets or sets the expiration date of the message.
     /// </summary>
     [JsonIgnore]
-    public DateTime ExpirationDate { get; set; } = DateTime.UtcNow;
+    public DateTime ExpirationDate { get; }
 
     /// <summary>
     /// Gets the issued date as a Unix timestamp.
@@ -51,7 +52,7 @@ public class LtiMessage
     /// Gets or sets the issued date of the message.
     /// </summary>
     [JsonIgnore]
-    public DateTime IssuedDate { get; set; } = DateTime.UtcNow;
+    public DateTime IssuedDate { get; }
 
     /// <summary>
     /// Gets or sets the nonce of the message.
@@ -60,7 +61,7 @@ public class LtiMessage
     /// Required for all messages.
     /// </summary>
     [JsonPropertyName("nonce")]
-    public required string Nonce { get; set; }
+    public string Nonce { get; }
 
     /// <summary>
     /// Gets or sets the message type.
@@ -68,7 +69,7 @@ public class LtiMessage
     /// Required for all messages.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/message_type")]
-    public required string MessageType { get; set; }
+    public string MessageType { get; }
 
     /// <summary>
     /// Gets or sets the subject of the message.
@@ -76,7 +77,7 @@ public class LtiMessage
     /// The platform MAY set this value as appropriate.
     /// </summary>
     [JsonPropertyName("sub")]
-    public string? Subject { get; set; }
+    public string? Subject { get; }
 
     /// <summary>
     /// Gets or sets the user's full name.
@@ -84,7 +85,7 @@ public class LtiMessage
     /// ordered according to the End-User's locale and preferences.
     /// </summary>
     [JsonPropertyName("name")]
-    public string? Name { get; set; }
+    public string? Name { get; }
 
     /// <summary>
     /// Gets or sets the user's given name.
@@ -92,7 +93,7 @@ public class LtiMessage
     /// given names; all can be present, with the names being separated by space characters.
     /// </summary>
     [JsonPropertyName("given_name")]
-    public string? GivenName { get; set; }
+    public string? GivenName { get; }
 
     /// <summary>
     /// Gets or sets the user's family name.
@@ -100,7 +101,7 @@ public class LtiMessage
     /// family names or no family name; all can be present, with the names being separated by space characters.
     /// </summary>
     [JsonPropertyName("family_name")]
-    public string? FamilyName { get; set; }
+    public string? FamilyName { get; }
 
     /// <summary>
     /// Gets or sets the user's middle name.
@@ -109,7 +110,7 @@ public class LtiMessage
     /// in some cultures, middle names are not used.
     /// </summary>
     [JsonPropertyName("middle_name")]
-    public string? MiddleName { get; set; }
+    public string? MiddleName { get; }
 
     /// <summary>
     /// Gets or sets the user's nickname.
@@ -117,7 +118,7 @@ public class LtiMessage
     /// For instance, a nickname value of Mike might be returned alongside a given_name value of Michael.
     /// </summary>
     [JsonPropertyName("nickname")]
-    public string? Nickname { get; set; }
+    public string? Nickname { get;   }
 
     /// <summary>
     /// Gets or sets the user's preferred username.
@@ -125,14 +126,14 @@ public class LtiMessage
     /// This value MAY be any valid JSON string including special characters such as @, /, or whitespace.
     /// </summary>
     [JsonPropertyName("preferred_username")]
-    public string? PreferredUsername { get; set; }
+    public string? PreferredUsername { get; }
 
     /// <summary>
     /// Gets or sets the URL to the user's profile.
     /// URL of the End-User's profile page. The contents of this Web page SHOULD be about the End-User.
     /// </summary>
     [JsonPropertyName("profile")]
-    public string? Profile { get; set; }
+    public string? Profile { get; }
 
     /// <summary>
     /// Gets or sets the URL to the user's picture.
@@ -140,7 +141,7 @@ public class LtiMessage
     /// JPEG, or GIF image file), rather than to a Web page containing an image.
     /// </summary>
     [JsonPropertyName("picture")]
-    public string? Picture { get; set; }
+    public string? Picture { get; }
 
     /// <summary>
     /// Gets or sets the URL to the user's website.
@@ -148,21 +149,21 @@ public class LtiMessage
     /// by the End-User or an organization that the End-User is affiliated with.
     /// </summary>
     [JsonPropertyName("website")]
-    public string? Website { get; set; }
+    public string? Website { get; }
 
     /// <summary>
     /// Gets or sets the user's email address.
     /// End-User's preferred e-mail address. Its value MUST conform to the RFC 5322 addr-spec syntax.
     /// </summary>
     [JsonPropertyName("email")]
-    public string? Email { get; set; }
+    public string? Email { get; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the user's email address has been verified.
     /// True if the End-User's e-mail address has been verified; otherwise false.
     /// </summary>
     [JsonPropertyName("email_verified")]
-    public bool? EmailVerified { get; set; }
+    public bool? EmailVerified { get; }
 
     /// <summary>
     /// Gets or sets the user's gender.
@@ -170,7 +171,7 @@ public class LtiMessage
     /// Other values MAY be used when neither of the defined values are applicable.
     /// </summary>
     [JsonPropertyName("gender")]
-    public string? Gender { get; set; }
+    public string? Gender { get; }
 
     /// <summary>
     /// Gets or sets the user's birthdate.
@@ -178,7 +179,7 @@ public class LtiMessage
     /// The year MAY be 0000, indicating that it is omitted.
     /// </summary>
     [JsonPropertyName("birthdate")]
-    public DateOnly? Birthdate { get; set; }
+    public DateOnly? Birthdate { get; }
 
     /// <summary>
     /// Gets or sets the user's timezone.
@@ -186,7 +187,7 @@ public class LtiMessage
     /// For example, Europe/Paris or America/Los_Angeles.
     /// </summary>
     [JsonPropertyName("zoneinfo")]
-    public string? TimeZone { get; set; }
+    public string? TimeZone { get; }
 
     /// <summary>
     /// Gets or sets the user's locale.
@@ -195,7 +196,7 @@ public class LtiMessage
     /// separated by a dash. For example, en-US or fr-CA.
     /// </summary>
     [JsonPropertyName("locale")]
-    public string? Locale { get; set; }
+    public string? Locale { get; }
 
     /// <summary>
     /// Gets or sets the user's phone number.
@@ -203,27 +204,27 @@ public class LtiMessage
     /// for example, +1 (425) 555-1212 or +56 (2) 687 2400.
     /// </summary>
     [JsonPropertyName("phone_number")]
-    public string? PhoneNumber { get; set; }
+    public string? PhoneNumber { get; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the user's phone number has been verified.
     /// True if the End-User's phone number has been verified; otherwise false.
     /// </summary>
     [JsonPropertyName("phone_number_verified")]
-    public bool? PhoneNumberVerified { get; set; }
+    public bool? PhoneNumberVerified { get; }
 
     /// <summary>
     /// Gets or sets the user's address information.
     /// End-User's preferred postal address as defined in OpenID Connect Core.
     /// </summary>
     [JsonPropertyName("address")]
-    public AddressClaim? Address { get; set; }
+    public AddressClaim? Address { get; }
 
     /// <summary>
     /// Gets or sets the time when the user's information was last updated.
     /// </summary>
     [JsonIgnore]
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; }
 
     /// <summary>
     /// Gets the time when the user's information was last updated as a Unix timestamp.
@@ -236,7 +237,7 @@ public class LtiMessage
 /// <summary>
 /// Represents an address claim in an OpenID Connect message.
 /// </summary>
-public class AddressClaim
+public record AddressClaim
 {
     /// <summary>
     /// Gets or sets the formatted address.
@@ -244,7 +245,7 @@ public class AddressClaim
     /// This field MAY contain multiple lines, separated by newlines.
     /// </summary>
     [JsonPropertyName("formatted")]
-    public string? Formatted { get; set; }
+    public string? Formatted { get; }
 
     /// <summary>
     /// Gets or sets the street address.
@@ -252,34 +253,127 @@ public class AddressClaim
     /// Post Office Box, and multi-line extended street address information.
     /// </summary>
     [JsonPropertyName("street_address")]
-    public string? StreetAddress { get; set; }
+    public string? StreetAddress { get; }
 
     /// <summary>
     /// Gets or sets the locality (city).
     /// City or locality component.
     /// </summary>
     [JsonPropertyName("locality")]
-    public string? Locality { get; set; }
+    public string? Locality { get; }
 
     /// <summary>
     /// Gets or sets the region (state).
     /// State, province, prefecture, or region component.
     /// </summary>
     [JsonPropertyName("region")]
-    public string? Region { get; set; }
+    public string? Region { get; }
 
     /// <summary>
     /// Gets or sets the postal code.
     /// Zip code or postal code component.
     /// </summary>
     [JsonPropertyName("postal_code")]
-    public string? PostalCode { get; set; }
+    public string? PostalCode { get; }
 
     /// <summary>
     /// Gets or sets the country.
     /// Country name component.
     /// </summary>
     [JsonPropertyName("country")]
-    public string? Country { get; set; }
+    public string? Country { get; }
 }
 
+/// <summary>
+/// Represents the result of an LTI (Learning Tools Interoperability) message operation, indicating either success with
+/// a message or failure with an error message.
+/// </summary>
+/// <remarks>This abstract base class encapsulates the outcome of processing an LTI message. Use the derived types
+/// to access the specific result details. The properties indicate whether the operation succeeded and provide access to
+/// the resulting message or error information as appropriate.</remarks>
+public abstract class LtiMessageResult
+{
+    /// <summary>
+    /// Gets the success status of the LTI message result.
+    /// </summary>
+    [MemberNotNullWhen(true, nameof(LtiMessage))]
+    public bool IsSuccess { get; }
+
+    /// <summary>
+    /// Gets the success status of the LTI message result.
+    /// </summary>
+    [MemberNotNullWhen(true, nameof(ErrorMessage))]
+    public bool IsFailure { get; }
+
+    /// <summary>
+    /// Gets the LTI message if the operation was successful; otherwise, null.
+    /// </summary>
+    public object? LtiMessage { get; }
+
+    /// <summary>
+    /// Gets the error message if the operation failed; otherwise, null.
+    /// </summary>
+    public string? ErrorMessage { get; }
+
+    internal LtiMessageResult()
+    {
+    }
+
+    internal LtiMessageResult(object ltiMessage)
+    {
+        IsSuccess = true;
+        LtiMessage = ltiMessage;
+    }
+
+    internal LtiMessageResult(string errorMessage)
+    {
+        IsFailure = true;
+        ErrorMessage = errorMessage;
+    }
+}
+
+/// <summary>
+/// Represents the result of an LTI message operation.
+/// </summary>
+public class LtiMessageResult<T> : LtiMessageResult where T : ILtiMessage
+{
+    /// <summary>
+    /// Gets the LTI message if the operation was successful; otherwise, null.
+    /// </summary>
+    public new T? LtiMessage { get; }
+
+    internal LtiMessageResult()
+    {
+    }
+
+    internal LtiMessageResult(T ltiMessage)
+        : base(ltiMessage)
+    {
+    }
+
+    internal LtiMessageResult(string errorMessage)
+        : base(errorMessage)
+    {
+    }
+
+    /// <summary>
+    /// Creates a result indicating no operation was performed.
+    /// </summary>
+    /// <returns>An <see cref="LtiMessageResult{T}"/>.</returns>
+    public static LtiMessageResult<T> None() => new();
+
+    /// <summary>
+    /// Creates a failed result with the specified error message.
+    /// </summary>
+    /// <param name="errorMessage">The error message that describes the reason for the failure. Cannot be null or empty.</param>
+    /// <returns>A failed <see cref="LtiMessageResult{T}"/> instance containing the specified error message.</returns>
+    public static LtiMessageResult<T> Fail(string errorMessage) => new(errorMessage);
+
+    /// <summary>
+    /// Creates a successful result containing the specified LTI message.
+    /// </summary>
+    /// <param name="ltiMessage">The LTI message to include in the result. Cannot be null.</param>
+    /// <returns>A new instance of <see cref="LtiMessageResult{T}"/> representing a successful result that contains the specified
+    /// LTI message.</returns>
+    public static LtiMessageResult<T> Success(T ltiMessage) => new(ltiMessage);
+}

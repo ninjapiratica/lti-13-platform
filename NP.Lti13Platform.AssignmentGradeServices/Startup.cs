@@ -189,17 +189,32 @@ public static class Startup
 
                 if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Content-Type", Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid Content-Type",
+                        Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item"
+                    });
                 }
 
                 if (string.IsNullOrWhiteSpace(request.Label))
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Label", Error_Description = "Label is reuired", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid Label",
+                        Error_Description = "Label is reuired",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label"
+                    });
                 }
 
                 if (request.ScoreMaximum <= 0)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid ScoreMaximum",
+                        Error_Description = "ScoreMaximum must be greater than 0",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum"
+                    });
                 }
 
                 if (request.ResourceLinkId != null && request.ResourceLinkId != ResourceLinkId.Empty)
@@ -351,22 +366,42 @@ public static class Startup
 
                 if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Content-Type", Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid Content-Type",
+                        Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item"
+                    });
                 }
 
                 if (string.IsNullOrWhiteSpace(request.Label))
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid Label", Error_Description = "Label is reuired", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid Label",
+                        Error_Description = "Label is reuired",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#label"
+                    });
                 }
 
                 if (request.ScoreMaximum <= 0)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid ScoreMaximum", Error_Description = "ScoreMaximum must be greater than 0", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid ScoreMaximum",
+                        Error_Description = "ScoreMaximum must be greater than 0",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#scoremaximum"
+                    });
                 }
 
                 if (request.ResourceLinkId != null && request.ResourceLinkId != lineItem.ResourceLinkId)
                 {
-                    return Results.BadRequest(new LtiBadRequest { Error = "Invalid ResourceLinkId", Error_Description = "ResourceLinkId may not change after creation", Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item" });
+                    return Results.BadRequest(new LtiBadRequest
+                    {
+                        Error = "Invalid ResourceLinkId",
+                        Error_Description = "ResourceLinkId may not change after creation",
+                        Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#updating-a-line-item"
+                    });
                 }
 
                 lineItem.Label = request.Label;
