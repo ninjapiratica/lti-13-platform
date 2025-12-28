@@ -387,7 +387,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissions(DeploymentId deploymentId, ContextId? contextId, UserId userId, UserId? actualUserId, CancellationToken cancellationToken)
+        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId userId, UserId? actualUserId, CancellationToken cancellationToken)
         {
             return Task.FromResult(new CustomPermissions { UserId = true, UserUsername = true });
         }

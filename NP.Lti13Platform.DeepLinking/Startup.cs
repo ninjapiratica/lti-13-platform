@@ -9,7 +9,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Scopes;
+using NP.Lti13Platform.Core.Claims;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.DeepLinking.Models;
@@ -35,10 +35,10 @@ public static class Startup
 
         builder
             .ExtendLti13Message<IDeepLinkingMessage, DeepLinkingPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
-            .ExtendLti13Message<IPlatformMessage, PlatformPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
-            .ExtendLti13Message<IContextMessage, ContextPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
-            .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
-            .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
+            .ExtendLti13Message<IPlatformInstanceClaims, PlatformPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
+            .ExtendLti13Message<IContextClaims, ContextClaims>(Lti13MessageType.LtiDeepLinkingRequest)
+            .ExtendLti13Message<ICustomClaims, CustomPopulator>(Lti13MessageType.LtiDeepLinkingRequest)
+            .ExtendLti13Message<IRolesClaims, RolesPopulator>(Lti13MessageType.LtiDeepLinkingRequest);
 
         builder.Services.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
         builder.Services.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();

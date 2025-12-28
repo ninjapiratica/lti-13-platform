@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Scopes;
+using NP.Lti13Platform.Core.Claims;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Populators;

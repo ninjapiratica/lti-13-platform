@@ -131,7 +131,7 @@ public interface ILti13CoreDataService
     /// <param name="actualUserId">The actual user ID (if impersonating).</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The custom permissions.</returns>
-    Task<CustomPermissions> GetCustomPermissions(DeploymentId deploymentId, ContextId? contextId, UserId userId, UserId? actualUserId, CancellationToken cancellationToken = default);
+    Task<CustomPermissions> GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId? userId, UserId? actualUserId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the user permissions.

@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Routing;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Scopes;
+using NP.Lti13Platform.Core.Claims;
 using NP.Lti13Platform.DeepLinking.Services;
 using System.Text;
 using System.Text.Json;
@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.DeepLinking.Populators;
 /// <summary>
 /// Defines the contract for a deep linking message in LTI 1.3.
 /// </summary>
-public interface IDeepLinkingMessage : ILaunchPresentationMessage
+public interface IDeepLinkingMessage : ILaunchPresentationClaims
 {
     /// <summary>
     /// Gets or sets the LTI version used for the deep linking.
@@ -153,7 +153,7 @@ public class DeepLinkingPopulator(LinkGenerator linkGenerator, ILti13DeepLinking
 
         if (launchPresentation != null)
         {
-            obj.LaunchPresentation = new ILaunchPresentationMessage.LaunchPresentationDefinition
+            obj.LaunchPresentation = new ILaunchPresentationClaims.LaunchPresentationClaim
             {
                 DocumentTarget = launchPresentation.DocumentTarget,
                 Height = launchPresentation.Height,

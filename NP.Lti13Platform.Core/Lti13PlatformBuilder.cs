@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NP.Lti13Platform.Core.Scopes;
+using NP.Lti13Platform.Core.Claims;
 
 namespace NP.Lti13Platform.Core;
 

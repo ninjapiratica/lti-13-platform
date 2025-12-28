@@ -1,83 +1,25 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using NP.Lti13Platform.Core.Models;
 using System.Text.Json.Serialization;
 
-namespace NP.Lti13Platform.Core.Scopes;
+namespace NP.Lti13Platform.Core.Claims;
 
 /// <summary>
-/// Represents an LTI message that can be sent between a platform and tool.
-/// This follows the JWT format as defined in the LTI 1.3 Core specification and includes
-/// standard OpenID Connect claims along with LTI-specific claims.
+/// Defines a set of standard claims representing user identity information, such as name, email, and contact details,
+/// typically used in authentication and authorization scenarios.
 /// </summary>
-public interface ILtiMessage
+/// <remarks>This interface models the standard OpenID Connect user claims, providing strongly-typed access to
+/// commonly used identity attributes. Implementations may return null for claims that are not available or not provided
+/// by the identity provider. The properties correspond to standard OpenID Connect claim names and are intended for use
+/// in scenarios where interoperable user profile information is required.</remarks>
+public interface IUserIdentityClaims
 {
-    /// <summary>
-    /// Gets or sets the issuer of the message.
-    /// Issuer identifier of the platform instance initiating the launch.
-    /// Required for all messages.
-    /// </summary>
-    [JsonPropertyName("iss")]
-    public string Issuer { get; }
-
-    /// <summary>
-    /// Gets or sets the audience of the message.
-    /// OAuth 2.0 Client ID of the tool deployment that is the audience for this message.
-    /// Required for all messages.
-    /// </summary>
-    [JsonPropertyName("aud")]
-    public string Audience { get; }
-
-    /// <summary>
-    /// Gets the expiration date as a Unix timestamp.
-    /// Time at which the JWT MUST NOT be accepted for processing.
-    /// Required for all messages.
-    /// </summary>
-    [JsonPropertyName("exp")]
-    public long ExpirationDateUnix => new DateTimeOffset(ExpirationDate).ToUnixTimeSeconds();
-
-    /// <summary>
-    /// Gets or sets the expiration date of the message.
-    /// </summary>
-    [JsonIgnore]
-    public DateTime ExpirationDate { get; }
-
-    /// <summary>
-    /// Gets the issued date as a Unix timestamp.
-    /// Time at which the JWT was issued.
-    /// Required for all messages.
-    /// </summary>
-    [JsonPropertyName("iat")]
-    public long IssuedDateUnix => new DateTimeOffset(IssuedDate).ToUnixTimeSeconds();
-
-    /// <summary>
-    /// Gets or sets the issued date of the message.
-    /// </summary>
-    [JsonIgnore]
-    public DateTime IssuedDate { get; }
-
-    /// <summary>
-    /// Gets or sets the nonce of the message.
-    /// String value used to associate a Client session with an ID Token and to mitigate replay attacks.
-    /// This is a unique value for each launch from a given issuer.
-    /// Required for all messages.
-    /// </summary>
-    [JsonPropertyName("nonce")]
-    public string Nonce { get; }
-
-    /// <summary>
-    /// Gets or sets the message type.
-    /// String indicating what type of LTI message is being sent.
-    /// Required for all messages.
-    /// </summary>
-    [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/message_type")]
-    public string MessageType { get; }
-
     /// <summary>
     /// Gets or sets the subject of the message.
     /// Locally unique and never reassigned identifier within the Issuer for the End-User.
     /// The platform MAY set this value as appropriate.
     /// </summary>
     [JsonPropertyName("sub")]
-    public string? Subject { get; }
+    public string? Subject { get; set; }
 
     /// <summary>
     /// Gets or sets the user's full name.
@@ -85,7 +27,7 @@ public interface ILtiMessage
     /// ordered according to the End-User's locale and preferences.
     /// </summary>
     [JsonPropertyName("name")]
-    public string? Name { get; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the user's given name.
@@ -93,7 +35,7 @@ public interface ILtiMessage
     /// given names; all can be present, with the names being separated by space characters.
     /// </summary>
     [JsonPropertyName("given_name")]
-    public string? GivenName { get; }
+    public string? GivenName { get; set; }
 
     /// <summary>
     /// Gets or sets the user's family name.
@@ -101,7 +43,7 @@ public interface ILtiMessage
     /// family names or no family name; all can be present, with the names being separated by space characters.
     /// </summary>
     [JsonPropertyName("family_name")]
-    public string? FamilyName { get; }
+    public string? FamilyName { get; set; }
 
     /// <summary>
     /// Gets or sets the user's middle name.
@@ -110,7 +52,7 @@ public interface ILtiMessage
     /// in some cultures, middle names are not used.
     /// </summary>
     [JsonPropertyName("middle_name")]
-    public string? MiddleName { get; }
+    public string? MiddleName { get; set; }
 
     /// <summary>
     /// Gets or sets the user's nickname.
@@ -118,7 +60,7 @@ public interface ILtiMessage
     /// For instance, a nickname value of Mike might be returned alongside a given_name value of Michael.
     /// </summary>
     [JsonPropertyName("nickname")]
-    public string? Nickname { get;   }
+    public string? Nickname { get; set; }
 
     /// <summary>
     /// Gets or sets the user's preferred username.
@@ -126,14 +68,14 @@ public interface ILtiMessage
     /// This value MAY be any valid JSON string including special characters such as @, /, or whitespace.
     /// </summary>
     [JsonPropertyName("preferred_username")]
-    public string? PreferredUsername { get; }
+    public string? PreferredUsername { get; set; }
 
     /// <summary>
     /// Gets or sets the URL to the user's profile.
     /// URL of the End-User's profile page. The contents of this Web page SHOULD be about the End-User.
     /// </summary>
     [JsonPropertyName("profile")]
-    public string? Profile { get; }
+    public string? Profile { get; set; }
 
     /// <summary>
     /// Gets or sets the URL to the user's picture.
@@ -141,7 +83,7 @@ public interface ILtiMessage
     /// JPEG, or GIF image file), rather than to a Web page containing an image.
     /// </summary>
     [JsonPropertyName("picture")]
-    public string? Picture { get; }
+    public string? Picture { get; set; }
 
     /// <summary>
     /// Gets or sets the URL to the user's website.
@@ -149,21 +91,21 @@ public interface ILtiMessage
     /// by the End-User or an organization that the End-User is affiliated with.
     /// </summary>
     [JsonPropertyName("website")]
-    public string? Website { get; }
+    public string? Website { get; set; }
 
     /// <summary>
     /// Gets or sets the user's email address.
     /// End-User's preferred e-mail address. Its value MUST conform to the RFC 5322 addr-spec syntax.
     /// </summary>
     [JsonPropertyName("email")]
-    public string? Email { get; }
+    public string? Email { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the user's email address has been verified.
     /// True if the End-User's e-mail address has been verified; otherwise false.
     /// </summary>
     [JsonPropertyName("email_verified")]
-    public bool? EmailVerified { get; }
+    public bool? EmailVerified { get; set; }
 
     /// <summary>
     /// Gets or sets the user's gender.
@@ -171,7 +113,7 @@ public interface ILtiMessage
     /// Other values MAY be used when neither of the defined values are applicable.
     /// </summary>
     [JsonPropertyName("gender")]
-    public string? Gender { get; }
+    public string? Gender { get; set; }
 
     /// <summary>
     /// Gets or sets the user's birthdate.
@@ -179,7 +121,7 @@ public interface ILtiMessage
     /// The year MAY be 0000, indicating that it is omitted.
     /// </summary>
     [JsonPropertyName("birthdate")]
-    public DateOnly? Birthdate { get; }
+    public DateOnly? Birthdate { get; set; }
 
     /// <summary>
     /// Gets or sets the user's timezone.
@@ -187,7 +129,7 @@ public interface ILtiMessage
     /// For example, Europe/Paris or America/Los_Angeles.
     /// </summary>
     [JsonPropertyName("zoneinfo")]
-    public string? TimeZone { get; }
+    public string? TimeZone { get; set; }
 
     /// <summary>
     /// Gets or sets the user's locale.
@@ -196,7 +138,7 @@ public interface ILtiMessage
     /// separated by a dash. For example, en-US or fr-CA.
     /// </summary>
     [JsonPropertyName("locale")]
-    public string? Locale { get; }
+    public string? Locale { get; set; }
 
     /// <summary>
     /// Gets or sets the user's phone number.
@@ -204,27 +146,27 @@ public interface ILtiMessage
     /// for example, +1 (425) 555-1212 or +56 (2) 687 2400.
     /// </summary>
     [JsonPropertyName("phone_number")]
-    public string? PhoneNumber { get; }
+    public string? PhoneNumber { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the user's phone number has been verified.
     /// True if the End-User's phone number has been verified; otherwise false.
     /// </summary>
     [JsonPropertyName("phone_number_verified")]
-    public bool? PhoneNumberVerified { get; }
+    public bool? PhoneNumberVerified { get; set; }
 
     /// <summary>
     /// Gets or sets the user's address information.
     /// End-User's preferred postal address as defined in OpenID Connect Core.
     /// </summary>
     [JsonPropertyName("address")]
-    public AddressClaim? Address { get; }
+    public AddressClaim? Address { get; set; }
 
     /// <summary>
     /// Gets or sets the time when the user's information was last updated.
     /// </summary>
     [JsonIgnore]
-    public DateTime? UpdatedAt { get; }
+    public DateTime? UpdatedAt { get; set; }
 
     /// <summary>
     /// Gets the time when the user's information was last updated as a Unix timestamp.
@@ -245,7 +187,7 @@ public record AddressClaim
     /// This field MAY contain multiple lines, separated by newlines.
     /// </summary>
     [JsonPropertyName("formatted")]
-    public string? Formatted { get; }
+    public string? Formatted { get; set; }
 
     /// <summary>
     /// Gets or sets the street address.
@@ -253,127 +195,89 @@ public record AddressClaim
     /// Post Office Box, and multi-line extended street address information.
     /// </summary>
     [JsonPropertyName("street_address")]
-    public string? StreetAddress { get; }
+    public string? StreetAddress { get; set; }
 
     /// <summary>
     /// Gets or sets the locality (city).
     /// City or locality component.
     /// </summary>
     [JsonPropertyName("locality")]
-    public string? Locality { get; }
+    public string? Locality { get; set; }
 
     /// <summary>
     /// Gets or sets the region (state).
     /// State, province, prefecture, or region component.
     /// </summary>
     [JsonPropertyName("region")]
-    public string? Region { get; }
+    public string? Region { get; set; }
 
     /// <summary>
     /// Gets or sets the postal code.
     /// Zip code or postal code component.
     /// </summary>
     [JsonPropertyName("postal_code")]
-    public string? PostalCode { get; }
+    public string? PostalCode { get; set; }
 
     /// <summary>
     /// Gets or sets the country.
     /// Country name component.
     /// </summary>
     [JsonPropertyName("country")]
-    public string? Country { get; }
+    public string? Country { get; set; }
 }
 
-/// <summary>
-/// Represents the result of an LTI (Learning Tools Interoperability) message operation, indicating either success with
-/// a message or failure with an error message.
-/// </summary>
-/// <remarks>This abstract base class encapsulates the outcome of processing an LTI message. Use the derived types
-/// to access the specific result details. The properties indicate whether the operation succeeded and provide access to
-/// the resulting message or error information as appropriate.</remarks>
-public abstract class LtiMessageResult
+public static partial class ClaimsExtensions
 {
     /// <summary>
-    /// Gets the success status of the LTI message result.
+    /// Populates the identity claims of a user object based on the specified permissions and user information.
     /// </summary>
-    [MemberNotNullWhen(true, nameof(LtiMessage))]
-    public bool IsSuccess { get; }
-
-    /// <summary>
-    /// Gets the success status of the LTI message result.
-    /// </summary>
-    [MemberNotNullWhen(true, nameof(ErrorMessage))]
-    public bool IsFailure { get; }
-
-    /// <summary>
-    /// Gets the LTI message if the operation was successful; otherwise, null.
-    /// </summary>
-    public object? LtiMessage { get; }
-
-    /// <summary>
-    /// Gets the error message if the operation failed; otherwise, null.
-    /// </summary>
-    public string? ErrorMessage { get; }
-
-    internal LtiMessageResult()
+    /// <remarks>Claims are only populated for fields permitted by <paramref name="userPermissions"/>;
+    /// otherwise, the corresponding properties are set to <see langword="null"/>. This method does not create a new
+    /// object but modifies and returns the provided instance. Thread safety is not guaranteed.</remarks>
+    /// <typeparam name="T">The type of the user identity claims object to populate. Must implement <see cref="IUserIdentityClaims"/>.</typeparam>
+    /// <param name="obj">The user identity claims object to be filled with claim values. Must not be <see langword="null"/>.</param>
+    /// <param name="userPermissions">An object specifying which user claims are permitted to be included. Determines which fields are populated.</param>
+    /// <param name="user">The user whose information is used to populate the claims. Must not be <see langword="null"/>.</param>
+    /// <returns>The same user identity claims object with its properties populated according to the provided permissions and user information.</returns>
+    public static T WithUserIdentityClaims<T>(
+        this T obj,
+        UserPermissions userPermissions,
+        User user)
+        where T : IUserIdentityClaims
     {
+        obj.Subject = user.Id.ToString();
+
+        obj.Address = user.Address == null || !userPermissions.Address
+            ? null
+            : new AddressClaim
+            {
+                Country = userPermissions.AddressCountry ? user.Address.Country : null,
+                Formatted = userPermissions.AddressFormatted ? user.Address.Formatted : null,
+                Locality = userPermissions.AddressLocality ? user.Address.Locality : null,
+                PostalCode = userPermissions.AddressPostalCode ? user.Address.PostalCode : null,
+                Region = userPermissions.AddressRegion ? user.Address.Region : null,
+                StreetAddress = userPermissions.AddressStreetAddress ? user.Address.StreetAddress : null
+            };
+
+        obj.Birthdate = userPermissions.Birthdate ? user.Birthdate : null;
+        obj.Email = userPermissions.Email ? user.Email : null;
+        obj.EmailVerified = userPermissions.EmailVerified ? user.EmailVerified : null;
+        obj.FamilyName = userPermissions.FamilyName ? user.FamilyName : null;
+        obj.Gender = userPermissions.Gender ? user.Gender : null;
+        obj.GivenName = userPermissions.GivenName ? user.GivenName : null;
+        obj.Locale = userPermissions.Locale ? user.Locale : null;
+        obj.MiddleName = userPermissions.MiddleName ? user.MiddleName : null;
+        obj.Name = userPermissions.Name ? user.Name : null;
+        obj.Nickname = userPermissions.Nickname ? user.Nickname : null;
+        obj.PhoneNumber = userPermissions.PhoneNumber ? user.PhoneNumber : null;
+        obj.PhoneNumberVerified = userPermissions.PhoneNumberVerified ? user.PhoneNumberVerified : null;
+        obj.Picture = userPermissions.Picture ? user.Picture?.OriginalString : null;
+        obj.PreferredUsername = userPermissions.PreferredUsername ? user.PreferredUsername : null;
+        obj.Profile = userPermissions.Profile ? user.Profile?.OriginalString : null;
+        obj.TimeZone = userPermissions.TimeZone ? user.TimeZone : null;
+        obj.UpdatedAt = userPermissions.UpdatedAt ? user.UpdatedAt : null;
+        obj.Website = userPermissions.Website ? user.Website?.OriginalString : null;
+
+        return obj;
     }
-
-    internal LtiMessageResult(object ltiMessage)
-    {
-        IsSuccess = true;
-        LtiMessage = ltiMessage;
-    }
-
-    internal LtiMessageResult(string errorMessage)
-    {
-        IsFailure = true;
-        ErrorMessage = errorMessage;
-    }
-}
-
-/// <summary>
-/// Represents the result of an LTI message operation.
-/// </summary>
-public class LtiMessageResult<T> : LtiMessageResult where T : ILtiMessage
-{
-    /// <summary>
-    /// Gets the LTI message if the operation was successful; otherwise, null.
-    /// </summary>
-    public new T? LtiMessage { get; }
-
-    internal LtiMessageResult()
-    {
-    }
-
-    internal LtiMessageResult(T ltiMessage)
-        : base(ltiMessage)
-    {
-    }
-
-    internal LtiMessageResult(string errorMessage)
-        : base(errorMessage)
-    {
-    }
-
-    /// <summary>
-    /// Creates a result indicating no operation was performed.
-    /// </summary>
-    /// <returns>An <see cref="LtiMessageResult{T}"/>.</returns>
-    public static LtiMessageResult<T> None() => new();
-
-    /// <summary>
-    /// Creates a failed result with the specified error message.
-    /// </summary>
-    /// <param name="errorMessage">The error message that describes the reason for the failure. Cannot be null or empty.</param>
-    /// <returns>A failed <see cref="LtiMessageResult{T}"/> instance containing the specified error message.</returns>
-    public static LtiMessageResult<T> Fail(string errorMessage) => new(errorMessage);
-
-    /// <summary>
-    /// Creates a successful result containing the specified LTI message.
-    /// </summary>
-    /// <param name="ltiMessage">The LTI message to include in the result. Cannot be null.</param>
-    /// <returns>A new instance of <see cref="LtiMessageResult{T}"/> representing a successful result that contains the specified
-    /// LTI message.</returns>
-    public static LtiMessageResult<T> Success(T ltiMessage) => new(ltiMessage);
 }

@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Scopes;
+using NP.Lti13Platform.Core.Claims;
 using NP.Lti13Platform.Core.Services;
 using System.Collections;
 using System.Net.Mime;
@@ -19,6 +19,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Web;
+using Microsoft.Extensions.Logging;
 
 namespace NP.Lti13Platform.Core;
 
@@ -65,11 +66,12 @@ public static class Startup
         builder.Services.AddTransient<ILti13UrlService, DefaultLti13UrlService>();
 
         builder
-            .ExtendLti13Message<IResourceLinkMessage, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<IPlatformMessage, PlatformPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<IContextMessage, ContextPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<ICustomMessage, CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<IRolesMessage, RolesPopulator>(Lti13MessageType.LtiResourceLinkRequest);
+            .ExtendLti13Message<IResourceLinkClaims, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+            .ExtendLti13Message<IPlatformInstanceClaims, PlatformPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+            .ExtendLti13Message<IContextClaims, ContextClaims>(Lti13MessageType.LtiResourceLinkRequest)
+            .ExtendLti13Message<ICustomClaims, CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest)
+            .ExtendLti13Message<IRolesClaims, RolesPopulator>(Lti13MessageType.LtiResourceLinkRequest);
+
 
         builder.Services.AddAuthentication()
             .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
@@ -463,24 +465,24 @@ public static class Startup
             });
         }
 
-        ILtiMessage? ltiMessage = null;
+        object? ltiMessage = null;
         LtiBadRequest? failedLtiMessageResult = null;
         foreach (var ltiMessageHandler in ltiMessageHandlers)
         {
             var result = await ltiMessageHandler.HandleLtiMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, cancellationToken);
 
-            if (result.IsSuccess)
+            if (result is LtiMessageResult.SuccessResult successResult)
             {
-                ltiMessage = result.LtiMessage;
+                ltiMessage = successResult.LtiMessage;
                 failedLtiMessageResult = null;
                 break;
             }
-            else if (result.IsFailure)
+            else if (result is LtiMessageResult.ErrorResult errorResult)
             {
                 failedLtiMessageResult = new LtiBadRequest
                 {
                     Error = INVALID_REQUEST,
-                    Error_Description = result.ErrorMessage,
+                    Error_Description = errorResult.ErrorMessage,
                     Error_Uri = "https://www.1edtech.org/standards/lti"
                 };
             }
