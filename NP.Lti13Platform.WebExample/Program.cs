@@ -192,11 +192,6 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Contexts.SingleOrDefault(c => c.Id == contextId));
         }
 
-        Task<User?> ILti13CoreDataService.GetUserAsync(UserId userId, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(Users.SingleOrDefault(u => u.Id == userId));
-        }
-
         Task<Membership?> ILti13CoreDataService.GetMembershipAsync(ContextId contextId, UserId userId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Memberships.SingleOrDefault(m => m.ContextId == contextId && m.UserId == userId));
@@ -385,24 +380,6 @@ namespace NP.Lti13Platform.WebExample
             LineItems.RemoveAll(i => i.Id == lineItemId);
 
             return Task.CompletedTask;
-        }
-
-        Task<CustomPermissions> ILti13CoreDataService.GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId userId, UserId? actualUserId, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(new CustomPermissions { UserId = true, UserUsername = true });
-        }
-
-        /// <summary>
-        /// Gets the user permissions for a specific user.
-        /// </summary>
-        /// <param name="deploymentId">The deployment ID.</param>
-        /// <param name="contextId">The context ID.</param>
-        /// <param name="userId">The user ID.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The user's permissions.</returns>
-        public Task<UserPermissions> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId userId, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(new UserPermissions { UserId = userId, FamilyName = true, Name = true, GivenName = true });
         }
 
         /// <summary>

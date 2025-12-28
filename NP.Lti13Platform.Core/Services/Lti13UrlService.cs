@@ -120,7 +120,7 @@ public class DefaultLti13UrlService(ILti13TokenConfigService tokenService, ILti1
         ContextId? contextId = null,
         ResourceLinkId? resourceLinkId = null,
         string? messageHint = null,
-        CancellationToken cancellationToken = default) => new LtiLaunch(
+        CancellationToken cancellationToken = default) => new(
             tool,
             (await tokenService.GetTokenConfigAsync(tool.ClientId, cancellationToken)).Issuer,
             targetLinkUri,

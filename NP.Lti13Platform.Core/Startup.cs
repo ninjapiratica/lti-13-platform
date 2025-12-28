@@ -7,10 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NP.Lti13Platform.Core.Claims;
 using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Claims;
 using NP.Lti13Platform.Core.Services;
 using System.Collections;
 using System.Net.Mime;
@@ -19,7 +19,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Web;
-using Microsoft.Extensions.Logging;
 
 namespace NP.Lti13Platform.Core;
 
@@ -64,14 +63,6 @@ public static class Startup
         var builder = new Lti13PlatformBuilder(serviceCollection);
 
         builder.Services.AddTransient<ILti13UrlService, DefaultLti13UrlService>();
-
-        builder
-            .ExtendLti13Message<IResourceLinkClaims, ResourceLinkPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<IPlatformInstanceClaims, PlatformPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<IContextClaims, ContextClaims>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<ICustomClaims, CustomPopulator>(Lti13MessageType.LtiResourceLinkRequest)
-            .ExtendLti13Message<IRolesClaims, RolesPopulator>(Lti13MessageType.LtiResourceLinkRequest);
-
 
         builder.Services.AddAuthentication()
             .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
@@ -127,6 +118,39 @@ public static class Startup
     public static Lti13PlatformBuilder WithLti13TokenConfigService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILti13TokenConfigService
     {
         builder.Services.Add(new ServiceDescriptor(typeof(ILti13TokenConfigService), typeof(T), serviceLifetime));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a message handler of the specified type with the platform builder using the given service lifetime.
+    /// </summary>
+    /// <remarks>Use this method to add a custom implementation of <see cref="ILtiMessageHandler"/> to the
+    /// platform's dependency injection container. Multiple handlers can be registered by calling this method multiple
+    /// times with different types.</remarks>
+    /// <typeparam name="T">The type of message handler to register. Must implement <see cref="ILtiMessageHandler"/>.</typeparam>
+    /// <param name="builder">The platform builder to configure with the message handler.</param>
+    /// <param name="serviceLifetime">The service lifetime to use when registering the message handler. Defaults to <see cref="ServiceLifetime.Transient"/>.</param>
+    /// <returns>The same <see cref="Lti13PlatformBuilder"/> instance, enabling further configuration.</returns>
+    public static Lti13PlatformBuilder WithMessageHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : ILtiMessageHandler
+    {
+        builder.Services.Add(new ServiceDescriptor(typeof(ILtiMessageHandler), typeof(T), serviceLifetime));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an LTI 1.3 resource link message handler and its associated data service with the platform builder.
+    /// </summary>
+    /// <remarks>This method registers <typeparamref name="T"/> as the implementation for <see cref="ILti13ResourceLinkMessageDataService"/>
+    /// and adds <see cref="LtiResourceLinkMessageHandler"/> for handling LTI resource link messages.
+    /// Call this method during platform setup to enable support for LTI 1.3 resource link messages.</remarks>
+    /// <typeparam name="T">The type that implements <see cref="ILti13ResourceLinkMessageDataService"/> and will be used to handle resource link message data.</typeparam>
+    /// <param name="builder">The platform builder to configure with the resource link message handler and data service.</param>
+    /// <param name="serviceLifetime">The lifetime with which to register the resource link message data service. Defaults to <see cref="ServiceLifetime.Transient"/>.</param>
+    /// <returns>The same <see cref="Lti13PlatformBuilder"/> instance, enabling further configuration.</returns>
+    public static Lti13PlatformBuilder WithLtiResourceLinkMessageHandler<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T: ILti13ResourceLinkMessageDataService
+    {
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13ResourceLinkMessageDataService), typeof(T), serviceLifetime));
+        builder.Services.AddTransient<ILtiMessageHandler, LtiResourceLinkMessageHandler>();
         return builder;
     }
 
@@ -345,17 +369,21 @@ public static class Startup
             .WithDescription("The tool will request from this endpoint a token that will be used to authorize calls into other LTI 1.3 services.");
 
         endpointRouteBuilder.MapGet(config.AuthenticationUrl,
-            async ([AsParameters] AuthenticationRequest queryString, ILti13CoreDataService dataService, IEnumerable<ILtiMessageHandler> ltiMessageHandlers, CancellationToken cancellationToken) =>
-            {
-                return await HandleAuthentication(queryString, dataService, ltiMessageHandlers, cancellationToken);
-            })
+            ([AsParameters] AuthenticationRequest queryString,
+            ILti13CoreDataService dataService,
+            IEnumerable<ILtiMessageHandler> ltiMessageHandlers,
+            CancellationToken cancellationToken) =>
+                HandleAuthentication(queryString, dataService, ltiMessageHandlers, cancellationToken)
+            )
             .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_GET);
 
         endpointRouteBuilder.MapPost(config.AuthenticationUrl,
-            async ([FromForm] AuthenticationRequest form, ILti13CoreDataService dataService, IEnumerable<ILtiMessageHandler> ltiMessageHandlers, CancellationToken cancellationToken) =>
-            {
-                return await HandleAuthentication(form, dataService, ltiMessageHandlers, cancellationToken);
-            })
+            ([FromForm] AuthenticationRequest form,
+            ILti13CoreDataService dataService,
+            IEnumerable<ILtiMessageHandler> ltiMessageHandlers,
+            CancellationToken cancellationToken) =>
+                HandleAuthentication(form, dataService, ltiMessageHandlers, cancellationToken)
+            )
             .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_POST);
 
         return endpointRouteBuilder;
@@ -469,7 +497,7 @@ public static class Startup
         LtiBadRequest? failedLtiMessageResult = null;
         foreach (var ltiMessageHandler in ltiMessageHandlers)
         {
-            var result = await ltiMessageHandler.HandleLtiMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, cancellationToken);
+            var result = await ltiMessageHandler.HandleLtiMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
 
             if (result is LtiMessageResult.SuccessResult successResult)
             {

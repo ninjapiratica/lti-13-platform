@@ -1,23 +1,51 @@
 ﻿using Microsoft.Extensions.Logging;
 using NP.Lti13Platform.Core.Claims;
-using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
+using System.Text.Json;
 
 namespace NP.Lti13Platform.Core;
 
+/// <summary>
+/// Defines a contract for handling Learning Tools Interoperability (LTI) messages asynchronously and returning the result of the message processing operation.
+/// </summary>
 public interface ILtiMessageHandler
 {
+    /// <summary>
+    /// Processes an LTI (Learning Tools Interoperability) message asynchronously and returns the result of the message handling operation.
+    /// </summary>
+    /// <param name="loginHint">A unique identifier provided by the platform to correlate the login request with the user. Cannot be null or empty.</param>
+    /// <param name="ltiMessageHint">An optional hint provided by the platform to help identify the specific LTI message or context. May be null.</param>
+    /// <param name="tool">The tool configuration used to validate and process the LTI message. Cannot be null.</param>
+    /// <param name="nonce">A unique, random string used to prevent replay attacks. Cannot be null or empty.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an LtiMessageResult describing the outcome of the message handling.</returns>
     Task<LtiMessageResult> HandleLtiMessageAsync(string loginHint, string? ltiMessageHint, Tool tool, string nonce, CancellationToken cancellationToken = default);
 }
 
 internal class LtiResourceLinkMessageHandler(
-    ILti13CoreDataService dataService,
+    ILti13ResourceLinkMessageDataService dataService,
     ILti13TokenConfigService tokenConfigService,
     ILti13PlatformService platformService,
     ILogger<LtiResourceLinkMessageHandler> logger)
     : ILtiMessageHandler
 {
+    public static readonly string MessageType = "LtiResourceLinkRequest";
+
+    private static bool TryDeserialize<T>(string jsonString, out T? deserilalized)
+    {
+        try
+        {
+            deserilalized = JsonSerializer.Deserialize<T>(jsonString);
+            return true;
+        }
+        catch (JsonException)
+        {
+            deserilalized = default;
+            return false;
+        }
+    }
+
     public async Task<LtiMessageResult> HandleLtiMessageAsync(
         string loginHint,
         string? ltiMessageHint,
@@ -25,15 +53,16 @@ internal class LtiResourceLinkMessageHandler(
         string nonce,
         CancellationToken cancellationToken = default)
     {
-        if (loginHint.Split('|', 2, StringSplitOptions.TrimEntries) is not [var userIdString, var actualUserIdString, var isAnonymousString]
+        if (loginHint.Split('|', 3, StringSplitOptions.TrimEntries) is not [var userIdString, var actualUserIdString, var isAnonymousString]
             || !bool.TryParse(isAnonymousString, out var isAnonymous))
         {
             return LtiMessageResult.None();
         }
 
-        if (ltiMessageHint?.Split('|', 2, StringSplitOptions.TrimEntries) is not [var messageTypeString, var resourceLinkIdString]
-            || messageTypeString != Lti13MessageType.LtiResourceLinkRequest
-            || ResourceLinkId.TryParse(resourceLinkIdString, null, out var resourceLinkId))
+        if (ltiMessageHint?.Split('|', 3, StringSplitOptions.TrimEntries) is not [var messageTypeString, var resourceLinkIdString, var launchPresentationOverrideString]
+            || messageTypeString != MessageType
+            || ResourceLinkId.TryParse(resourceLinkIdString, null, out var resourceLinkId)
+            || TryDeserialize<LaunchPresentationOverride>(launchPresentationOverrideString, out var launchPresentationOverride))
         {
             return LtiMessageResult.None();
         }
@@ -95,7 +124,7 @@ internal class LtiResourceLinkMessageHandler(
 
         var ltiMessage = new LtiResourceLinkRequestMessage()
             .WithLtiMessageClaims(
-                Lti13MessageType.LtiResourceLinkRequest,
+                MessageType,
                 nonce,
                 tool.ClientId,
                 tokenConfig)
@@ -104,7 +133,6 @@ internal class LtiResourceLinkMessageHandler(
             .WithTargetLinkUriClaims("")
             .WithResourceLinkClaims(resourceLink)
             .WithContextClaims(context)
-            //.WithLaunchPresentationClaims(launchPresentation)
             .WithCustomClaims(
                 customPermissions,
                 platform,
@@ -124,6 +152,12 @@ internal class LtiResourceLinkMessageHandler(
         {
             ltiMessage = ltiMessage
                 .WithPlatformInstanceClaims(platform);
+        }
+
+        if (launchPresentationOverride != null)
+        {
+            ltiMessage = ltiMessage
+               .WithLaunchPresentationClaims(launchPresentationOverride);
         }
 
         if (userMembership != null)
