@@ -24,31 +24,16 @@ public static class Startup
     /// </summary>
     /// <param name="services">The service collection to add the LTI 1.3 platform services to.</param>
     /// <returns>A builder object that allows further configuration of the LTI 1.3 platform services.</returns>
-    public static Lti13PlatformBuilder AddLti13Platform(this IServiceCollection services)
-    {
-        return services
-            .AddLti13PlatformCore()
-            .AddLti13PlatformDeepLinking()
-            .AddLti13PlatformNameRoleProvisioningServices()
-            .AddLti13PlatformAssignmentGradeServices();
-    }
-
-    /// <summary>
-    /// Configures a custom implementation of the LTI 1.3 data service for all related services.
-    /// </summary>
-    /// <typeparam name="T">The type implementing the LTI 1.3 data service interfaces.</typeparam>
-    /// <param name="builder">The LTI 1.3 platform builder to configure.</param>
-    /// <param name="serviceLifetime">The lifetime of the service to register.</param>
-    /// <returns>The configured LTI 1.3 platform builder.</returns>
-    public static Lti13PlatformBuilder WithLti13DataService<T>(this Lti13PlatformBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+    public static IServiceCollection AddLti13PlatformWithDefaults<T>(this IServiceCollection services)
         where T : ILti13DataService
     {
-        builder.WithLti13CoreDataService<T>(serviceLifetime)
-            .WithLti13DeepLinkingDataService<T>(serviceLifetime)
-            .WithLti13NameRoleProvisioningDataService<T>(serviceLifetime)
-            .WithLti13AssignmentGradeDataService<T>(serviceLifetime);
-
-        return builder;
+        return services
+            .AddLti13PlatformCore<T>()
+            .WithDefaultLtiResourceLinkMessageHandler<T>()
+            .AddLti13PlatformDeepLinking<T>()
+            .WithDefaultDeepLinkingRequestMessageHandler<T>()
+            .AddLti13PlatformNameRoleProvisioningServices<T>()
+            .AddLti13PlatformAssignmentGradeServices<T>();
     }
 
     /// <summary>

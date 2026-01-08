@@ -73,12 +73,14 @@ app.Run();
 namespace NP.Lti13Platform.WebExample
 {
     using Microsoft.IdentityModel.Tokens;
+    using NP.Lti13Platform.AssignmentGradeServices.Constants;
     using NP.Lti13Platform.AssignmentGradeServices.Services;
     using NP.Lti13Platform.Core.Constants;
     using NP.Lti13Platform.Core.Models;
     using NP.Lti13Platform.Core.Services;
     using NP.Lti13Platform.DeepLinking.Models;
     using NP.Lti13Platform.DeepLinking.Services;
+    using NP.Lti13Platform.NameRoleProvisioningServices.Constants;
     using NP.Lti13Platform.NameRoleProvisioningServices.Services;
     using System.Security.Cryptography;
 
@@ -140,11 +142,11 @@ namespace NP.Lti13Platform.WebExample
                 Jwks = "https://saltire.lti.app/tool/jwks/s8cd1a33052f22f98e58369762c6373aa",
                 ServiceScopes =
                 [
-                    AssignmentGradeServices.ServiceScopes.LineItem,
-                    AssignmentGradeServices.ServiceScopes.LineItemReadOnly,
-                    AssignmentGradeServices.ServiceScopes.ResultReadOnly,
-                    AssignmentGradeServices.ServiceScopes.Score,
-                    NameRoleProvisioningServices.Lti13ServiceScopes.MembershipReadOnly
+                    ServiceScopes.LineItem,
+                    ServiceScopes.LineItemReadOnly,
+                    ServiceScopes.ResultReadOnly,
+                    ServiceScopes.Score,
+                    Lti13ServiceScopes.MembershipReadOnly
                 ]
             });
 
@@ -192,11 +194,6 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Contexts.SingleOrDefault(c => c.Id == contextId));
         }
 
-        Task<Membership?> ILti13CoreDataService.GetMembershipAsync(ContextId contextId, UserId userId, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(Memberships.SingleOrDefault(m => m.ContextId == contextId && m.UserId == userId));
-        }
-
         Task<ResourceLink?> ILti13CoreDataService.GetResourceLinkAsync(ResourceLinkId resourceLinkId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ResourceLinks.SingleOrDefault(r => r.Id == resourceLinkId));
@@ -233,11 +230,6 @@ namespace NP.Lti13Platform.WebExample
                 LineItems.Add(lineItem);
                 return Task.FromResult(lineItem.Id);
             }
-        }
-
-        async Task<Attempt?> ILti13CoreDataService.GetAttemptAsync(ResourceLinkId resourceLinkId, UserId userId, CancellationToken cancellationToken)
-        {
-            return await Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
 
         Task<PartialList<Grade>> ILti13AssignmentGradeDataService.GetGradesAsync(LineItemId lineItemId, int pageIndex, int limit, UserId? userId, CancellationToken cancellationToken)

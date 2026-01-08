@@ -37,8 +37,8 @@ public interface ILti13ToolSecurityService
 
 internal class DefaultLti13ToolSecurityService(ILti13TokenConfigService tokenConfigService, LinkGenerator linkGenerator) : ILti13ToolSecurityService
 {
-    public async Task<Lti13ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri baseUrl, CancellationToken cancellationToken)
-        => await GetToolSecurityAsync(clientId, baseUrl, baseUrl, baseUrl, cancellationToken);
+    public Task<Lti13ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri baseUrl, CancellationToken cancellationToken)
+        => GetToolSecurityAsync(clientId, baseUrl, baseUrl, baseUrl, cancellationToken);
 
     public async Task<Lti13ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri authenticationBaseUrl, Uri tokenBaseUrl, Uri jwksBaseUrl, CancellationToken cancellationToken = default)
     {

@@ -11,4 +11,11 @@ namespace NP.Lti13Platform;
 /// <remarks>
 /// This interface combines multiple LTI 1.3 related services, allowing implementations to manage various aspects of LTI 1.3 interactions in a unified manner. It extends the capabilities of <see cref="ILti13CoreDataService"/>, <see cref="ILti13DeepLinkingDataService"/>, <see cref="ILti13NameRoleProvisioningDataService"/>, and <see cref="ILti13AssignmentGradeDataService"/>.
 /// </remarks>
-public interface ILti13DataService : ILti13CoreDataService, ILti13DeepLinkingDataService, ILti13NameRoleProvisioningDataService, ILti13AssignmentGradeDataService { }
+public interface ILti13DataService
+    : ILti13CoreDataService,
+    ILti13ResourceLinkMessageDataService,
+    ILti13DeepLinkingRequestDataService,
+    ILti13DeepLinkingResponseDataService,
+    ILti13NameRoleProvisioningDataService,
+    ILti13AssignmentGradeDataService
+{ }
