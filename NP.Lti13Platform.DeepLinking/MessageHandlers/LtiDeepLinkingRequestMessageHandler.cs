@@ -37,11 +37,11 @@ public interface ILtiDeepLinkingRequestMessageHandler : ILtiMessageHandler
     /// <returns>A task that represents the asynchronous operation. The task result contains the <see cref="LtiLaunch"/> if a matching launch is found; otherwise, null.</returns>
     Task<LtiLaunch?> GetLtiLaunchAsync(
         DeploymentId deploymentId,
-        ContextId? contextId,
-        UserId? userId,
-        UserId? actualUserId,
-        bool isAnonymous,
-        Uri? deepLinkingUrl,
+        ContextId? contextId = null,
+        UserId? userId = null,
+        UserId? actualUserId = null,
+        bool isAnonymous = false,
+        Uri? deepLinkingUrl = null,
         LaunchPresentationOverride? launchPresentationOverride = null,
         DeepLinkingSettingsOverride? deepLinkingSettingsOverride = null,
         CancellationToken cancellationToken = default);

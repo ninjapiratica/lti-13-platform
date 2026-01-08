@@ -12,8 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddLti13Platform()
-    .WithLti13DataService<DataService>();
+    .AddLti13PlatformWithDefaults<DataService>();
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -179,27 +178,27 @@ namespace NP.Lti13Platform.WebExample
             });
         }
 
-        Task<Tool?> ILti13CoreDataService.GetToolAsync(ClientId clientId, CancellationToken cancellationToken)
+        public Task<Tool?> GetToolAsync(ClientId clientId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Tools.SingleOrDefault(t => t.ClientId == clientId));
         }
 
-        Task<Deployment?> ILti13CoreDataService.GetDeploymentAsync(DeploymentId deploymentId, CancellationToken cancellationToken)
+        public Task<Deployment?> GetDeploymentAsync(DeploymentId deploymentId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Deployments.SingleOrDefault(d => d.Id == deploymentId));
         }
 
-        Task<Context?> ILti13CoreDataService.GetContextAsync(ContextId contextId, CancellationToken cancellationToken)
+        public Task<Context?> GetContextAsync(ContextId contextId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Contexts.SingleOrDefault(c => c.Id == contextId));
         }
 
-        Task<ResourceLink?> ILti13CoreDataService.GetResourceLinkAsync(ResourceLinkId resourceLinkId, CancellationToken cancellationToken)
+        public Task<ResourceLink?> GetResourceLinkAsync(ResourceLinkId resourceLinkId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ResourceLinks.SingleOrDefault(r => r.Id == resourceLinkId));
         }
 
-        Task<PartialList<LineItem>> ILti13CoreDataService.GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId, ResourceLinkId? resourceLinkId, string? tag, CancellationToken cancellationToken)
+        public Task<PartialList<LineItem>> GetLineItemsAsync(DeploymentId deploymentId, ContextId contextId, int pageIndex, int limit, string? resourceId, ResourceLinkId? resourceLinkId, string? tag, CancellationToken cancellationToken)
         {
             var lineItems = LineItems.Where(li => li.DeploymentId == deploymentId && li.ContextId == contextId && (resourceId == null || li.ResourceId == resourceId) && (resourceLinkId == null || li.ResourceLinkId == resourceLinkId) && (tag == null || li.Tag == tag)).ToList();
 
@@ -232,7 +231,7 @@ namespace NP.Lti13Platform.WebExample
             }
         }
 
-        Task<PartialList<Grade>> ILti13AssignmentGradeDataService.GetGradesAsync(LineItemId lineItemId, int pageIndex, int limit, UserId? userId, CancellationToken cancellationToken)
+        public Task<PartialList<Grade>> GetGradesAsync(LineItemId lineItemId, int pageIndex, int limit, UserId? userId, CancellationToken cancellationToken)
         {
             var grades = Grades.Where(x => x.LineItemId == lineItemId && (userId == null || x.UserId == userId)).ToList();
 
@@ -243,7 +242,7 @@ namespace NP.Lti13Platform.WebExample
             });
         }
 
-        Task<Grade?> ILti13CoreDataService.GetGradeAsync(LineItemId lineItemId, UserId userId, CancellationToken cancellationToken)
+        public Task<Grade?> GetGradeAsync(LineItemId lineItemId, UserId userId, CancellationToken cancellationToken)
         {
             return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
@@ -263,12 +262,12 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<ServiceToken?> ILti13CoreDataService.GetServiceTokenAsync(ClientId clientId, ServiceTokenId serviceTokenId, CancellationToken cancellationToken)
+        public Task<ServiceToken?> GetServiceTokenAsync(ClientId clientId, ServiceTokenId serviceTokenId, CancellationToken cancellationToken)
         {
             return Task.FromResult(ServiceTokens.FirstOrDefault(x => x.ClientId == clientId && x.Id == serviceTokenId));
         }
 
-        Task ILti13CoreDataService.SaveServiceTokenAsync(ServiceToken serviceToken, CancellationToken cancellationToken)
+        public Task SaveServiceTokenAsync(ServiceToken serviceToken, CancellationToken cancellationToken)
         {
             var existing = ServiceTokens.SingleOrDefault(x => x.ClientId == serviceToken.ClientId && x.Id == serviceToken.Id);
             if (existing != null)
@@ -283,7 +282,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.CompletedTask;
         }
 
-        Task<IEnumerable<SecurityKey>> ILti13CoreDataService.GetPublicKeysAsync(ClientId clientId, CancellationToken cancellationToken)
+        public Task<IEnumerable<SecurityKey>> GetPublicKeysAsync(ClientId clientId, CancellationToken cancellationToken)
         {
             var rsaProvider = RSA.Create();
             var key = "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6S7asUuzq5Q/3U9rbs+P\r\nkDVIdjgmtgWreG5qWPsC9xXZKiMV1AiV9LXyqQsAYpCqEDM3XbfmZqGb48yLhb/X\r\nqZaKgSYaC/h2DjM7lgrIQAp9902Rr8fUmLN2ivr5tnLxUUOnMOc2SQtr9dgzTONY\r\nW5Zu3PwyvAWk5D6ueIUhLtYzpcB+etoNdL3Ir2746KIy/VUsDwAM7dhrqSK8U2xF\r\nCGlau4ikOTtvzDownAMHMrfE7q1B6WZQDAQlBmxRQsyKln5DIsKv6xauNsHRgBAK\r\nctUxZG8M4QJIx3S6Aughd3RZC4Ca5Ae9fd8L8mlNYBCrQhOZ7dS0f4at4arlLcaj\r\ntwIDAQAB\r\n-----END PUBLIC KEY-----";
@@ -297,7 +296,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult<IEnumerable<SecurityKey>>([securityKey]);
         }
 
-        Task<SecurityKey> ILti13CoreDataService.GetPrivateKeyAsync(ClientId clientId, CancellationToken cancellationToken)
+        public Task<SecurityKey> GetPrivateKeyAsync(ClientId clientId, CancellationToken cancellationToken)
         {
             var rsaProvider = RSA.Create();
             var key = "-----BEGIN PRIVATE KEY-----\r\nMIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQDpLtqxS7OrlD/d\r\nT2tuz4+QNUh2OCa2Bat4bmpY+wL3FdkqIxXUCJX0tfKpCwBikKoQMzddt+ZmoZvj\r\nzIuFv9eploqBJhoL+HYOMzuWCshACn33TZGvx9SYs3aK+vm2cvFRQ6cw5zZJC2v1\r\n2DNM41hblm7c/DK8BaTkPq54hSEu1jOlwH562g10vcivbvjoojL9VSwPAAzt2Gup\r\nIrxTbEUIaVq7iKQ5O2/MOjCcAwcyt8TurUHpZlAMBCUGbFFCzIqWfkMiwq/rFq42\r\nwdGAEApy1TFkbwzhAkjHdLoC6CF3dFkLgJrkB7193wvyaU1gEKtCE5nt1LR/hq3h\r\nquUtxqO3AgMBAAECggEBANX6C+7EA/TADrbcCT7fMuNnMb5iGovPuiDCWc6bUIZC\r\nQ0yac45l7o1nZWzfzpOkIprJFNZoSgIF7NJmQeYTPCjAHwsSVraDYnn3Y4d1D3tM\r\n5XjJcpX2bs1NactxMTLOWUl0JnkGwtbWp1Qq+DBnMw6ghc09lKTbHQvhxSKNL/0U\r\nC+YmCYT5ODmxzLBwkzN5RhxQZNqol/4LYVdji9bS7N/UITw5E6LGDOo/hZHWqJsE\r\nfgrJTPsuCyrYlwrNkgmV2KpRrGz5MpcRM7XHgnqVym+HyD/r9E7MEFdTLEaiiHcm\r\nIsh1usJDEJMFIWkF+rnEoJkQHbqiKlQBcoqSbCmoMWECgYEA/4379mMPF0JJ/EER\r\n4VH7/ZYxjdyphenx2VYCWY/uzT0KbCWQF8KXckuoFrHAIP3EuFn6JNoIbja0NbhI\r\nHGrU29BZkATG8h/xjFy/zPBauxTQmM+yS2T37XtMoXNZNS/ubz2lJXMOapQQiXVR\r\nl/tzzpyWaCe9j0NT7DAU0ZFmDbECgYEA6ZbjkcOs2jwHsOwwfamFm4VpUFxYtED7\r\n9vKzq5d7+Ii1kPKHj5fDnYkZd+mNwNZ02O6OGxh40EDML+i6nOABPg/FmXeVCya9\r\nVump2Yqr2fAK3xm6QY5KxAjWWq2kVqmdRmICSL2Z9rBzpXmD5o06y9viOwd2bhBo\r\n0wB02416GecCgYEA+S/ZoEa3UFazDeXlKXBn5r2tVEb2hj24NdRINkzC7h23K/z0\r\npDZ6tlhPbtGkJodMavZRk92GmvF8h2VJ62vAYxamPmhqFW5Qei12WL+FuSZywI7F\r\nq/6oQkkYT9XKBrLWLGJPxlSKmiIGfgKHrUrjgXPutWEK1ccw7f10T2UXvgECgYEA\r\nnXqLa58G7o4gBUgGnQFnwOSdjn7jkoppFCClvp4/BtxrxA+uEsGXMKLYV75OQd6T\r\nIhkaFuxVrtiwj/APt2lRjRym9ALpqX3xkiGvz6ismR46xhQbPM0IXMc0dCeyrnZl\r\nQKkcrxucK/Lj1IBqy0kVhZB1IaSzVBqeAPrCza3AzqsCgYEAvSiEjDvGLIlqoSvK\r\nMHEVe8PBGOZYLcAdq4YiOIBgddoYyRsq5bzHtTQFgYQVK99Cnxo+PQAvzGb+dpjN\r\n/LIEAS2LuuWHGtOrZlwef8ZpCQgrtmp/phXfVi6llcZx4mMm7zYmGhh2AsA9yEQc\r\nacgc4kgDThAjD7VlXad9UHpNMO8=\r\n-----END PRIVATE KEY-----";
@@ -311,7 +310,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult<SecurityKey>(securityKey);
         }
 
-        Task<IEnumerable<Membership>> ILti13NameRoleProvisioningDataService.GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
+        public Task<IEnumerable<Membership>> GetMembershipsAsync(DeploymentId deploymentId, ContextId contextId, string? role, ResourceLinkId? resourceLinkId, DateTime? asOfDate, CancellationToken cancellationToken)
         {
             if (ResourceLinks.Any(x => x.ContextId == contextId && x.DeploymentId == deploymentId && (resourceLinkId == null || resourceLinkId == x.Id)))
             {
@@ -323,18 +322,18 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Enumerable.Empty<Membership>());
         }
 
-        Task<IEnumerable<User>> ILti13NameRoleProvisioningDataService.GetUsersAsync(IEnumerable<UserId> userIds, CancellationToken cancellationToken)
+        public Task<IEnumerable<User>> GetUsersAsync(IEnumerable<UserId> userIds, CancellationToken cancellationToken)
         {
             var users = Users.Where(u => userIds.Contains(u.Id)).ToList();
             return Task.FromResult(users.AsEnumerable());
         }
 
-        Task ILti13DeepLinkingDataService.SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken)
+        public Task SaveContentItemAsync(DeploymentId deploymentId, ContextId? contextId, ContentItem contentItem, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
 
-        Task<ResourceLinkId> ILti13DeepLinkingDataService.SaveResourceLinkAsync(DeploymentId deploymentId, ContextId? contextId, LtiResourceLinkContentItem resourceLinkContentItem, CancellationToken cancellationToken)
+        public Task<ResourceLinkId> SaveResourceLinkAsync(DeploymentId deploymentId, ContextId? contextId, LtiResourceLinkContentItem resourceLinkContentItem, CancellationToken cancellationToken)
         {
             var id = new ResourceLinkId(Guid.NewGuid().ToString());
 
@@ -360,14 +359,12 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(id);
         }
 
-
-
-        Task<LineItem?> ILti13AssignmentGradeDataService.GetLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken)
+        public Task<LineItem?> GetLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken)
         {
             return Task.FromResult(LineItems.SingleOrDefault(x => x.Id == lineItemId));
         }
 
-        Task ILti13AssignmentGradeDataService.DeleteLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken)
+        public Task DeleteLineItemAsync(LineItemId lineItemId, CancellationToken cancellationToken)
         {
             LineItems.RemoveAll(i => i.Id == lineItemId);
 
@@ -385,6 +382,51 @@ namespace NP.Lti13Platform.WebExample
         public Task<IEnumerable<UserPermissions>> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(userIds.Select(x => new UserPermissions { UserId = x, FamilyName = true, Name = true, GivenName = true }));
+        }
+
+        public Task<User?> GetUserAsync(UserId userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Membership?> GetMembershipAsync(ContextId contextId, UserId userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PartialList<LineItem>> GetLineItemsAsync(ResourceLinkId resourceLinkId, int pageIndex, int limit, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Attempt?> GetAttemptAsync(ResourceLinkId resourceLinkId, UserId userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<CustomPermissions> GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId? userId, UserId? actualUserId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UserPermissions> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<CustomPermissions>> GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<Attempt?>> GetAttemptsAsync(ResourceLinkId resourceLinkId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<Grade?>> GetGradesAsync(LineItemId lineItemId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

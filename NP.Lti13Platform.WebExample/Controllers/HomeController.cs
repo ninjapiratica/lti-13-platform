@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Constants;
+using NP.Lti13Platform.Core.MessageHandlers;
 using NP.Lti13Platform.Core.Models;
-using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking;
-using NP.Lti13Platform.DeepLinking.Services;
+using NP.Lti13Platform.DeepLinking.MessageHandlers;
 
 namespace NP.Lti13Platform.WebExample.Controllers;
 
-public class HomeController(ILogger<HomeController> logger, ILti13UrlService service, ILti13DeepLinkingUrlService deepLinkUrlService) : Controller
+public class HomeController(ILogger<HomeController> logger, ILtiResourceLinkRequestMessageHandler service, ILtiDeepLinkingRequestMessageHandler deepLinkUrlService) : Controller
 {
     public async Task<IResult> Index(CancellationToken cancellationToken)
     {
@@ -24,37 +24,35 @@ public class HomeController(ILogger<HomeController> logger, ILti13UrlService ser
 
         return Results.Ok(new
         {
-            deepLinkUrl = (await deepLinkUrlService.GetDeepLinkInitiationUrlAsync(
+            deepLinkUrl = (await deepLinkUrlService.GetLtiLaunchAsync(
                 deploymentId,
-                userId,
-                false,
-                deepLinkUrl: null,
-                actualUserId: null,
                 contextId,
-                new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
-                cancellationToken: cancellationToken)).AsUri(),
-            deepLinkForm = (await deepLinkUrlService.GetDeepLinkInitiationUrlAsync(
+                userId: userId,
+                actualUserId: null,
+                isAnonymous: false,
+                deepLinkingSettingsOverride: new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
+                cancellationToken: cancellationToken))!.AsUri(),
+            deepLinkForm = (await deepLinkUrlService.GetLtiLaunchAsync(
                 deploymentId,
-                userId,
-                false,
-                deepLinkUrl: null,
-                actualUserId: null,
                 contextId,
-                new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
-                cancellationToken: cancellationToken)).AsForm("form1"),
+                userId: userId,
+                actualUserId: null,
+                isAnonymous: false,
+                deepLinkingSettingsOverride: new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
+                cancellationToken: cancellationToken))!.AsForm("form1"),
             resourceLinkUrls = DataService.ResourceLinks
-                .Select(async resourceLink => (await service.GetResourceLinkInitiationUrlAsync(
+                .Select(async resourceLink => (await service.GetLtiLaunchAsync(
                     resourceLink.Id,
                     userId,
-                    false,
-                    launchPresentation: new LaunchPresentationOverride
+                    isAnonymous: false,
+                    launchPresentationOverride: new LaunchPresentationOverride
                     {
                         DocumentTarget = documentTarget,
                         Height = height,
                         Width = width,
                         Locale = locale
                     },
-                    cancellationToken: cancellationToken)).AsForm("form1"))
+                    cancellationToken: cancellationToken))!.AsForm("form1"))
                 .Select(t => t.Result)
         });
     }
