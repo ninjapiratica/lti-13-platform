@@ -386,47 +386,146 @@ namespace NP.Lti13Platform.WebExample
 
         public Task<User?> GetUserAsync(UserId userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(Users.SingleOrDefault(u => u.Id == userId));
         }
 
         public Task<Membership?> GetMembershipAsync(ContextId contextId, UserId userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(Memberships.SingleOrDefault(m => m.ContextId == contextId && m.UserId == userId));
         }
 
         public Task<PartialList<LineItem>> GetLineItemsAsync(ResourceLinkId resourceLinkId, int pageIndex, int limit, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var lineItems = LineItems.Where(li => li.ResourceLinkId == resourceLinkId).ToList();
+
+            return Task.FromResult(new PartialList<LineItem>
+            {
+                Items = [.. lineItems.Skip(pageIndex * limit).Take(limit)],
+                TotalItems = lineItems.Count
+            });
         }
 
         public Task<Attempt?> GetAttemptAsync(ResourceLinkId resourceLinkId, UserId userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == userId));
         }
 
         public Task<CustomPermissions> GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId? userId, UserId? actualUserId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            // Return a permissive set of custom permissions for demo purposes.
+            var permissions = new CustomPermissions
+            {
+                UserId = true,
+                UserImage = true,
+                UserUsername = true,
+                UserOrg = true,
+                UserScopeMentor = true,
+                UserGradeLevelsOneRoster = true,
+                ActualUserId = true,
+                ActualUserImage = true,
+                ActualUserUsername = true,
+                ActualUserOrg = true,
+                ActualUserScopeMentor = true,
+                ActualUserGradeLevelsOneRoster = true,
+                ContextId = true,
+                ContextOrg = true,
+                ContextType = true,
+                ContextLabel = true,
+                ContextTitle = true,
+                ContextSourcedId = true,
+                ContextIdHistory = true,
+                ContextGradeLevelsOneRoster = true,
+                ResourceLinkId = true,
+                ResourceLinkTitle = true,
+                ResourceLinkDescription = true,
+                ResourceLinkAvailableStartDateTime = true,
+                ResourceLinkAvailableUserStartDateTime = true,
+                ResourceLinkAvailableEndDateTime = true,
+                ResourceLinkAvailableUserEndDateTime = true,
+                ResourceLinkSubmissionStartDateTime = true,
+                ResourceLinkSubmissionUserStartDateTime = true,
+                ResourceLinkSubmissionEndDateTime = true,
+                ResourceLinkSubmissionUserEndDateTime = true,
+                ResourceLinkLineItemReleaseDateTime = true,
+                ResourceLinkLineItemUserReleaseDateTime = true,
+                ResourceLinkIdHistory = true,
+                ToolPlatformProductFamilyCode = true,
+                ToolPlatformProductVersion = true,
+                ToolPlatformProductInstanceGuid = true,
+                ToolPlatformProductInstanceName = true,
+                ToolPlatformProductInstanceDescription = true,
+                ToolPlatformProductInstanceUrl = true,
+                ToolPlatformProductInstanceContactEmail = true
+            };
+
+            return Task.FromResult(permissions);
         }
 
         public Task<UserPermissions> GetUserPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, UserId userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(new UserPermissions { UserId = userId, FamilyName = true, Name = true, GivenName = true });
         }
 
         public Task<IEnumerable<CustomPermissions>> GetCustomPermissionsAsync(DeploymentId deploymentId, ContextId? contextId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var result = userIds.Select(u => new CustomPermissions
+            {
+                UserId = true,
+                UserImage = true,
+                UserUsername = true,
+                UserOrg = true,
+                UserScopeMentor = true,
+                UserGradeLevelsOneRoster = true,
+                ActualUserId = true,
+                ActualUserImage = true,
+                ActualUserUsername = true,
+                ActualUserOrg = true,
+                ActualUserScopeMentor = true,
+                ActualUserGradeLevelsOneRoster = true,
+                ContextId = true,
+                ContextOrg = true,
+                ContextType = true,
+                ContextLabel = true,
+                ContextTitle = true,
+                ContextSourcedId = true,
+                ContextIdHistory = true,
+                ContextGradeLevelsOneRoster = true,
+                ResourceLinkId = true,
+                ResourceLinkTitle = true,
+                ResourceLinkDescription = true,
+                ResourceLinkAvailableStartDateTime = true,
+                ResourceLinkAvailableUserStartDateTime = true,
+                ResourceLinkAvailableEndDateTime = true,
+                ResourceLinkAvailableUserEndDateTime = true,
+                ResourceLinkSubmissionStartDateTime = true,
+                ResourceLinkSubmissionUserStartDateTime = true,
+                ResourceLinkSubmissionEndDateTime = true,
+                ResourceLinkSubmissionUserEndDateTime = true,
+                ResourceLinkLineItemReleaseDateTime = true,
+                ResourceLinkLineItemUserReleaseDateTime = true,
+                ResourceLinkIdHistory = true,
+                ToolPlatformProductFamilyCode = true,
+                ToolPlatformProductVersion = true,
+                ToolPlatformProductInstanceGuid = true,
+                ToolPlatformProductInstanceName = true,
+                ToolPlatformProductInstanceDescription = true,
+                ToolPlatformProductInstanceUrl = true,
+                ToolPlatformProductInstanceContactEmail = true
+            });
+
+            return Task.FromResult(result);
         }
 
         public Task<IEnumerable<Attempt?>> GetAttemptsAsync(ResourceLinkId resourceLinkId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var attempts = userIds.Select(u => Attempts.SingleOrDefault(a => a.ResourceLinkId == resourceLinkId && a.UserId == u));
+            return Task.FromResult(attempts);
         }
 
         public Task<IEnumerable<Grade?>> GetGradesAsync(LineItemId lineItemId, IEnumerable<UserId> userIds, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var grades = userIds.Select(u => Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == u));
+            return Task.FromResult(grades);
         }
     }
 }
