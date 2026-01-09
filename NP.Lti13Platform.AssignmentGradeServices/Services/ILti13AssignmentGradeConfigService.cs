@@ -1,4 +1,6 @@
-﻿using NP.Lti13Platform.AssignmentGradeServices.Configs;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.AssignmentGradeServices.Services;
@@ -15,4 +17,18 @@ public interface ILti13AssignmentGradeConfigService
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the services configuration.</returns>
     Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
+}
+
+internal class DefaultLti13AssignmentGradeConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13AssignmentGradeConfigService
+{
+    public async Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default)
+    {
+        var servicesConfig = config.CurrentValue;
+        if (servicesConfig.ServiceAddress == ServicesConfig.DefaultUri)
+        {
+            servicesConfig = servicesConfig with { ServiceAddress = new UriBuilder(httpContextAccessor.HttpContext?.Request.Scheme, httpContextAccessor.HttpContext?.Request.Host.Value).Uri };
+        }
+
+        return await Task.FromResult(servicesConfig);
+    }
 }

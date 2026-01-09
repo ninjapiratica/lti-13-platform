@@ -28,7 +28,7 @@ public static class DependencyInjection
         where T : ILti13AssignmentGradeDataService
     {
         serviceCollection.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:AssignmentGradeServices");
-        serviceCollection.TryAddSingleton<ILti13AssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
+        serviceCollection.TryAddSingleton<ILti13AssignmentGradeConfigService, DefaultLti13AssignmentGradeConfigService>();
 
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeDataService), typeof(T), serviceLifetime));
         serviceCollection.WithLti13ResourceLinkMessageExtension<LineItemServiceMessageExtension>();

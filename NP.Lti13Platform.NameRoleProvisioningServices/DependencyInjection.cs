@@ -17,6 +17,7 @@ public static class DependencyInjection
     /// <remarks>This method registers the default implementation for <see cref="ILti13NameRoleProvisioningConfigService"/> and binds configuration from the 'Lti13Platform:NameRoleProvisioningServices' section.
     /// Call this method during application startup to enable LTI 1.3 Name/Role Provisioning support.</remarks>
     /// <param name="serviceCollection">The service collection to which the Name/Role Provisioning services will be added. Cannot be null.</param>
+    /// <param name="serviceLifetime">The lifetime with which to register the services.</param>
     /// <returns>The same instance of <see cref="IServiceCollection"/> that was provided, to support method chaining.</returns>
     public static IServiceCollection AddLti13PlatformNameRoleProvisioningServices<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
         where T : ILti13NameRoleProvisioningDataService

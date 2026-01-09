@@ -45,5 +45,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="NP.Lti13Platform.Test" />
+  </ItemGroup>
 
 </Project>
