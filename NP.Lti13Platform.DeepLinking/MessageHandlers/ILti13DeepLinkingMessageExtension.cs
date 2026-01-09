@@ -1,4 +1,4 @@
-﻿using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.DeepLinking.MessageHandlers;
 
@@ -7,7 +7,7 @@ namespace NP.Lti13Platform.DeepLinking.MessageHandlers;
 /// </summary>
 /// <remarks>Implementations of this interface enable customization or extension of LTI deep linking messages based on the tool, deployment, context, or user.
 /// This is typically used to add additional claims or data to the deep linking response in LTI 1.3 workflows.</remarks>
-public interface ILtiDeepLinkingMessageExtension
+public interface ILti13DeepLinkingMessageExtension
 {
     /// <summary>
     /// Asynchronously retrieves a message extension object for the specified tool and deployment, using the provided context and user information.

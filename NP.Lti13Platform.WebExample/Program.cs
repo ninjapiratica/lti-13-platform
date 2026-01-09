@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddLti13PlatformWithDefaults<DataService>();
+    .AddLti13PlatformWithDefaultMessageHandlers<DataService>();
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -141,11 +141,11 @@ namespace NP.Lti13Platform.WebExample
                 Jwks = "https://saltire.lti.app/tool/jwks/s8cd1a33052f22f98e58369762c6373aa",
                 ServiceScopes =
                 [
-                    ServiceScopes.LineItem,
-                    ServiceScopes.LineItemReadOnly,
-                    ServiceScopes.ResultReadOnly,
-                    ServiceScopes.Score,
-                    Lti13ServiceScopes.MembershipReadOnly
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.LineItem,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.LineItemReadOnly,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.ResultReadOnly,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.Score,
+                    NP.Lti13Platform.NameRoleProvisioningServices.Constants.Lti13ServiceScopes.MembershipReadOnly
                 ]
             });
 

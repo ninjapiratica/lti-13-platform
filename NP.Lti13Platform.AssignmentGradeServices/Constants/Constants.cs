@@ -10,7 +10,7 @@ internal static class RouteNames
     internal static readonly string GET_LINE_ITEM_RESULTS = "8224f1d6-5e3f-4ee8-b62e-acaf8b644a39";
 }
 
-internal static class ContentTypes
+internal static class Lti13ContentTypes
 {
     internal static readonly string LineItemContainer = "application/vnd.ims.lis.v2.lineitemcontainer+json";
     internal static readonly string LineItem = "application/vnd.ims.lis.v2.lineitem+json";
@@ -21,7 +21,7 @@ internal static class ContentTypes
 /// <summary>
 /// Provides constants for service scopes used in assignment grade services.
 /// </summary>
-public static class ServiceScopes
+public static class Lti13ServiceScopes
 {
     /// <summary>
     /// Scope for managing line items.

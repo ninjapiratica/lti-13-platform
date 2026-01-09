@@ -54,10 +54,10 @@ public static partial class ClaimsExtensions
 {
     private static readonly ISet<string> LineItemServiceScopes = new HashSet<string>
     {
-        ServiceScopes.LineItem,
-        ServiceScopes.LineItemReadOnly,
-        ServiceScopes.ResultReadOnly,
-        ServiceScopes.Score
+        Lti13ServiceScopes.LineItem,
+        Lti13ServiceScopes.LineItemReadOnly,
+        Lti13ServiceScopes.ResultReadOnly,
+        Lti13ServiceScopes.Score
     };
 
     /// <summary>
@@ -125,7 +125,7 @@ internal class LineItemServiceMessageExtension(
     ILti13AssignmentGradeDataService dataService,
     ILti13AssignmentGradeConfigService configService,
     LinkGenerator linkGenerator)
-    : ILtiResourceLinkMessageExtension
+    : ILti13ResourceLinkMessageExtension
 {
     public async Task<object> GetMessageExtensionAsync(Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken = default)
     {

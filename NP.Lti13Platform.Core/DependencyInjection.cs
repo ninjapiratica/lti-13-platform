@@ -93,7 +93,7 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Registers an implementation of the ILti13ResourceLinkMessageDataService interface and the LtiResourceLinkRequestMessageHandler for handling LTI 1.3 resource link messages in the dependency injection container.
+    /// Registers an implementation of the ILti13ResourceLinkMessageDataService interface and the Lti13ResourceLinkRequestMessageHandler for handling LTI 1.3 resource link messages in the dependency injection container.
     /// </summary>
     /// <remarks>This method enables LTI 1.3 resource link message handling by registering the required services.
     /// Call this method during application startup to ensure that LTI resource link requests are processed correctly.</remarks>
@@ -101,28 +101,28 @@ public static class DependencyInjection
     /// <param name="serviceCollection">The IServiceCollection to which the services are added.</param>
     /// <param name="serviceLifetime">The lifetime with which to register the ILti13ResourceLinkMessageDataService implementation. The default is ServiceLifetime.Transient.</param>
     /// <returns>The IServiceCollection instance with the LTI resource link message handler services registered.</returns>
-    public static IServiceCollection WithDefaultLtiResourceLinkMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+    public static IServiceCollection WithDefaultLti13ResourceLinkMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
         where T : ILti13ResourceLinkMessageDataService
     {
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13ResourceLinkMessageDataService), typeof(T), serviceLifetime));
-        serviceCollection.AddTransient<ILtiResourceLinkRequestMessageHandler, LtiResourceLinkRequestMessageHandler>();
-        serviceCollection.AddTransient<ILtiMessageHandler, LtiResourceLinkRequestMessageHandler>();
+        serviceCollection.AddTransient<ILti13ResourceLinkRequestMessageHandler, Lti13ResourceLinkRequestMessageHandler>();
+        serviceCollection.AddTransient<ILtiMessageHandler, Lti13ResourceLinkRequestMessageHandler>();
         return serviceCollection;
     }
 
     /// <summary>
-    /// Registers an implementation of the ILtiResourceLinkMessageExtension interface in the service collection with the specified service lifetime.
+    /// Registers an implementation of the ILti13ResourceLinkMessageExtension interface in the service collection with the specified service lifetime.
     /// </summary>
     /// <remarks>Use this method to enable dependency injection for LTI Resource Link Message extensions.
-    /// This allows consumers to resolve ILtiResourceLinkMessageExtension implementations from the service provider according to the specified lifetime.</remarks>
-    /// <typeparam name="T">The type that implements ILtiResourceLinkMessageExtension to be registered.</typeparam>
-    /// <param name="serviceCollection">The IServiceCollection to which the ILtiResourceLinkMessageExtension implementation will be added.</param>
-    /// <param name="serviceLifetime">The lifetime with which the ILtiResourceLinkMessageExtension service will be registered. Defaults to ServiceLifetime.Transient.</param>
-    /// <returns>The IServiceCollection instance with the ILtiResourceLinkMessageExtension service registration added.</returns>
-    public static IServiceCollection WithLtiResourceLinkMessageExtension<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-        where T : ILtiResourceLinkMessageExtension
+    /// This allows consumers to resolve ILti13ResourceLinkMessageExtension implementations from the service provider according to the specified lifetime.</remarks>
+    /// <typeparam name="T">The type that implements ILti13ResourceLinkMessageExtension to be registered.</typeparam>
+    /// <param name="serviceCollection">The IServiceCollection to which the ILti13ResourceLinkMessageExtension implementation will be added.</param>
+    /// <param name="serviceLifetime">The lifetime with which the ILti13ResourceLinkMessageExtension service will be registered. Defaults to ServiceLifetime.Transient.</param>
+    /// <returns>The IServiceCollection instance with the ILti13ResourceLinkMessageExtension service registration added.</returns>
+    public static IServiceCollection WithLti13ResourceLinkMessageExtension<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        where T : ILti13ResourceLinkMessageExtension
     {
-        serviceCollection.Add(new ServiceDescriptor(typeof(ILtiResourceLinkMessageExtension), typeof(T), serviceLifetime));
+        serviceCollection.Add(new ServiceDescriptor(typeof(ILti13ResourceLinkMessageExtension), typeof(T), serviceLifetime));
         return serviceCollection;
     }
 }

@@ -69,36 +69,36 @@ public static class DependencyInjection
     /// <summary>
     /// Registers the default deep linking request message handler and associates the specified deep linking data service implementation with the resource link message data service in the dependency injection container.
     /// </summary>
-    /// <remarks>This method registers <see cref="LtiDeepLinkingRequestMessageHandler"/> as the handler for deep linking request messages
+    /// <remarks>This method registers <see cref="Lti13DeepLinkingRequestMessageHandler"/> as the handler for deep linking request messages
     /// and associates the  <typeparamref name="T"/> implementation with <see cref="ILti13ResourceLinkMessageDataService"/>.
-    /// It also registers the handler for both <see cref="ILtiDeepLinkingRequestMessageHandler"/> and <see cref="ILtiMessageHandler"/> interfaces.
+    /// It also registers the handler for both <see cref="ILti13DeepLinkingRequestMessageHandler"/> and <see cref="ILtiMessageHandler"/> interfaces.
     /// Use this method to enable default deep linking support in an LTI 1.3 integration.</remarks>
     /// <typeparam name="T">The type that implements the deep linking data service interface used for resource link message data operations.</typeparam>
     /// <param name="serviceCollection">The dependency injection service collection to which the deep linking message handler and data service will be added.</param>
     /// <param name="serviceLifetime">The lifetime with which the deep linking data service implementation is registered. Defaults to <see cref="ServiceLifetime.Transient"/>.</param>
     /// <returns>The same <see cref="IServiceCollection"/> instance, enabling method chaining.</returns>
-    public static IServiceCollection WithDefaultDeepLinkingRequestMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+    public static IServiceCollection WithDefaultLti13DeepLinkingRequestMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
         where T : ILti13DeepLinkingRequestDataService
     {
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingRequestDataService), typeof(T), serviceLifetime));
-        serviceCollection.AddTransient<ILtiDeepLinkingRequestMessageHandler, LtiDeepLinkingRequestMessageHandler>();
-        serviceCollection.AddTransient<ILtiMessageHandler, LtiDeepLinkingRequestMessageHandler>();
+        serviceCollection.AddTransient<ILti13DeepLinkingRequestMessageHandler, Lti13DeepLinkingRequestMessageHandler>();
+        serviceCollection.AddTransient<ILtiMessageHandler, Lti13DeepLinkingRequestMessageHandler>();
         return serviceCollection;
     }
 
     /// <summary>
-    /// Registers an implementation of the ILtiDeepLinkingMessageExtension interface using the specified resource link message extension type and service lifetime.
+    /// Registers an implementation of the ILti13DeepLinkingMessageExtension interface using the specified resource link message extension type and service lifetime.
     /// </summary>
     /// <remarks>Use this method to enable LTI deep linking message extension support by registering a custom implementation.
     /// This is typically called during application startup as part of dependency injection configuration.</remarks>
-    /// <typeparam name="T">The type that implements ILtiDeepLinkingMessageExtension to be used as the deep linking message extension.</typeparam>
+    /// <typeparam name="T">The type that implements ILti13DeepLinkingMessageExtension to be used as the deep linking message extension.</typeparam>
     /// <param name="serviceCollection">The IServiceCollection to which the deep linking message extension service will be added.</param>
     /// <param name="serviceLifetime">The lifetime with which the service will be registered. Defaults to ServiceLifetime.Transient.</param>
     /// <returns>The IServiceCollection instance with the deep linking message extension service registered.</returns>
-    public static IServiceCollection WithLtiDeepLinkingMessageExtension<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-        where T : ILtiDeepLinkingMessageExtension
+    public static IServiceCollection WithLti13DeepLinkingMessageExtension<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        where T : ILti13DeepLinkingMessageExtension
     {
-        serviceCollection.Add(new ServiceDescriptor(typeof(ILtiDeepLinkingMessageExtension), typeof(T), serviceLifetime));
+        serviceCollection.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingMessageExtension), typeof(T), serviceLifetime));
         return serviceCollection;
     }
 }

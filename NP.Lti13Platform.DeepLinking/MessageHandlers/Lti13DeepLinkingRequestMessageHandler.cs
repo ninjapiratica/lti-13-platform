@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Extensions;
@@ -15,10 +15,7 @@ namespace NP.Lti13Platform.DeepLinking.MessageHandlers;
 /// <summary>
 /// Defines methods for handling LTI deep linking request messages, including retrieving and creating LTI launch objects with support for context, user, and presentation overrides.
 /// </summary>
-/// <remarks>Implementations of this interface enable the processing of LTI deep linking requests according to the IMS LTI specification.
-/// Methods support both asynchronous retrieval and creation of LTI launch objects, allowing for customization of launch parameters such as user identity, context, and presentation settings.
-/// This interface is typically used by LTI tool providers or platforms to facilitate secure and flexible LTI launches in deep linking workflows.</remarks>
-public interface ILtiDeepLinkingRequestMessageHandler : ILtiMessageHandler
+public interface ILti13DeepLinkingRequestMessageHandler : ILtiMessageHandler
 {
     /// <summary>
     /// Asynchronously retrieves an LTI launch for the specified deployment, context, and user parameters, optionally applying presentation and deep linking overrides.
@@ -73,16 +70,16 @@ public interface ILtiDeepLinkingRequestMessageHandler : ILtiMessageHandler
         DeepLinkingSettingsOverride? deepLinkingSettingsOverride = null);
 }
 
-internal class LtiDeepLinkingRequestMessageHandler(
+internal class Lti13DeepLinkingRequestMessageHandler(
     ILti13CoreDataService coreDataService,
     ILti13DeepLinkingRequestDataService dataService,
     ILti13DeepLinkingConfigService deepLinkingConfigService,
     ILti13TokenConfigService tokenConfigService,
     ILti13PlatformService platformService,
-    IEnumerable<ILtiDeepLinkingMessageExtension> extensions,
-    ILogger<LtiDeepLinkingRequestMessageHandler> logger,
+    IEnumerable<ILti13DeepLinkingMessageExtension> extensions,
+    ILogger<Lti13DeepLinkingRequestMessageHandler> logger,
     LinkGenerator linkGenerator)
-    : ILtiDeepLinkingRequestMessageHandler
+    : ILti13DeepLinkingRequestMessageHandler
 {
     public static readonly string MessageType = "LtiDeepLinkingRequest";
 

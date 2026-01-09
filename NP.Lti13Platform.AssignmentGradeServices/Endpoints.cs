@@ -116,15 +116,15 @@ public static class Endpoints
                     GradesReleased = i.GradesReleased,
                 }),
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: ContentTypes.LineItemContainer);
+                contentType: Lti13ContentTypes.LineItemContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEMS)
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
+                policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
             })
-            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItemContainer)
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItemContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(OpenApi.GroupName)
@@ -164,12 +164,12 @@ public static class Endpoints
                     return Results.NotFound();
                 }
 
-                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
+                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != Lti13ContentTypes.LineItem)
                 {
                     return Results.BadRequest(new LtiBadRequest
                     {
                         Error = "Invalid Content-Type",
-                        Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'",
+                        Error_Description = $"Content-Type must be '{Lti13ContentTypes.LineItem}'",
                         Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item"
                     });
                 }
@@ -240,7 +240,7 @@ public static class Endpoints
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.LineItem);
+                policy.RequireRole(Lti13ServiceScopes.LineItem);
             })
             .Produces<LineItemResponse>(StatusCodes.Status201Created, MediaTypeNames.Application.Json)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -303,15 +303,15 @@ public static class Endpoints
                     EndDateTime = lineItem.EndDateTime,
                 },
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: ContentTypes.LineItem);
+                contentType: Lti13ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
+                policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
             })
-            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(OpenApi.GroupName)
@@ -358,12 +358,12 @@ public static class Endpoints
                     return Results.NotFound();
                 }
 
-                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
+                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != Lti13ContentTypes.LineItem)
                 {
                     return Results.BadRequest(new LtiBadRequest
                     {
                         Error = "Invalid Content-Type",
-                        Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'",
+                        Error_Description = $"Content-Type must be '{Lti13ContentTypes.LineItem}'",
                         Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item"
                     });
                 }
@@ -422,14 +422,14 @@ public static class Endpoints
                     EndDateTime = lineItem.EndDateTime
                 },
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: ContentTypes.LineItem);
+                contentType: Lti13ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.LineItem);
+                policy.RequireRole(Lti13ServiceScopes.LineItem);
             })
-            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
@@ -483,7 +483,7 @@ public static class Endpoints
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.LineItem);
+                policy.RequireRole(Lti13ServiceScopes.LineItem);
             })
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -569,15 +569,15 @@ public static class Endpoints
                     Comment = i.Comment
                 }),
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: ContentTypes.ResultContainer);
+                contentType: Lti13ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.ResultReadOnly);
+                policy.RequireRole(Lti13ServiceScopes.ResultReadOnly);
             })
-            .Produces<LineItemResultResponse>(StatusCodes.Status200OK, ContentTypes.ResultContainer)
+            .Produces<LineItemResultResponse>(StatusCodes.Status200OK, Lti13ContentTypes.ResultContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(OpenApi.GroupName)
@@ -705,7 +705,7 @@ public static class Endpoints
             .RequireAuthorization(policy =>
             {
                 policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
-                policy.RequireRole(ServiceScopes.Score);
+                policy.RequireRole(Lti13ServiceScopes.Score);
             })
             .Produces(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status204NoContent)

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.Models;
@@ -13,7 +13,7 @@ namespace NP.Lti13Platform.Core.MessageHandlers;
 /// <remarks>Implementations of this interface provide functionality for constructing and retrieving LTI launch data in accordance with the LTI specification.
 /// Methods support scenarios such as anonymous launches, acting on behalf of another user, and customizing launch presentation parameters.
 /// This interface extends ILtiMessageHandler to support resource link-specific launch workflows.</remarks>
-public interface ILtiResourceLinkRequestMessageHandler : ILtiMessageHandler
+public interface ILti13ResourceLinkRequestMessageHandler : ILtiMessageHandler
 {
     /// <summary>
     /// Asynchronously retrieves the LTI launch information for the specified resource link and user context.
@@ -55,14 +55,14 @@ public interface ILtiResourceLinkRequestMessageHandler : ILtiMessageHandler
 /// <param name="platformService">The service used to access platform-specific information for LTI 1.3 integrations.</param>
 /// <param name="extensions">A collection of extensions that can augment or customize the LTI Resource Link Request message.</param>
 /// <param name="logger">The logger used to record diagnostic and operational information for this handler.</param>
-public class LtiResourceLinkRequestMessageHandler(
+internal class Lti13ResourceLinkRequestMessageHandler(
     ILti13CoreDataService coreDataService,
     ILti13ResourceLinkMessageDataService dataService,
     ILti13TokenConfigService tokenConfigService,
     ILti13PlatformService platformService,
-    IEnumerable<ILtiResourceLinkMessageExtension> extensions,
-    ILogger<LtiResourceLinkRequestMessageHandler> logger)
-    : ILtiResourceLinkRequestMessageHandler
+    IEnumerable<ILti13ResourceLinkMessageExtension> extensions,
+    ILogger<Lti13ResourceLinkRequestMessageHandler> logger)
+    : ILti13ResourceLinkRequestMessageHandler
 {
     private static readonly string MessageType = "LtiResourceLinkRequest";
 
@@ -315,7 +315,7 @@ public class LtiResourceLinkRequestMessageHandler(
 /// <summary>
 /// Defines a contract for retrieving a message extension object associated with a specific tool, resource link, and user in an LTI (Learning Tools Interoperability) context.
 /// </summary>
-public interface ILtiResourceLinkMessageExtension
+public interface ILti13ResourceLinkMessageExtension
 {
     /// <summary>
     /// Asynchronously retrieves a message extension object for the specified tool, resource link, and user.
