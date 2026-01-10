@@ -13,14 +13,14 @@ namespace NP.Lti13Platform.Core;
 /// 1.3 authorization into the OpenAPI specification. The document transformer adds the necessary security scheme at
 /// the document level, while the operation transformer applies security requirements to operations that require
 /// authorization.</remarks>
-public static class OpenApi
+public static class Lti13OpenApi
 {
     private static readonly string SecuritySchemeId = "LTI 1.3 Bearer";
 
     /// <summary>
     /// Represents the name of the group associated with the OpenAPI configuration.
     /// </summary>
-    public static readonly string GroupName = $"{typeof(OpenApi).FullName}.GoupName";
+    public static readonly string GroupName = $"{typeof(Lti13OpenApi).FullName}.GoupName";
 
     /// <summary>
     /// Adds support for LTI 1.3 authorization to the OpenAPI options.

@@ -3,7 +3,7 @@
 /// <summary>
 /// Configuration for LTI 1.3 platform tokens.
 /// </summary>
-public class Lti13PlatformTokenConfig
+public class TokenConfig
 {
     private Uri _issuer = new("x://x.x.x");
     /// <summary>

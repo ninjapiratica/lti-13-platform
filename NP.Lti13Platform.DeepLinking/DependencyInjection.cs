@@ -25,9 +25,9 @@ public static class DependencyInjection
         where T : ILti13DeepLinkingResponseDataService
     {
         serviceCollection.AddOptions<DeepLinkingConfig>().BindConfiguration("Lti13Platform:DeepLinking");
-        serviceCollection.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultDeepLinkingConfigService>();
+        serviceCollection.TryAddSingleton<ILti13DeepLinkingConfigService, DefaultLti13DeepLinkingConfigService>();
 
-        serviceCollection.TryAddSingleton<ILti13DeepLinkingResponseHandler, DefaultDeepLinkingResponseHandler>();
+        serviceCollection.TryAddSingleton<ILti13DeepLinkingResponseHandler, DefaultLti13DeepLinkingResponseHandler>();
 
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingResponseDataService), typeof(T), serviceLifetime));
 
@@ -71,7 +71,7 @@ public static class DependencyInjection
     /// </summary>
     /// <remarks>This method registers <see cref="Lti13DeepLinkingRequestMessageHandler"/> as the handler for deep linking request messages
     /// and associates the  <typeparamref name="T"/> implementation with <see cref="ILti13ResourceLinkMessageDataService"/>.
-    /// It also registers the handler for both <see cref="ILti13DeepLinkingRequestMessageHandler"/> and <see cref="ILtiMessageHandler"/> interfaces.
+    /// It also registers the handler for both <see cref="ILti13DeepLinkingRequestMessageHandler"/> and <see cref="ILti13MessageHandler"/> interfaces.
     /// Use this method to enable default deep linking support in an LTI 1.3 integration.</remarks>
     /// <typeparam name="T">The type that implements the deep linking data service interface used for resource link message data operations.</typeparam>
     /// <param name="serviceCollection">The dependency injection service collection to which the deep linking message handler and data service will be added.</param>
@@ -82,7 +82,7 @@ public static class DependencyInjection
     {
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13DeepLinkingRequestDataService), typeof(T), serviceLifetime));
         serviceCollection.AddTransient<ILti13DeepLinkingRequestMessageHandler, Lti13DeepLinkingRequestMessageHandler>();
-        serviceCollection.AddTransient<ILtiMessageHandler, Lti13DeepLinkingRequestMessageHandler>();
+        serviceCollection.AddTransient<ILti13MessageHandler, Lti13DeepLinkingRequestMessageHandler>();
         return serviceCollection;
     }
 

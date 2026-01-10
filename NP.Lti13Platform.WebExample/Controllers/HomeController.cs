@@ -24,7 +24,7 @@ public class HomeController(ILogger<HomeController> logger, ILti13ResourceLinkRe
 
         return Results.Ok(new
         {
-            deepLinkUrl = (await deepLinkUrlService.GetLtiLaunchAsync(
+            deepLinkUrl = (await deepLinkUrlService.GetLti13LaunchAsync(
                 deploymentId,
                 contextId,
                 userId: userId,
@@ -32,7 +32,7 @@ public class HomeController(ILogger<HomeController> logger, ILti13ResourceLinkRe
                 isAnonymous: false,
                 deepLinkingSettingsOverride: new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
                 cancellationToken: cancellationToken))!.AsUri(),
-            deepLinkForm = (await deepLinkUrlService.GetLtiLaunchAsync(
+            deepLinkForm = (await deepLinkUrlService.GetLti13LaunchAsync(
                 deploymentId,
                 contextId,
                 userId: userId,
@@ -41,7 +41,7 @@ public class HomeController(ILogger<HomeController> logger, ILti13ResourceLinkRe
                 deepLinkingSettingsOverride: new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
                 cancellationToken: cancellationToken))!.AsForm("form1"),
             resourceLinkUrls = DataService.ResourceLinks
-                .Select(async resourceLink => (await service.GetLtiLaunchAsync(
+                .Select(async resourceLink => (await service.GetLti13LaunchAsync(
                     resourceLink.Id,
                     userId,
                     isAnonymous: false,

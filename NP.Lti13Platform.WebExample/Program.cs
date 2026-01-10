@@ -20,9 +20,9 @@ builder.Services.AddOpenApi("v1", options =>
 });
 builder.Services.AddOpenApi("v2", options =>
 {
-    options.ShouldInclude = (description) => description.GroupName == OpenApi.GroupName;
-    options.AddDocumentTransformer<OpenApi.DocumentTransformer>();
-    options.AddOperationTransformer<OpenApi.OperationTransformer>();
+    options.ShouldInclude = (description) => description.GroupName == Lti13OpenApi.GroupName;
+    options.AddDocumentTransformer<Lti13OpenApi.DocumentTransformer>();
+    options.AddOperationTransformer<Lti13OpenApi.OperationTransformer>();
 });
 builder.Services.AddLti13OpenApi("lti");
 

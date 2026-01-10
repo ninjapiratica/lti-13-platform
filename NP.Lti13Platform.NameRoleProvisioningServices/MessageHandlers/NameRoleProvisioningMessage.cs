@@ -9,7 +9,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.MessageHandlers;
 /// Represents a message used in the Name and Role Provisioning Services for LTI 1.3.
 /// </summary>
 public class NameRoleProvisioningMessage
-    : IBaseLtiMessage
+    : IBaseLti13Message
 {
     /// <summary>
     /// Gets or sets the type of the message.

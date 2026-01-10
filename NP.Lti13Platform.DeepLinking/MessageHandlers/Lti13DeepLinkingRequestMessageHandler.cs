@@ -15,7 +15,7 @@ namespace NP.Lti13Platform.DeepLinking.MessageHandlers;
 /// <summary>
 /// Defines methods for handling LTI deep linking request messages, including retrieving and creating LTI launch objects with support for context, user, and presentation overrides.
 /// </summary>
-public interface ILti13DeepLinkingRequestMessageHandler : ILtiMessageHandler
+public interface ILti13DeepLinkingRequestMessageHandler
 {
     /// <summary>
     /// Asynchronously retrieves an LTI launch for the specified deployment, context, and user parameters, optionally applying presentation and deep linking overrides.
@@ -31,8 +31,8 @@ public interface ILti13DeepLinkingRequestMessageHandler : ILtiMessageHandler
     /// If null, default presentation settings are used.</param>
     /// <param name="deepLinkingSettingsOverride">An optional object specifying overrides for deep linking settings. If null, default deep linking settings are used.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the <see cref="LtiLaunch"/> if a matching launch is found; otherwise, null.</returns>
-    Task<LtiLaunch?> GetLtiLaunchAsync(
+    /// <returns>A task that represents the asynchronous operation. The task result contains the <see cref="Lti13Launch"/> if a matching launch is found; otherwise, null.</returns>
+    Task<Lti13Launch?> GetLti13LaunchAsync(
         DeploymentId deploymentId,
         ContextId? contextId = null,
         UserId? userId = null,
@@ -57,7 +57,7 @@ public interface ILti13DeepLinkingRequestMessageHandler : ILtiMessageHandler
     /// <param name="launchPresentationOverride">An optional override for launch presentation parameters, such as display or window settings. If null, default presentation settings are used.</param>
     /// <param name="deepLinkingSettingsOverride">An optional override for deep linking settings. If null, default deep linking settings are used.</param>
     /// <returns>An LtiLaunch object representing the configured LTI launch. The returned object contains all parameters and overrides applied.</returns>
-    LtiLaunch GetLtiLaunch(
+    Lti13Launch GetLti13Launch(
         Uri issuer,
         Tool tool,
         DeploymentId deploymentId,
@@ -79,12 +79,13 @@ internal class Lti13DeepLinkingRequestMessageHandler(
     IEnumerable<ILti13DeepLinkingMessageExtension> extensions,
     ILogger<Lti13DeepLinkingRequestMessageHandler> logger,
     LinkGenerator linkGenerator)
-    : ILti13DeepLinkingRequestMessageHandler
+    : ILti13DeepLinkingRequestMessageHandler,
+        ILti13MessageHandler
 {
     public static readonly string MessageType = "LtiDeepLinkingRequest";
 
     /// <inheritdoc/>
-    public async Task<LtiLaunch?> GetLtiLaunchAsync(
+    public async Task<Lti13Launch?> GetLti13LaunchAsync(
         DeploymentId deploymentId,
         ContextId? contextId,
         UserId? userId,
@@ -109,11 +110,11 @@ internal class Lti13DeepLinkingRequestMessageHandler(
 
         var tokenConfig = await tokenConfigService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
-        return GetLtiLaunch(tokenConfig.Issuer, tool, deploymentId, contextId, userId, actualUserId, isAnonymous, deepLinkingUrl, launchPresentationOverride, deepLinkingSettingsOverride);
+        return GetLti13Launch(tokenConfig.Issuer, tool, deploymentId, contextId, userId, actualUserId, isAnonymous, deepLinkingUrl, launchPresentationOverride, deepLinkingSettingsOverride);
     }
 
     /// <inheritdoc/>
-    public LtiLaunch GetLtiLaunch(
+    public Lti13Launch GetLti13Launch(
         Uri issuer,
         Tool tool,
         DeploymentId deploymentId,
@@ -128,7 +129,7 @@ internal class Lti13DeepLinkingRequestMessageHandler(
         var loginHint = new LoginHint(userId, actualUserId, isAnonymous);
         var ltiMessageHint = new LtiMessageHint(deploymentId, contextId, launchPresentationOverride, deepLinkingSettingsOverride);
 
-        return new LtiLaunch(tool, issuer, deepLinkingUrl ?? tool.LaunchUrl, deploymentId, loginHint.ToString(), ltiMessageHint.ToString());
+        return new Lti13Launch(tool, issuer, deepLinkingUrl ?? tool.LaunchUrl, deploymentId, loginHint.ToString(), ltiMessageHint.ToString());
     }
 
     private static bool TryDeserialize<T>(string jsonString, out T? deserilalized)
@@ -145,7 +146,7 @@ internal class Lti13DeepLinkingRequestMessageHandler(
         }
     }
 
-    public async Task<LtiMessageResult> HandleLtiMessageAsync(
+    public async Task<Lti13MessageResult> HandleLti13MessageAsync(
         string loginHint,
         string? ltiMessageHint,
         Tool tool,
@@ -155,18 +156,18 @@ internal class Lti13DeepLinkingRequestMessageHandler(
         if (ltiMessageHint == null
             || !LtiMessageHint.TryParse(ltiMessageHint, out var ltiMessageHintRecord))
         {
-            return LtiMessageResult.None();
+            return Lti13MessageResult.None();
         }
 
         if (!LoginHint.TryParse(loginHint, out var loginHintRecord))
         {
-            return LtiMessageResult.None();
+            return Lti13MessageResult.None();
         }
 
         var deployment = await dataService.GetDeploymentAsync(ltiMessageHintRecord.DeploymentId, cancellationToken);
         if (deployment == null || deployment.ClientId != tool.ClientId)
         {
-            return LtiMessageResult.Error("");
+            return Lti13MessageResult.Error("");
         }
 
         Context? context = null;
@@ -177,7 +178,7 @@ internal class Lti13DeepLinkingRequestMessageHandler(
 
             if (context == null)
             {
-                return LtiMessageResult.Error("");
+                return Lti13MessageResult.Error("");
             }
         }
 
@@ -187,7 +188,7 @@ internal class Lti13DeepLinkingRequestMessageHandler(
             user = await dataService.GetUserAsync(loginHintRecord.UserId.Value, cancellationToken);
             if (user == null)
             {
-                return LtiMessageResult.Error("");
+                return Lti13MessageResult.Error("");
             }
         }
 
@@ -197,7 +198,7 @@ internal class Lti13DeepLinkingRequestMessageHandler(
             actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId.Value, cancellationToken);
             if (actualUser == null)
             {
-                return LtiMessageResult.Error("");
+                return Lti13MessageResult.Error("");
             }
         }
 
@@ -221,9 +222,9 @@ internal class Lti13DeepLinkingRequestMessageHandler(
                 ? await dataService.GetMembershipAsync(context.Id, actualUser.Id, cancellationToken)
                 : null;
 
-        var ltiMessage = new LtiDeepLinkingRequestMessage()
+        var lti13Message = new Lti13DeepLinkingRequestMessage()
             .WithDeepLinkingSettingsClaims(deepLinkingConfig, linkGenerator, ltiMessageHintRecord.ContextId, ltiMessageHintRecord.DeepLinkingSettingsOverride)
-            .WithLtiMessageClaims(
+            .WithLti13MessageClaims(
                 MessageType,
                 nonce,
                 tool.ClientId,
@@ -243,30 +244,30 @@ internal class Lti13DeepLinkingRequestMessageHandler(
 
         if (context != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithContextClaims(context);
         }
 
         if (platform != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithPlatformInstanceClaims(platform);
         }
 
         if (ltiMessageHintRecord.LaunchPresentationOverride != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                .WithLaunchPresentationClaims(ltiMessageHintRecord.LaunchPresentationOverride);
         }
 
         if (userMembership != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithRolesClaims(userMembership, logger);
 
             if (!loginHintRecord.IsAnonymous)
             {
-                ltiMessage = ltiMessage
+                lti13Message = lti13Message
                     .WithRoleScopeMentorClaims(userMembership);
             }
         }
@@ -275,19 +276,19 @@ internal class Lti13DeepLinkingRequestMessageHandler(
             && userPermissions != null
             && user != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithUserIdentityClaims(userPermissions, user);
         }
 
         if (extensions.Any())
         {
             var extensionResults = await Task.WhenAll(extensions.Select(e => e.GetMessageExtensionAsync(tool, deployment, context, user, cancellationToken)));
-            var extendedMessage = ltiMessage.Extend(extensionResults);
-            return LtiMessageResult.Success(extendedMessage);
+            var extendedMessage = lti13Message.Extend(extensionResults);
+            return Lti13MessageResult.Success(extendedMessage);
         }
         else
         {
-            return LtiMessageResult.Success(ltiMessage);
+            return Lti13MessageResult.Success(lti13Message);
         }
     }
 

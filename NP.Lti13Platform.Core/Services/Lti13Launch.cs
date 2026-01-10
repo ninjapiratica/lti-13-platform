@@ -16,7 +16,7 @@ namespace NP.Lti13Platform.Core.Services;
 /// <param name="DeploymentId">The deployment identifier for the platform-tool installation. This value identifies the specific integration/installation and is sent as 'lti_deployment_id'.</param>
 /// <param name="LoginHint">The computed login hint. This value is transmitted as the 'login_hint' parameter to correlate the login to a platform user (it may encode impersonation and anonymity flags).</param>
 /// <param name="LtiMessageHint">The LTI message hint. This value is sent as 'lti_message_hint' to convey the LTI message context (message type, deployment, context, resource link, and optional message hint) to the tool.</param>
-public record LtiLaunch(Tool Tool, Uri Issuer, Uri TargetLinkUri, DeploymentId DeploymentId, string LoginHint, string LtiMessageHint)
+public record Lti13Launch(Tool Tool, Uri Issuer, Uri TargetLinkUri, DeploymentId DeploymentId, string LoginHint, string LtiMessageHint)
 {
     /// <summary>
     /// Constructs a URI with query parameters required for OIDC initiation.

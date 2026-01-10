@@ -5,7 +5,8 @@ using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 
 namespace NP.Lti13Platform.NameRoleProvisioningServices.Services;
 
-internal class DefaultNameRoleProvisioningConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13NameRoleProvisioningConfigService
+internal class DefaultLti13NameRoleProvisioningConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor)
+    : ILti13NameRoleProvisioningConfigService
 {
     public async Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default)
     {

@@ -25,14 +25,14 @@ public static class DependencyInjection
         where T : ILti13CoreDataService
     {
         serviceCollection.AddAuthentication()
-            .AddScheme<AuthenticationSchemeOptions, LtiServicesAuthHandler>(LtiServicesAuthHandler.SchemeName, null);
+            .AddScheme<AuthenticationSchemeOptions, Lti13ServicesAuthHandler>(Lti13ServicesAuthHandler.SchemeName, null);
 
         serviceCollection.AddHttpContextAccessor();
 
         serviceCollection.AddOptions<Platform>().BindConfiguration("Lti13Platform:Platform");
         serviceCollection.TryAddSingleton<ILti13PlatformService, DefaultLti13PlatformService>();
 
-        serviceCollection.AddOptions<Lti13PlatformTokenConfig>()
+        serviceCollection.AddOptions<TokenConfig>()
             .BindConfiguration("Lti13Platform:Token")
             .Validate(x => x.Issuer.Scheme == Uri.UriSchemeHttps, "Lti13Platform:Token:Issuer is required when using default ILti13TokenConfigService.");
         serviceCollection.TryAddSingleton<ILti13TokenConfigService, DefaultLti13TokenConfigService>();
@@ -77,18 +77,18 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Registers the specified message handler type as an implementation of ILtiMessageHandler in the service collection.
+    /// Registers the specified message handler type as an implementation of ILti13MessageHandler in the service collection.
     /// </summary>
-    /// <remarks>This method enables dependency injection of a custom ILtiMessageHandler implementation.
-    /// Use this method to configure the desired handler and its lifetime when setting up services for LTI message processing.</remarks>
-    /// <typeparam name="T">The type of the message handler to register. Must implement ILtiMessageHandler.</typeparam>
+    /// <remarks>This method enables dependency injection of a custom ILti13MessageHandler implementation.
+    /// Use this method to configure the desired handler and its lifetime when setting up services for LTI 1.3 message processing.</remarks>
+    /// <typeparam name="T">The type of the message handler to register. Must implement ILti13MessageHandler.</typeparam>
     /// <param name="serviceCollection">The IServiceCollection to which the message handler will be added.</param>
     /// <param name="serviceLifetime">The lifetime with which to register the message handler. The default is ServiceLifetime.Transient.</param>
     /// <returns>The IServiceCollection instance with the message handler registration added.</returns>
     public static IServiceCollection WithMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-        where T : ILtiMessageHandler
+        where T : ILti13MessageHandler
     {
-        serviceCollection.Add(new ServiceDescriptor(typeof(ILtiMessageHandler), typeof(T), serviceLifetime));
+        serviceCollection.Add(new ServiceDescriptor(typeof(ILti13MessageHandler), typeof(T), serviceLifetime));
         return serviceCollection;
     }
 
@@ -96,24 +96,24 @@ public static class DependencyInjection
     /// Registers an implementation of the ILti13ResourceLinkMessageDataService interface and the Lti13ResourceLinkRequestMessageHandler for handling LTI 1.3 resource link messages in the dependency injection container.
     /// </summary>
     /// <remarks>This method enables LTI 1.3 resource link message handling by registering the required services.
-    /// Call this method during application startup to ensure that LTI resource link requests are processed correctly.</remarks>
+    /// Call this method during application startup to ensure that LTI 1.3 resource link requests are processed correctly.</remarks>
     /// <typeparam name="T">The type that implements ILti13ResourceLinkMessageDataService to be registered.</typeparam>
     /// <param name="serviceCollection">The IServiceCollection to which the services are added.</param>
     /// <param name="serviceLifetime">The lifetime with which to register the ILti13ResourceLinkMessageDataService implementation. The default is ServiceLifetime.Transient.</param>
-    /// <returns>The IServiceCollection instance with the LTI resource link message handler services registered.</returns>
+    /// <returns>The IServiceCollection instance with the LTI 1.3 resource link message handler services registered.</returns>
     public static IServiceCollection WithDefaultLti13ResourceLinkMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
         where T : ILti13ResourceLinkMessageDataService
     {
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13ResourceLinkMessageDataService), typeof(T), serviceLifetime));
         serviceCollection.AddTransient<ILti13ResourceLinkRequestMessageHandler, Lti13ResourceLinkRequestMessageHandler>();
-        serviceCollection.AddTransient<ILtiMessageHandler, Lti13ResourceLinkRequestMessageHandler>();
+        serviceCollection.AddTransient<ILti13MessageHandler, Lti13ResourceLinkRequestMessageHandler>();
         return serviceCollection;
     }
 
     /// <summary>
     /// Registers an implementation of the ILti13ResourceLinkMessageExtension interface in the service collection with the specified service lifetime.
     /// </summary>
-    /// <remarks>Use this method to enable dependency injection for LTI Resource Link Message extensions.
+    /// <remarks>Use this method to enable dependency injection for LTI 1.3 Resource Link Message extensions.
     /// This allows consumers to resolve ILti13ResourceLinkMessageExtension implementations from the service provider according to the specified lifetime.</remarks>
     /// <typeparam name="T">The type that implements ILti13ResourceLinkMessageExtension to be registered.</typeparam>
     /// <param name="serviceCollection">The IServiceCollection to which the ILti13ResourceLinkMessageExtension implementation will be added.</param>

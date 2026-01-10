@@ -1,12 +1,11 @@
-﻿using NP.Lti13Platform.Core.MessageClaims;
-using NP.Lti13Platform.Core.Models;
+﻿using NP.Lti13Platform.Core.Models;
 
 namespace NP.Lti13Platform.Core.MessageHandlers;
 
 /// <summary>
 /// Defines a contract for handling Learning Tools Interoperability (LTI) messages asynchronously and returning the result of the message processing operation.
 /// </summary>
-public interface ILtiMessageHandler
+public interface ILti13MessageHandler
 {
     /// <summary>
     /// Processes an LTI (Learning Tools Interoperability) message asynchronously and returns the result of the message handling operation.
@@ -17,5 +16,5 @@ public interface ILtiMessageHandler
     /// <param name="nonce">A unique, random string used to prevent replay attacks. Cannot be null or empty.</param>
     /// <param name="cancellationToken">A token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains an LtiMessageResult describing the outcome of the message handling.</returns>
-    Task<LtiMessageResult> HandleLtiMessageAsync(string loginHint, string? ltiMessageHint, Tool tool, string nonce, CancellationToken cancellationToken = default);
+    Task<Lti13MessageResult> HandleLti13MessageAsync(string loginHint, string? ltiMessageHint, Tool tool, string nonce, CancellationToken cancellationToken = default);
 }

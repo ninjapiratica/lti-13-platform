@@ -23,7 +23,7 @@ public static class DependencyInjection
         where T : ILti13NameRoleProvisioningDataService
     {
         serviceCollection.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:NameRoleProvisioningServices");
-        serviceCollection.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
+        serviceCollection.TryAddSingleton<ILti13NameRoleProvisioningConfigService, DefaultLti13NameRoleProvisioningConfigService>();
 
         serviceCollection.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningDataService), typeof(T), serviceLifetime));
 
@@ -55,10 +55,10 @@ public static class DependencyInjection
     /// <param name="serviceCollection">The IServiceCollection to which the message extension implementation will be added.</param>
     /// <param name="serviceLifetime">The lifetime with which to register the service. The default is ServiceLifetime.Transient.</param>
     /// <returns>The IServiceCollection instance with the message extension service registered.</returns>
-    public static IServiceCollection WithLtiNameRoleProvisioningServicesMessageExtension<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-        where T : ILtiNameRoleProvisioningServicesMessageExtension
+    public static IServiceCollection WithLti13NameRoleProvisioningServicesMessageExtension<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        where T : ILti13NameRoleProvisioningServicesMessageExtension
     {
-        serviceCollection.Add(new ServiceDescriptor(typeof(ILtiNameRoleProvisioningServicesMessageExtension), typeof(T), serviceLifetime));
+        serviceCollection.Add(new ServiceDescriptor(typeof(ILti13NameRoleProvisioningServicesMessageExtension), typeof(T), serviceLifetime));
         return serviceCollection;
     }
 }

@@ -19,7 +19,7 @@ public interface ILti13DeepLinkingConfigService
     Task<DeepLinkingConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultDeepLinkingConfigService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13DeepLinkingConfigService
+internal class DefaultLti13DeepLinkingConfigService(IOptionsMonitor<DeepLinkingConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13DeepLinkingConfigService
 {
     public async Task<DeepLinkingConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default)
     {

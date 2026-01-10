@@ -31,10 +31,10 @@ public interface ILti13DeepLinkingResponseDataService
     /// </summary>
     /// <param name="deploymentId">The deployment identifier.</param>
     /// <param name="contextId">Optional. The context identifier.</param>
-    /// <param name="resourceLinkContentItem">The resource link content item to save.</param>
+    /// <param name="ltiResourceLinkContentItem">The resource link content item to save.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the identifier of the saved resource link.</returns>
-    Task<ResourceLinkId> SaveResourceLinkAsync(DeploymentId deploymentId, ContextId? contextId, LtiResourceLinkContentItem resourceLinkContentItem, CancellationToken cancellationToken = default);
+    Task<ResourceLinkId> SaveResourceLinkAsync(DeploymentId deploymentId, ContextId? contextId, LtiResourceLinkContentItem ltiResourceLinkContentItem, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Saves a line item to the data store.

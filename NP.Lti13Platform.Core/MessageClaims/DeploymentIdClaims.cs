@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 namespace NP.Lti13Platform.Core.MessageClaims;
 
 /// <summary>
-/// Defines a contract for accessing the deployment identifier claim used in LTI integrations.
+/// Defines a contract for accessing the deployment identifier claim used in LTI 1.3 integrations.
 /// </summary>
-/// <remarks>Implementations of this interface provide access to the deployment Id associated with an LTI launch,
+/// <remarks>Implementations of this interface provide access to the deployment Id associated with an LTI 1.3 launch,
 /// as specified by the IMS Global standard. The deployment Id uniquely identifies the context in which the tool is
 /// deployed within the platform.</remarks>
 public interface IDeploymentIdClaims

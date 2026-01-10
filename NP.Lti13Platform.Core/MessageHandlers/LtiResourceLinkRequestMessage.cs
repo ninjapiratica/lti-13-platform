@@ -9,10 +9,10 @@ namespace NP.Lti13Platform.Core.MessageHandlers;
 /// <remarks>This interface aggregates claims and properties from multiple LTI-related interfaces, including user identity, roles, context, platform instance, and custom claims.
 /// It is typically used to model the data received during an LTI resource link launch, enabling tools to access launch parameters in a strongly typed manner.</remarks>
 public interface ILtiResourceLinkRequestMessage
-    : ILtiMessage,
+    : ILti13Message,
     ILtiVersionClaims,
     IDeploymentIdClaims,
-    ILtiTargetLinkUriClaims,
+    ITargetLinkUriClaims,
     IResourceLinkClaims,
     IUserIdentityClaims,
     IRolesClaims,

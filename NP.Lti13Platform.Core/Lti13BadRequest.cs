@@ -3,9 +3,9 @@
 namespace NP.Lti13Platform.Core;
 
 /// <summary>
-/// Represents an LTI bad request error response.
+/// Represents an LTI 1.3 bad request error response.
 /// </summary>
-public record LtiBadRequest
+public record Lti13BadRequest
 {
     /// <summary>
     /// Gets or sets the error code.

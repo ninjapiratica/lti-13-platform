@@ -37,11 +37,11 @@ public static class Endpoints
     /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
     /// <param name="configure">Optional configuration for service endpoints.</param>
     /// <returns>The updated endpoint route builder.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<ServiceEndpointsConfig, ServiceEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13PlatformAssignmentGradeServices(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
     {
         const string OpenAPI_Tag = "LTI 1.3 Assignment and Grade Services";
 
-        ServiceEndpointsConfig config = new();
+        EndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.LineItemsUrl,
@@ -121,13 +121,13 @@ public static class Endpoints
             .WithName(RouteNames.GET_LINE_ITEMS)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
             })
             .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItemContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the line items within a context.")
             .WithDescription("Gets the line items within a context. Can be filtered by resource id, resource link id, or tag. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
@@ -166,7 +166,7 @@ public static class Endpoints
 
                 if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != Lti13ContentTypes.LineItem)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid Content-Type",
                         Error_Description = $"Content-Type must be '{Lti13ContentTypes.LineItem}'",
@@ -176,7 +176,7 @@ public static class Endpoints
 
                 if (string.IsNullOrWhiteSpace(request.Label))
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid Label",
                         Error_Description = "Label is reuired",
@@ -186,7 +186,7 @@ public static class Endpoints
 
                 if (request.ScoreMaximum <= 0)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid ScoreMaximum",
                         Error_Description = "ScoreMaximum must be greater than 0",
@@ -239,7 +239,7 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.LineItem);
             })
             .Produces<LineItemResponse>(StatusCodes.Status201Created, MediaTypeNames.Application.Json)
@@ -247,7 +247,7 @@ public static class Endpoints
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Creates a line item within a context.")
             .WithDescription("Creates a line item within a context.");
@@ -308,13 +308,13 @@ public static class Endpoints
             .WithName(RouteNames.GET_LINE_ITEM)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
             })
             .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets a line item within a context.")
             .WithDescription("Gets a line item within a context.");
@@ -360,7 +360,7 @@ public static class Endpoints
 
                 if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != Lti13ContentTypes.LineItem)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid Content-Type",
                         Error_Description = $"Content-Type must be '{Lti13ContentTypes.LineItem}'",
@@ -370,7 +370,7 @@ public static class Endpoints
 
                 if (string.IsNullOrWhiteSpace(request.Label))
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid Label",
                         Error_Description = "Label is reuired",
@@ -380,7 +380,7 @@ public static class Endpoints
 
                 if (request.ScoreMaximum <= 0)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid ScoreMaximum",
                         Error_Description = "ScoreMaximum must be greater than 0",
@@ -390,7 +390,7 @@ public static class Endpoints
 
                 if (request.ResourceLinkId != null && request.ResourceLinkId != lineItem.ResourceLinkId)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid ResourceLinkId",
                         Error_Description = "ResourceLinkId may not change after creation",
@@ -426,15 +426,15 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.LineItem);
             })
             .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
+            .Produces<Lti13BadRequest>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Updates a line item within a context.")
             .WithDescription("Updates a line item within a context.");
@@ -482,14 +482,14 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.LineItem);
             })
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Deletes a line item within a context.")
             .WithDescription("Deletes a line item within a context.");
@@ -574,13 +574,13 @@ public static class Endpoints
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.ResultReadOnly);
             })
             .Produces<LineItemResultResponse>(StatusCodes.Status200OK, Lti13ContentTypes.ResultContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the results within a context and line item.")
             .WithDescription("Gets the results within a context and line item. Can be filtered by user id. It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers.");
@@ -625,7 +625,7 @@ public static class Endpoints
 
                 if (DateTime.UtcNow < lineItem.StartDateTime)
                 {
-                    return Results.Json(new LtiBadRequest
+                    return Results.Json(new Lti13BadRequest
                     {
                         Error = "startDateTime",
                         Error_Description = "lineItem startDateTime is in the future",
@@ -635,7 +635,7 @@ public static class Endpoints
 
                 if (DateTime.UtcNow > lineItem.EndDateTime)
                 {
-                    return Results.Json(new LtiBadRequest
+                    return Results.Json(new Lti13BadRequest
                     {
                         Error = "endDateTime",
                         Error_Description = "lineItem endDateTime is in the past",
@@ -656,7 +656,7 @@ public static class Endpoints
                 }
                 else if (grade.Timestamp >= request.TimeStamp)
                 {
-                    return Results.Conflict(new LtiBadRequest
+                    return Results.Conflict(new Lti13BadRequest
                     {
                         Error = "timestamp",
                         Error_Description = "timestamp must be after the current timestamp",
@@ -704,17 +704,17 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(LtiServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.Score);
             })
             .Produces(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces<LtiBadRequest>(StatusCodes.Status409Conflict)
-            .Produces<LtiBadRequest>(StatusCodes.Status403Forbidden)
+            .Produces<Lti13BadRequest>(StatusCodes.Status409Conflict)
+            .Produces<Lti13BadRequest>(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .DisableAntiforgery()
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Creates or updates a score within a context.")
             .WithDescription("Creates or updates a score within a context.");

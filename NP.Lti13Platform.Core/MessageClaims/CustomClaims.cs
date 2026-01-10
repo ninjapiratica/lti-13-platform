@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace NP.Lti13Platform.Core.MessageClaims;
 
 /// <summary>
-/// Defines the contract for a message containing custom LTI claims.
+/// Defines the contract for a message containing custom LTI 1.3 claims.
 /// </summary>
 public interface ICustomClaims
 {
@@ -20,7 +20,7 @@ public interface ICustomClaims
 public static partial class ClaimsExtensions
 {
     /// <summary>
-    /// Populates the custom claims of the specified object with values derived from the provided LTI context, user, and
+    /// Populates the custom claims of the specified object with values derived from the provided LTI 1.3 context, user, and
     /// resource information, according to the given custom permissions.
     /// </summary>
     /// <remarks>If any of the tool, deployment, or resource link parameters are null or do not contain custom

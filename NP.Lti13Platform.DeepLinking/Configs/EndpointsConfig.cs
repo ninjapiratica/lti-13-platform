@@ -3,7 +3,7 @@
 /// <summary>
 /// Configuration for Deep Linking endpoints in the LTI 1.3 platform.
 /// </summary>
-public class DeepLinkingEndpointsConfig
+public class EndpointsConfig
 {
     /// <summary>
     /// Endpoint for the response of LTI 1.3 deep link messages.

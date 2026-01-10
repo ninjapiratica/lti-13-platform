@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.MessageHandlers;
 /// <summary>
 /// Defines a contract for asynchronously retrieving a message extension object associated with a specific tool, resource link, and user in the context of LTI Name and Role Provisioning Services.
 /// </summary>
-public interface ILtiNameRoleProvisioningServicesMessageExtension
+public interface ILti13NameRoleProvisioningServicesMessageExtension
 {
     /// <summary>
     /// Asynchronously retrieves a message extension object for the specified tool, resource link, and user.

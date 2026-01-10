@@ -11,9 +11,8 @@ namespace NP.Lti13Platform.Core.MessageHandlers;
 /// Defines methods for handling LTI resource link launch requests, enabling retrieval and creation of LTI launch information for specific resource links and user contexts.
 /// </summary>
 /// <remarks>Implementations of this interface provide functionality for constructing and retrieving LTI launch data in accordance with the LTI specification.
-/// Methods support scenarios such as anonymous launches, acting on behalf of another user, and customizing launch presentation parameters.
-/// This interface extends ILtiMessageHandler to support resource link-specific launch workflows.</remarks>
-public interface ILti13ResourceLinkRequestMessageHandler : ILtiMessageHandler
+/// Methods support scenarios such as anonymous launches, acting on behalf of another user, and customizing launch presentation parameters.</remarks>
+public interface ILti13ResourceLinkRequestMessageHandler
 {
     /// <summary>
     /// Asynchronously retrieves the LTI launch information for the specified resource link and user context.
@@ -26,7 +25,7 @@ public interface ILti13ResourceLinkRequestMessageHandler : ILtiMessageHandler
     /// <param name="launchPresentationOverride">An optional override for launch presentation parameters, such as display target or return URL. If null, default presentation settings are used.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the LTI launch information for the specified resource link and user context.</returns>
-    Task<LtiLaunch?> GetLtiLaunchAsync(ResourceLinkId resourceLinkId, UserId? userId = null, UserId? actualUserId = null, bool isAnonymous = false, LaunchPresentationOverride? launchPresentationOverride = null, CancellationToken cancellationToken = default);
+    Task<Lti13Launch?> GetLti13LaunchAsync(ResourceLinkId resourceLinkId, UserId? userId = null, UserId? actualUserId = null, bool isAnonymous = false, LaunchPresentationOverride? launchPresentationOverride = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates an LTI launch request for the specified issuer, tool, and resource link, with optional user and presentation overrides.
@@ -41,7 +40,7 @@ public interface ILti13ResourceLinkRequestMessageHandler : ILtiMessageHandler
     /// <param name="isAnonymous">true if the launch should be performed without identifying the user; otherwise, false.</param>
     /// <param name="launchPresentationOverride">An optional override for launch presentation parameters, such as display or window preferences. If null, default presentation settings are used.</param>
     /// <returns>An LtiLaunch object representing the constructed LTI launch request.</returns>
-    LtiLaunch GetLtiLaunch(Uri issuer, Tool tool, ResourceLink resourceLink, UserId? userId = null, UserId? actualUserId = null, bool isAnonymous = false, LaunchPresentationOverride? launchPresentationOverride = null);
+    Lti13Launch GetLti13Launch(Uri issuer, Tool tool, ResourceLink resourceLink, UserId? userId = null, UserId? actualUserId = null, bool isAnonymous = false, LaunchPresentationOverride? launchPresentationOverride = null);
 }
 
 /// <summary>
@@ -62,12 +61,13 @@ internal class Lti13ResourceLinkRequestMessageHandler(
     ILti13PlatformService platformService,
     IEnumerable<ILti13ResourceLinkMessageExtension> extensions,
     ILogger<Lti13ResourceLinkRequestMessageHandler> logger)
-    : ILti13ResourceLinkRequestMessageHandler
+    : ILti13ResourceLinkRequestMessageHandler,
+        ILti13MessageHandler
 {
     private static readonly string MessageType = "LtiResourceLinkRequest";
 
     /// <inheritdoc/>
-    public async Task<LtiLaunch?> GetLtiLaunchAsync(ResourceLinkId resourceLinkId, UserId? userId, UserId? actualUserId, bool isAnonymous, LaunchPresentationOverride? launchPresentationOverride = null, CancellationToken cancellationToken = default)
+    public async Task<Lti13Launch?> GetLti13LaunchAsync(ResourceLinkId resourceLinkId, UserId? userId, UserId? actualUserId, bool isAnonymous, LaunchPresentationOverride? launchPresentationOverride = null, CancellationToken cancellationToken = default)
     {
         var resourceLink = await dataService.GetResourceLinkAsync(resourceLinkId, cancellationToken);
 
@@ -87,16 +87,16 @@ internal class Lti13ResourceLinkRequestMessageHandler(
 
         var tokenConfig = await tokenConfigService.GetTokenConfigAsync(tool.ClientId, cancellationToken);
 
-        return GetLtiLaunch(tokenConfig.Issuer, tool, resourceLink, userId, actualUserId, isAnonymous, launchPresentationOverride);
+        return GetLti13Launch(tokenConfig.Issuer, tool, resourceLink, userId, actualUserId, isAnonymous, launchPresentationOverride);
     }
 
     /// <inheritdoc/>
-    public LtiLaunch GetLtiLaunch(Uri issuer, Tool tool, ResourceLink resourceLink, UserId? userId = null, UserId? actualUserId = null, bool isAnonymous = false, LaunchPresentationOverride? launchPresentationOverride = null)
+    public Lti13Launch GetLti13Launch(Uri issuer, Tool tool, ResourceLink resourceLink, UserId? userId = null, UserId? actualUserId = null, bool isAnonymous = false, LaunchPresentationOverride? launchPresentationOverride = null)
     {
         var loginHint = new LoginHint(userId, actualUserId, isAnonymous);
         var ltiMessageHint = new LtiMessageHint(resourceLink.Id, launchPresentationOverride);
 
-        return new LtiLaunch(tool, issuer, resourceLink.Url ?? tool.LaunchUrl, resourceLink.DeploymentId, loginHint.ToString(), ltiMessageHint.ToString());
+        return new Lti13Launch(tool, issuer, resourceLink.Url ?? tool.LaunchUrl, resourceLink.DeploymentId, loginHint.ToString(), ltiMessageHint.ToString());
     }
 
     private static bool TryDeserialize<T>(string jsonString, out T? deserilalized)
@@ -114,7 +114,7 @@ internal class Lti13ResourceLinkRequestMessageHandler(
     }
 
     /// <inheritdoc/>
-    public async Task<LtiMessageResult> HandleLtiMessageAsync(
+    public async Task<Lti13MessageResult> HandleLti13MessageAsync(
         string loginHint,
         string? ltiMessageHint,
         Tool tool,
@@ -124,30 +124,30 @@ internal class Lti13ResourceLinkRequestMessageHandler(
         if (ltiMessageHint == null
             || !LtiMessageHint.TryParse(ltiMessageHint, out var ltiMessageHintRecord))
         {
-            return LtiMessageResult.None();
+            return Lti13MessageResult.None();
         }
 
         if (!LoginHint.TryParse(loginHint, out var loginHintRecord))
         {
-            return LtiMessageResult.None();
+            return Lti13MessageResult.None();
         }
 
         var resourceLink = await dataService.GetResourceLinkAsync(ltiMessageHintRecord.ResourceLinkId, cancellationToken);
         if (resourceLink == null)
         {
-            return LtiMessageResult.Error("");
+            return Lti13MessageResult.Error("");
         }
 
         var context = await dataService.GetContextAsync(resourceLink.ContextId, cancellationToken);
         if (context == null)
         {
-            return LtiMessageResult.Error("");
+            return Lti13MessageResult.Error("");
         }
 
         var deployment = await dataService.GetDeploymentAsync(resourceLink.DeploymentId, cancellationToken);
         if (deployment == null || deployment.ClientId != tool.ClientId)
         {
-            return LtiMessageResult.Error("");
+            return Lti13MessageResult.Error("");
         }
 
         User? user = null;
@@ -156,7 +156,7 @@ internal class Lti13ResourceLinkRequestMessageHandler(
             user = await dataService.GetUserAsync(loginHintRecord.UserId.Value, cancellationToken);
             if (user == null)
             {
-                return LtiMessageResult.Error("");
+                return Lti13MessageResult.Error("");
             }
         }
 
@@ -166,7 +166,7 @@ internal class Lti13ResourceLinkRequestMessageHandler(
             actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId.Value, cancellationToken);
             if (actualUser == null)
             {
-                return LtiMessageResult.Error("");
+                return Lti13MessageResult.Error("");
             }
         }
 
@@ -193,8 +193,8 @@ internal class Lti13ResourceLinkRequestMessageHandler(
             ? await dataService.GetMembershipAsync(context.Id, actualUser.Id, cancellationToken)
             : null;
 
-        var ltiMessage = new LtiResourceLinkRequestMessage()
-            .WithLtiMessageClaims(
+        var lti13Message = new LtiResourceLinkRequestMessage()
+            .WithLti13MessageClaims(
                 MessageType,
                 nonce,
                 tool.ClientId,
@@ -221,24 +221,24 @@ internal class Lti13ResourceLinkRequestMessageHandler(
 
         if (platform != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithPlatformInstanceClaims(platform);
         }
 
         if (ltiMessageHintRecord.LaunchPresentationOverride != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                .WithLaunchPresentationClaims(ltiMessageHintRecord.LaunchPresentationOverride);
         }
 
         if (userMembership != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithRolesClaims(userMembership, logger);
 
             if (!loginHintRecord.IsAnonymous)
             {
-                ltiMessage = ltiMessage
+                lti13Message = lti13Message
                     .WithRoleScopeMentorClaims(userMembership);
             }
         }
@@ -247,19 +247,19 @@ internal class Lti13ResourceLinkRequestMessageHandler(
             && userPermissions != null
             && user != null)
         {
-            ltiMessage = ltiMessage
+            lti13Message = lti13Message
                 .WithUserIdentityClaims(userPermissions, user);
         }
 
         if (extensions.Any())
         {
             var extensionResults = await Task.WhenAll(extensions.Select(e => e.GetMessageExtensionAsync(tool, resourceLink, user, cancellationToken)));
-            var extendedMessage = ltiMessage.Extend(extensionResults);
-            return LtiMessageResult.Success(extendedMessage);
+            var extendedMessage = lti13Message.Extend(extensionResults);
+            return Lti13MessageResult.Success(extendedMessage);
         }
         else
         {
-            return LtiMessageResult.Success(ltiMessage);
+            return Lti13MessageResult.Success(lti13Message);
         }
     }
 

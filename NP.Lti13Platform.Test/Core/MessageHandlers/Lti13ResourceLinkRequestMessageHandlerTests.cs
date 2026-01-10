@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.MessageHandlers;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
@@ -32,10 +31,10 @@ public class Lti13ResourceLinkRequestMessageHandlerTests
         var tool = new Tool { ClientId = new ClientId("client"), OidcInitiationUrl = new Uri("https://example.com"), LaunchUrl = new Uri("https://example.com") };
 
         // Act
-        var result = await handler.HandleLtiMessageAsync("loginHint", null, tool, "nonce");
+        var result = await handler.HandleLti13MessageAsync("loginHint", null, tool, "nonce");
 
         // Assert
-        Assert.IsType<LtiMessageResult.NoneResult>(result);
+        Assert.IsType<Lti13MessageResult.NoneResult>(result);
     }
 
     [Fact]
@@ -60,10 +59,10 @@ public class Lti13ResourceLinkRequestMessageHandlerTests
         var tool = new Tool { ClientId = new ClientId("client"), OidcInitiationUrl = new Uri("https://example.com"), LaunchUrl = new Uri("https://example.com") };
 
         // Act
-        var result = await handler.HandleLtiMessageAsync("loginHint", "invalid", tool, "nonce");
+        var result = await handler.HandleLti13MessageAsync("loginHint", "invalid", tool, "nonce");
 
         // Assert
-        Assert.IsType<LtiMessageResult.NoneResult>(result);
+        Assert.IsType<Lti13MessageResult.NoneResult>(result);
     }
 
     [Fact]
@@ -88,9 +87,9 @@ public class Lti13ResourceLinkRequestMessageHandlerTests
         var tool = new Tool { ClientId = new ClientId("client"), OidcInitiationUrl = new Uri("https://example.com"), LaunchUrl = new Uri("https://example.com") };
 
         // Act
-        var result = await handler.HandleLtiMessageAsync("invalid", "LtiResourceLinkRequest|resourceId|", tool, "nonce");
+        var result = await handler.HandleLti13MessageAsync("invalid", "LtiResourceLinkRequest|resourceId|", tool, "nonce");
 
         // Assert
-        Assert.IsType<LtiMessageResult.NoneResult>(result);
+        Assert.IsType<Lti13MessageResult.NoneResult>(result);
     }
 }

@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace NP.Lti13Platform.Core.MessageClaims;
 
 /// <summary>
-/// Defines the contract for a message containing LTI context information.
+/// Defines the contract for a message containing LTI 1.3 context information.
 /// </summary>
 public interface IContextClaims
 {
@@ -15,7 +15,7 @@ public interface IContextClaims
     public ContextClaim? Context { get; set; }
 
     /// <summary>
-    /// Represents the LTI context information.
+    /// Represents the LTI 1.3 context information.
     /// </summary>
     public class ContextClaim
     {

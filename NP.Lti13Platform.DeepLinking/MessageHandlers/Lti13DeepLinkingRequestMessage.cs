@@ -11,9 +11,9 @@ namespace NP.Lti13Platform.DeepLinking.MessageHandlers;
 /// <remarks>Implementations of this interface provide access to all standard claims required for LTI Deep Linking, including user identity, context, platform instance, and deep linking settings.
 /// This interface is typically used by LTI tool providers to interpret and validate deep linking launch requests and to construct appropriate responses.
 /// For more information about LTI Deep Linking, see the IMS Global LTI specification.</remarks>
-public interface ILtiDeepLinkingRequestMessage
+public interface ILti13DeepLinkingRequestMessage
     : IDeepLinkingSettingsClaims,
-    ILtiMessage,
+    ILti13Message,
     ILtiVersionClaims,
     IDeploymentIdClaims,
     IUserIdentityClaims,
@@ -32,8 +32,8 @@ public interface ILtiDeepLinkingRequestMessage
 /// <remarks>This record encapsulates all claims defined by the LTI 1.3 Deep Linking specification, including user identity, context, platform, and deep linking settings.
 /// It is typically used by LTI-compliant tools to process and respond to deep linking requests initiated by learning platforms.
 /// All required and optional claims are exposed as properties to facilitate validation and handling of the deep linking workflow.</remarks>
-public record LtiDeepLinkingRequestMessage
-    : ILtiDeepLinkingRequestMessage
+public record Lti13DeepLinkingRequestMessage
+    : ILti13DeepLinkingRequestMessage
 {
     /// <inheritdoc/>
     public IDeepLinkingSettingsClaims.DeepLinkingSettingsClaim DeepLinkSettings { get; set; } = null!;

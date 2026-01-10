@@ -3,7 +3,7 @@
 /// <summary>
 /// Gets or sets the paths for line item services.
 /// </summary>
-public class ServiceEndpointsConfig
+public class EndpointsConfig
 {
     /// <summary>
     /// Endpoint used to get a list of line items or create a new line item.

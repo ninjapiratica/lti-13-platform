@@ -3,12 +3,12 @@
 namespace NP.Lti13Platform.Core.MessageClaims;
 
 /// <summary>
-/// Defines the contract for accessing the target link URI claim in an LTI message.
+/// Defines the contract for accessing the target link URI claim in an LTI 1.3 message.
 /// </summary>
 /// <remarks>The target link URI identifies the resource within the tool that the platform requests to launch.
 /// Implementations should ensure that this value is a valid absolute URI as required by the LTI
 /// specification.</remarks>
-public interface ILtiTargetLinkUriClaims
+public interface ITargetLinkUriClaims
 {
     /// <summary>
     /// Gets or sets the target link URI.
@@ -29,7 +29,7 @@ public static partial class ClaimsExtensions
     public static T WithTargetLinkUriClaims<T>(
         this T obj,
         Uri targetLinkUri)
-        where T : ILtiTargetLinkUriClaims
+        where T : ITargetLinkUriClaims
     {
         obj.TargetLinkUri = targetLinkUri.OriginalString;
 

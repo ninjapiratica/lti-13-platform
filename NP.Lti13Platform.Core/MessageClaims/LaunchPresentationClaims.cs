@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace NP.Lti13Platform.Core.MessageClaims;
 
 /// <summary>
-/// Defines the contract for an LTI launch presentation message.
+/// Defines the contract for an LTI 1.3 launch presentation message.
 /// </summary>
 public interface ILaunchPresentationClaims
 {

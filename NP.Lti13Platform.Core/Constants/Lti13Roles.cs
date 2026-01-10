@@ -39,10 +39,10 @@ public static class Lti13SystemRoles
     /// </summary>
     public static readonly string User = "http://purl.imsglobal.org/vocab/lis/v2/system/person#User";
 
-    // LTI Launch Only
+    // LTI 1.3 Launch Only
 
     /// <summary>
-    /// TestUser system role. Should be used only for LTI launches and only in conjunction with a 'real' role.
+    /// TestUser system role. Should be used only for LTI 1.3 launches and only in conjunction with a 'real' role.
     /// <see href="https://www.imsglobal.org/spec/lti/v1p3/#lti-vocabulary-for-system-roles"/>.
     /// </summary>
     public static readonly string TestUser = "http://purl.imsglobal.org/vocab/lti/system/person#TestUser";

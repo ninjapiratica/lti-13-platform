@@ -6,7 +6,6 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Constants;
-using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.MessageHandlers;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
@@ -54,11 +53,11 @@ public static class Endpoints
                     keySet.Keys.Add(jwk);
                 }
 
-                return Results.Json(keySet, JsonSerializerLtiMessageOptions.JSON_SERIALIZER_OPTIONS);
+                return Results.Json(keySet, JsonSerializerLti13MessageOptions.JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
             .WithName(RouteNames.JWKS)
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets the public keys used for JWT signing verification.")
             .WithDescription("Gets the public keys used for JWT signing verification.");
@@ -82,7 +81,7 @@ public static class Endpoints
 
                 if (request == null)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "request body is missing",
@@ -92,7 +91,7 @@ public static class Endpoints
 
                 if (request.Grant_Type != "client_credentials")
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "unsupported_grant_type",
                         Error_Description = "grant_type must be 'client_credentials'",
@@ -102,7 +101,7 @@ public static class Endpoints
 
                 if (request.Client_Assertion_Type != "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_GRANT,
                         Error_Description = "client_assertion_type must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'",
@@ -112,7 +111,7 @@ public static class Endpoints
 
                 if (string.IsNullOrWhiteSpace(request.Scope))
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_SCOPE,
                         Error_Description = SCOPE_REQUIRED,
@@ -122,7 +121,7 @@ public static class Endpoints
 
                 if (string.IsNullOrWhiteSpace(request.Client_Assertion))
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_GRANT,
                         Error_Description = CLIENT_ASSERTION_INVALID,
@@ -133,7 +132,7 @@ public static class Endpoints
                 var jwt = new JsonWebToken(request.Client_Assertion);
                 if (jwt.Issuer != jwt.Subject)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_GRANT,
                         Error_Description = CLIENT_ASSERTION_INVALID,
@@ -144,7 +143,7 @@ public static class Endpoints
                 var tool = await dataService.GetToolAsync(new ClientId(jwt.Issuer), cancellationToken);
                 if (tool?.Jwks == null)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_GRANT,
                         Error_Description = CLIENT_ASSERTION_INVALID,
@@ -158,7 +157,7 @@ public static class Endpoints
                     .ToList();
                 if (scopes.Count == 0)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_SCOPE,
                         Error_Description = SCOPE_REQUIRED,
@@ -179,7 +178,7 @@ public static class Endpoints
 
                 if (!validatedToken.IsValid)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = validatedToken.Exception.Message,
@@ -192,7 +191,7 @@ public static class Endpoints
                 var serviceToken = await dataService.GetServiceTokenAsync(tool.ClientId, serviceTokenId, cancellationToken);
                 if (serviceToken?.Expiration > DateTime.UtcNow)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "jti has already been used and is not expired",
@@ -227,13 +226,13 @@ public static class Endpoints
                     TokenType = "bearer",
                     ExpiresIn = tokenConfig.AccessTokenExpirationSeconds,
                     Scope = string.Join(' ', scopes)
-                }, JsonSerializerLtiMessageOptions.JSON_SERIALIZER_OPTIONS);
+                }, JsonSerializerLti13MessageOptions.JSON_SERIALIZER_OPTIONS);
             })
             .WithName(RouteNames.TOKEN)
             .DisableAntiforgery()
-            .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
+            .Produces<Lti13BadRequest>(StatusCodes.Status400BadRequest)
             .Produces<TokenResponse>()
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Gets a token to be used with platform services.")
             .WithDescription("The tool will request from this endpoint a token that will be used to authorize calls into other LTI 1.3 services.");
@@ -241,18 +240,18 @@ public static class Endpoints
         endpointRouteBuilder.MapGet(config.AuthenticationUrl,
             ([AsParameters] AuthenticationRequest queryString,
             ILti13CoreDataService dataService,
-            IEnumerable<ILtiMessageHandler> ltiMessageHandlers,
+            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
-                HandleAuthentication(queryString, dataService, ltiMessageHandlers, cancellationToken)
+                HandleAuthentication(queryString, dataService, lti13MessageHandlers, cancellationToken)
             )
             .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_GET);
 
         endpointRouteBuilder.MapPost(config.AuthenticationUrl,
             ([FromForm] AuthenticationRequest form,
             ILti13CoreDataService dataService,
-            IEnumerable<ILtiMessageHandler> ltiMessageHandlers,
+            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
-                HandleAuthentication(form, dataService, ltiMessageHandlers, cancellationToken)
+                HandleAuthentication(form, dataService, lti13MessageHandlers, cancellationToken)
             )
             .ConfigureAuthenticationEndpoint(RouteNames.AUTHENTICATION_POST);
 
@@ -262,7 +261,7 @@ public static class Endpoints
     private static async Task<IResult> HandleAuthentication(
         AuthenticationRequest request,
         ILti13CoreDataService dataService,
-        IEnumerable<ILtiMessageHandler> ltiMessageHandlers,
+        IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
         CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";
@@ -284,7 +283,7 @@ public static class Endpoints
 
         if (request.Response_Type != "id_token")
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_REQUEST,
                 Error_Description = "response_type must be 'id_token'.",
@@ -294,7 +293,7 @@ public static class Endpoints
 
         if (request.Response_Mode != "form_post")
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_REQUEST,
                 Error_Description = "response_mode must be 'form_post'.",
@@ -304,7 +303,7 @@ public static class Endpoints
 
         if (request.Prompt != "none")
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_REQUEST,
                 Error_Description = "prompt must be 'none'.",
@@ -314,7 +313,7 @@ public static class Endpoints
 
         if (string.IsNullOrWhiteSpace(request.Nonce))
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_REQUEST,
                 Error_Description = "nonce is required.",
@@ -324,7 +323,7 @@ public static class Endpoints
 
         if (string.IsNullOrWhiteSpace(request.Login_Hint))
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_REQUEST,
                 Error_Description = "login_hint is required",
@@ -334,7 +333,7 @@ public static class Endpoints
 
         if (string.IsNullOrWhiteSpace(request.Client_Id))
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_CLIENT,
                 Error_Description = "client_id is required.",
@@ -345,7 +344,7 @@ public static class Endpoints
         var tool = await dataService.GetToolAsync(new ClientId(request.Client_Id), cancellationToken);
         if (tool == null)
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_CLIENT,
                 Error_Description = "client_id is unknown",
@@ -355,7 +354,7 @@ public static class Endpoints
 
         if (!tool.RedirectUrls.Contains(request.Redirect_Uri))
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = "invalid_grant",
                 Error_Description = "redirect_uri is unknown",
@@ -363,21 +362,21 @@ public static class Endpoints
             });
         }
 
-        object? ltiMessage = null;
-        LtiBadRequest? failedLtiMessageResult = null;
-        foreach (var ltiMessageHandler in ltiMessageHandlers)
+        object? lti13Message = null;
+        Lti13BadRequest? failedLti13MessageResult = null;
+        foreach (var lti13MessageHandler in lti13MessageHandlers)
         {
-            var result = await ltiMessageHandler.HandleLtiMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
+            var result = await lti13MessageHandler.HandleLti13MessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
 
-            if (result is LtiMessageResult.SuccessResult successResult)
+            if (result is Lti13MessageResult.SuccessResult successResult)
             {
-                ltiMessage = successResult.LtiMessage;
-                failedLtiMessageResult = null;
+                lti13Message = successResult.Lti13Message;
+                failedLti13MessageResult = null;
                 break;
             }
-            else if (result is LtiMessageResult.ErrorResult errorResult)
+            else if (result is Lti13MessageResult.ErrorResult errorResult)
             {
-                failedLtiMessageResult = new LtiBadRequest
+                failedLti13MessageResult = new Lti13BadRequest
                 {
                     Error = INVALID_REQUEST,
                     Error_Description = errorResult.ErrorMessage,
@@ -386,14 +385,14 @@ public static class Endpoints
             }
         }
 
-        if (failedLtiMessageResult != null)
+        if (failedLti13MessageResult != null)
         {
-            return Results.BadRequest(failedLtiMessageResult);
+            return Results.BadRequest(failedLti13MessageResult);
         }
 
-        if (ltiMessage == null)
+        if (lti13Message == null)
         {
-            return Results.BadRequest(new LtiBadRequest
+            return Results.BadRequest(new Lti13BadRequest
             {
                 Error = INVALID_REQUEST,
                 Error_Description = "unsupported message type",
@@ -404,7 +403,7 @@ public static class Endpoints
         var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
         var token = new JsonWebTokenHandler().CreateToken(
-            JsonSerializer.Serialize(ltiMessage, JsonSerializerLtiMessageOptions.LTI_MESSAGE_JSON_SERIALIZER_OPTIONS),
+            JsonSerializer.Serialize(lti13Message, JsonSerializerLti13MessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
             new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
         return Results.Content($@"
@@ -428,9 +427,9 @@ public static class Endpoints
         return routeHandlerBuilder
             .WithName(routeName)
             .DisableAntiforgery()
-            .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
+            .Produces<Lti13BadRequest>(StatusCodes.Status400BadRequest)
             .Produces<string>(contentType: MediaTypeNames.Text.Html)
-            .WithGroupName(OpenApi.GroupName)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Callback that handles the authentication request from the tool")
             .WithDescription("After the tool receives the initial request, it will call back to this endpoint for authentication and to get the message it should handle. This endpoint will verify everything and post back to the tool with the correct message that was initially requested. Can be called as a get with query parameters or a post with a form.");

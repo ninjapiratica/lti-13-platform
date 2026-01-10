@@ -13,8 +13,8 @@ public class Lti13TokenConfigServiceTests
     public async Task GetTokenConfigAsync_ReturnsCurrentValue()
     {
         // Arrange
-        var config = new Lti13PlatformTokenConfig { Issuer = new Uri("https://example.com") };
-        var optionsMonitorMock = new Mock<IOptionsMonitor<Lti13PlatformTokenConfig>>();
+        var config = new TokenConfig { Issuer = new Uri("https://example.com") };
+        var optionsMonitorMock = new Mock<IOptionsMonitor<TokenConfig>>();
         optionsMonitorMock.Setup(o => o.CurrentValue).Returns(config);
         var service = new DefaultLti13TokenConfigService(optionsMonitorMock.Object);
 

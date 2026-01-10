@@ -22,7 +22,7 @@ public interface ILti13DeepLinkingResponseHandler
     Task<IResult> HandleResponseAsync(ClientId clientId, DeploymentId deploymentId, ContextId? contextId, DeepLinkingResponse response, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultDeepLinkingResponseHandler() : ILti13DeepLinkingResponseHandler
+internal class DefaultLti13DeepLinkingResponseHandler() : ILti13DeepLinkingResponseHandler
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 

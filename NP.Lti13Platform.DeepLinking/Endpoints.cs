@@ -27,11 +27,11 @@ public static class Endpoints
     /// <param name="endpointRouteBuilder">The endpoint route builder.</param>
     /// <param name="configure">Optional function to configure endpoints.</param>
     /// <returns>The endpoint route builder for further configuration.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder endpointRouteBuilder, Func<DeepLinkingEndpointsConfig, DeepLinkingEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13PlatformDeepLinking(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = null)
     {
         const string OpenAPI_Tag = "LTI 1.3 Deep Linking";
 
-        DeepLinkingEndpointsConfig config = new();
+        EndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
         _ = endpointRouteBuilder.MapPost(config.DeepLinkingResponseUrl,
@@ -50,7 +50,7 @@ public static class Endpoints
 
                 if (string.IsNullOrWhiteSpace(request.Jwt))
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "JWT is required",
@@ -74,7 +74,7 @@ public static class Endpoints
 
                 if (!jwt.TryGetClaim("https://purl.imsglobal.org/spec/lti/claim/deployment_id", out var deploymentIdClaim))
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "deployment_id is required",
@@ -85,7 +85,7 @@ public static class Endpoints
                 var deployment = await deepLinkingResponseDataService.GetDeploymentAsync(new DeploymentId(deploymentIdClaim.Value), cancellationToken);
                 if (deployment == null || deployment.ClientId != tool.ClientId)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "deployment_id is invalid",
@@ -104,7 +104,7 @@ public static class Endpoints
 
                 if (!validatedToken.IsValid)
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = validatedToken.Exception.Message,
@@ -114,7 +114,7 @@ public static class Endpoints
 
                 if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/message_type", out var messageType) || (string)messageType != "LtiDeepLinkingResponse")
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "message_type is invalid",
@@ -124,7 +124,7 @@ public static class Endpoints
 
                 if (!validatedToken.Claims.TryGetValue("https://purl.imsglobal.org/spec/lti/claim/version", out var version) || (string)version != "1.3.0")
                 {
-                    return Results.BadRequest(new LtiBadRequest
+                    return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = INVALID_REQUEST,
                         Error_Description = "version is invalid",
@@ -170,28 +170,28 @@ public static class Endpoints
                     {
                         if (ci.Type == ContentItemType.LtiResourceLink)
                         {
-                            if (ci is not LtiResourceLinkContentItem ltiResourceLinkItem)
+                            if (ci is not LtiResourceLinkContentItem ltiResourceLinkContentItem)
                             {
-                                ltiResourceLinkItem = JsonSerializer.Deserialize<LtiResourceLinkContentItem>(JsonSerializer.Serialize(ci))!;
+                                ltiResourceLinkContentItem = JsonSerializer.Deserialize<LtiResourceLinkContentItem>(JsonSerializer.Serialize(ci))!;
                             }
 
-                            var id = await deepLinkingResponseDataService.SaveResourceLinkAsync(deployment.Id, contextId, ltiResourceLinkItem);
+                            var id = await deepLinkingResponseDataService.SaveResourceLinkAsync(deployment.Id, contextId, ltiResourceLinkContentItem);
 
-                            if (deepLinkingConfig.AcceptLineItem == true && contextId != null && ltiResourceLinkItem?.LineItem != null)
+                            if (deepLinkingConfig.AcceptLineItem == true && contextId != null && ltiResourceLinkContentItem?.LineItem != null)
                             {
                                 await deepLinkingResponseDataService.SaveLineItemAsync(new LineItem
                                 {
                                     Id = LineItemId.Empty,
                                     DeploymentId = deployment.Id,
                                     ContextId = contextId.GetValueOrDefault(),
-                                    Label = ltiResourceLinkItem.LineItem.Label ?? ltiResourceLinkItem.Title ?? ltiResourceLinkItem.Type,
-                                    ScoreMaximum = ltiResourceLinkItem.LineItem.ScoreMaximum,
-                                    GradesReleased = ltiResourceLinkItem.LineItem.GradesReleased,
-                                    Tag = ltiResourceLinkItem.LineItem.Tag,
-                                    ResourceId = ltiResourceLinkItem.LineItem.ResourceId,
+                                    Label = ltiResourceLinkContentItem.LineItem.Label ?? ltiResourceLinkContentItem.Title ?? ltiResourceLinkContentItem.Type,
+                                    ScoreMaximum = ltiResourceLinkContentItem.LineItem.ScoreMaximum,
+                                    GradesReleased = ltiResourceLinkContentItem.LineItem.GradesReleased,
+                                    Tag = ltiResourceLinkContentItem.LineItem.Tag,
+                                    ResourceId = ltiResourceLinkContentItem.LineItem.ResourceId,
                                     ResourceLinkId = id,
-                                    StartDateTime = ltiResourceLinkItem.Submission?.StartDateTime?.UtcDateTime,
-                                    EndDateTime = ltiResourceLinkItem.Submission?.EndDateTime?.UtcDateTime
+                                    StartDateTime = ltiResourceLinkContentItem.Submission?.StartDateTime?.UtcDateTime,
+                                    EndDateTime = ltiResourceLinkContentItem.Submission?.EndDateTime?.UtcDateTime
                                 },
                                 cancellationToken);
                             }
@@ -209,9 +209,9 @@ public static class Endpoints
             })
             .WithName(RouteNames.DEEP_LINKING_RESPONSE)
             .DisableAntiforgery()
-            .Produces<LtiBadRequest>(StatusCodes.Status400BadRequest)
-            .Produces<LtiBadRequest>(StatusCodes.Status404NotFound)
-            .WithGroupName(OpenApi.GroupName)
+            .Produces<Lti13BadRequest>(StatusCodes.Status400BadRequest)
+            .Produces<Lti13BadRequest>(StatusCodes.Status404NotFound)
+            .WithGroupName(Lti13OpenApi.GroupName)
             .WithTags(OpenAPI_Tag)
             .WithSummary("Handles the deep linking response from the tool.")
             .WithDescription("After a user selects items to be deep linked, the tool will return the user to this endpoint with the selected items. This endpoint will validate the request and handle the resulting items. Not all possible results are shown as the results will be determined by how it is handled.");

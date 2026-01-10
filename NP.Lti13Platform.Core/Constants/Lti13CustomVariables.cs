@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Defines constants for standard LTI 1.3 user variables used in message claims.
-/// These variables represent properties related to the user who initiated the LTI message.
+/// These variables represent properties related to the user who initiated the LTI 1.3 message.
 /// </summary>
 public static class Lti13UserVariables
 {
@@ -41,7 +41,7 @@ public static class Lti13UserVariables
 
 /// <summary>
 /// Defines constants for LTI 1.3 actual user variables used in message claims.
-/// These variables represent properties related to the actual user who initiated the LTI message
+/// These variables represent properties related to the actual user who initiated the LTI 1.3 message
 /// when the initiating user is masquerading as or acting on behalf of another user.
 /// </summary>
 public static class Lti13ActualUserVariables
@@ -81,7 +81,7 @@ public static class Lti13ActualUserVariables
 
 /// <summary>
 /// Defines constants for LTI 1.3 context variables used in message claims.
-/// These variables represent properties related to the context (course, classroom, etc.) in which the LTI message is sent.
+/// These variables represent properties related to the context (course, classroom, etc.) in which the LTI 1.3 message is sent.
 /// </summary>
 public static class Lti13ContextVariables
 {
@@ -132,7 +132,7 @@ public static class Lti13ContextVariables
 
 /// <summary>
 /// Defines constants for LTI 1.3 resource link variables used in message claims.
-/// These variables represent properties related to the specific resource being accessed in the LTI message.
+/// These variables represent properties related to the specific resource being accessed in the LTI 1.3 message.
 /// </summary>
 public static class Lti13ResourceLinkVariables
 {
@@ -221,7 +221,7 @@ public static class Lti13ResourceLinkVariables
 
 /// <summary>
 /// Defines constants for LTI 1.3 tool platform variables used in message claims.
-/// These variables represent properties related to the platform from which the LTI message originated.
+/// These variables represent properties related to the platform from which the LTI 1.3 message originated.
 /// </summary>
 public static class Lti13ToolPlatformVariables
 {
