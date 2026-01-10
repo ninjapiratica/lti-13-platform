@@ -60,9 +60,9 @@ public static class Endpoints
                 long? since,
                 IServiceProvider serviceProvider,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13NameRoleProvisioningDataService nrpsDataService,
-                IEnumerable<ILti13NameRoleProvisioningServicesMessageExtension> messageExtensions,
+                ICoreDataService coreDataService,
+                INameRoleProvisioningDataService nrpsDataService,
+                IEnumerable<INameRoleProvisioningServicesMessageExtension> messageExtensions,
                 IOptionsMonitor<ServicesConfig> config,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
@@ -297,7 +297,7 @@ public static class Endpoints
             .WithName(RouteNames.GET_MEMBERSHIPS)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
                 policy.RequireRole(Lti13ServiceScopes.MembershipReadOnly);
             })
             .Produces<MembershipContainer>(contentType: MediaTypeNames.Application.Json)

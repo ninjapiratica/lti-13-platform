@@ -38,11 +38,11 @@ public static class Endpoints
             async ([FromForm] DeepLinkingResponseRequest request,
                 ContextId? contextId,
                 ILogger<DeepLinkingResponseRequest> logger,
-                ILti13TokenConfigService tokenService,
-                ILti13CoreDataService coreDataService,
-                ILti13DeepLinkingResponseDataService deepLinkingResponseDataService,
-                ILti13DeepLinkingConfigService deepLinkingService,
-                ILti13DeepLinkingResponseHandler deepLinkingResponseHandler,
+                ITokenConfigService tokenService,
+                ICoreDataService coreDataService,
+                IDeepLinkingResponseDataService deepLinkingResponseDataService,
+                IDeepLinkingConfigService deepLinkingService,
+                IDeepLinkingResponseHandler deepLinkingResponseHandler,
                 CancellationToken cancellationToken) =>
             {
                 const string DEEP_LINKING_SPEC = "https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-response-message";

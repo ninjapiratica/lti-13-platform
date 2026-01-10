@@ -1,0 +1,21 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
+
+namespace NP.Lti13Platform.NameRoleProvisioningServices.Services;
+
+internal class DefaultNameRoleProvisioningConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor)
+    : INameRoleProvisioningConfigService
+{
+    public async Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default)
+    {
+        var servicesConfig = config.CurrentValue;
+        if (servicesConfig.ServiceAddress == ServicesConfig.DefaultUri)
+        {
+            servicesConfig = servicesConfig with { ServiceAddress = new UriBuilder(httpContextAccessor.HttpContext?.Request.Scheme, httpContextAccessor.HttpContext?.Request.Host.Value).Uri };
+        }
+
+        return await Task.FromResult(servicesConfig);
+    }
+}

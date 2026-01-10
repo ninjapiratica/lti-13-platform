@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddLti13PlatformWithDefaultMessageHandlers<DataService>();
+    .AddPlatformWithDefaultMessageHandlers<DataService>();
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -60,7 +60,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapGet("security", async (ILti13ToolSecurityService securityService, IHttpContextAccessor httpContextAccessor) =>
+app.MapGet("security", async (IToolSecurityService securityService, IHttpContextAccessor httpContextAccessor) =>
 {
     var security = await securityService.GetToolSecurityAsync(new ClientId("clientId"), new Uri(httpContextAccessor.HttpContext!.Request.GetDisplayUrl()));
 
@@ -81,7 +81,7 @@ namespace NP.Lti13Platform.WebExample
     /// <summary>
     /// A sample implementation of the <see cref="ILti13DataService"/> for demonstration purposes.
     /// </summary>
-    public class DataService : ILti13DataService
+    public class DataService : IDataService
     {
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
@@ -136,10 +136,10 @@ namespace NP.Lti13Platform.WebExample
                 Jwks = "https://saltire.lti.app/tool/jwks/s8cd1a33052f22f98e58369762c6373aa",
                 ServiceScopes =
                 [
-                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.LineItem,
-                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.LineItemReadOnly,
-                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.ResultReadOnly,
-                    NP.Lti13Platform.AssignmentGradeServices.Constants.Lti13ServiceScopes.Score,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.ServiceScopes.LineItem,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.ServiceScopes.LineItemReadOnly,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.ServiceScopes.ResultReadOnly,
+                    NP.Lti13Platform.AssignmentGradeServices.Constants.ServiceScopes.Score,
                     NP.Lti13Platform.NameRoleProvisioningServices.Constants.Lti13ServiceScopes.MembershipReadOnly
                 ]
             });
@@ -155,7 +155,7 @@ namespace NP.Lti13Platform.WebExample
                 Id = new ContextId("contextId"),
                 Label = "asdf_label",
                 Title = "asdf_title",
-                Types = [Lti13ContextTypes.CourseOffering]
+                Types = [ContextTypes.CourseOffering]
             });
 
             Users.Add(new User
@@ -242,7 +242,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
 
-        Task ILti13AssignmentGradeDataService.SaveGradeAsync(Grade grade, CancellationToken cancellationToken)
+        Task IAssignmentGradeDataService.SaveGradeAsync(Grade grade, CancellationToken cancellationToken)
         {
             var existingGrade = Grades.SingleOrDefault(x => x.LineItemId == grade.LineItemId && x.UserId == grade.UserId);
             if (existingGrade != null)

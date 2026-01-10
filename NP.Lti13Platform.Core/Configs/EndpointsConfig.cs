@@ -3,7 +3,7 @@
 /// <summary>
 /// Configuration for LTI 1.3 platform core endpoints.
 /// </summary>
-public class Lti13PlatformCoreEndpointsConfig
+public class EndpointsConfig
 {
     /// <summary>
     /// Gets or sets the endpoint for the authentication of LTI 1.3 requests.

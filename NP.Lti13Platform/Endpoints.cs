@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using NP.Lti13Platform.AssignmentGradeServices;
+using NP.Lti13Platform.Configs;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.DeepLinking;
 using NP.Lti13Platform.NameRoleProvisioningServices;
@@ -21,9 +22,9 @@ public static class Endpoints
     /// <param name="app">The endpoint route builder to configure the LTI 1.3 platform endpoints for.</param>
     /// <param name="configure">An optional function to configure the LTI 1.3 platform endpoints.</param>
     /// <returns>The configured endpoint route builder.</returns>
-    public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<Lti13PlatformEndpointsConfig, Lti13PlatformEndpointsConfig>? configure = null)
+    public static IEndpointRouteBuilder UseLti13Platform(this IEndpointRouteBuilder app, Func<EndpointsConfig, EndpointsConfig>? configure = null)
     {
-        Lti13PlatformEndpointsConfig config = new();
+        EndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
         return app

@@ -54,8 +54,8 @@ public static class Endpoints
                 int? limit,
                 int? pageIndex,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -116,15 +116,15 @@ public static class Endpoints
                     GradesReleased = i.GradesReleased,
                 }),
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: Lti13ContentTypes.LineItemContainer);
+                contentType: ContentTypes.LineItemContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEMS)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
             })
-            .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItemContainer)
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItemContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(Lti13OpenApi.GroupName)
@@ -138,8 +138,8 @@ public static class Endpoints
                 ContextId contextId,
                 LineItemRequest request,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -164,12 +164,12 @@ public static class Endpoints
                     return Results.NotFound();
                 }
 
-                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != Lti13ContentTypes.LineItem)
+                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
                 {
                     return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid Content-Type",
-                        Error_Description = $"Content-Type must be '{Lti13ContentTypes.LineItem}'",
+                        Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'",
                         Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item"
                     });
                 }
@@ -239,8 +239,8 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.LineItem);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.LineItem);
             })
             .Produces<LineItemResponse>(StatusCodes.Status201Created, MediaTypeNames.Application.Json)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -258,8 +258,8 @@ public static class Endpoints
                 ContextId contextId,
                 LineItemId lineItemId,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -303,15 +303,15 @@ public static class Endpoints
                     EndDateTime = lineItem.EndDateTime,
                 },
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: Lti13ContentTypes.LineItem);
+                contentType: ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.LineItem, Lti13ServiceScopes.LineItemReadOnly);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.LineItem, ServiceScopes.LineItemReadOnly);
             })
-            .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItem)
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(Lti13OpenApi.GroupName)
@@ -326,8 +326,8 @@ public static class Endpoints
                 LineItemId lineItemId,
                 LineItemRequest request,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -358,12 +358,12 @@ public static class Endpoints
                     return Results.NotFound();
                 }
 
-                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != Lti13ContentTypes.LineItem)
+                if (!MediaTypeHeaderValue.TryParse(httpContext.Request.ContentType, out var headerValue) || headerValue.MediaType != ContentTypes.LineItem)
                 {
                     return Results.BadRequest(new Lti13BadRequest
                     {
                         Error = "Invalid Content-Type",
-                        Error_Description = $"Content-Type must be '{Lti13ContentTypes.LineItem}'",
+                        Error_Description = $"Content-Type must be '{ContentTypes.LineItem}'",
                         Error_Uri = "https://www.imsglobal.org/spec/lti-ags/v2p0/#creating-a-new-line-item"
                     });
                 }
@@ -422,14 +422,14 @@ public static class Endpoints
                     EndDateTime = lineItem.EndDateTime
                 },
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: Lti13ContentTypes.LineItem);
+                contentType: ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.LineItem);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.LineItem);
             })
-            .Produces<LineItemResponse>(StatusCodes.Status200OK, Lti13ContentTypes.LineItem)
+            .Produces<LineItemResponse>(StatusCodes.Status200OK, ContentTypes.LineItem)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<Lti13BadRequest>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
@@ -445,8 +445,8 @@ public static class Endpoints
                 ContextId contextId,
                 LineItemId lineItemId,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -482,8 +482,8 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.LineItem);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.LineItem);
             })
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -503,8 +503,8 @@ public static class Endpoints
                 int? limit,
                 int? pageIndex,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -569,15 +569,15 @@ public static class Endpoints
                     Comment = i.Comment
                 }),
                 options: JSON_SERIALIZER_OPTIONS,
-                contentType: Lti13ContentTypes.ResultContainer);
+                contentType: ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.ResultReadOnly);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.ResultReadOnly);
             })
-            .Produces<LineItemResultResponse>(StatusCodes.Status200OK, Lti13ContentTypes.ResultContainer)
+            .Produces<LineItemResultResponse>(StatusCodes.Status200OK, ContentTypes.ResultContainer)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .WithGroupName(Lti13OpenApi.GroupName)
@@ -592,8 +592,8 @@ public static class Endpoints
                 LineItemId lineItemId,
                 ScoreRequest request,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService coreDataService,
-                ILti13AssignmentGradeDataService assignmentGradeDataService,
+                ICoreDataService coreDataService,
+                IAssignmentGradeDataService assignmentGradeDataService,
                 CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -704,8 +704,8 @@ public static class Endpoints
             })
             .RequireAuthorization(policy =>
             {
-                policy.AddAuthenticationSchemes(Lti13ServicesAuthHandler.SchemeName);
-                policy.RequireRole(Lti13ServiceScopes.Score);
+                policy.AddAuthenticationSchemes(ServicesAuthHandler.SchemeName);
+                policy.RequireRole(ServiceScopes.Score);
             })
             .Produces(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status204NoContent)

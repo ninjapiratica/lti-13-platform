@@ -14,7 +14,7 @@ public record DeepLinkingConfig
     /// <summary>
     /// Gets or sets the accepted presentation document targets.
     /// </summary>
-    public IEnumerable<string> AcceptPresentationDocumentTargets { get; set; } = [Lti13PresentationTargetDocuments.Embed, Lti13PresentationTargetDocuments.Iframe, Lti13PresentationTargetDocuments.Window];
+    public IEnumerable<string> AcceptPresentationDocumentTargets { get; set; } = [PresentationTargetDocuments.Embed, PresentationTargetDocuments.Iframe, PresentationTargetDocuments.Window];
 
     /// <summary>
     /// Gets or sets the accepted content item types.

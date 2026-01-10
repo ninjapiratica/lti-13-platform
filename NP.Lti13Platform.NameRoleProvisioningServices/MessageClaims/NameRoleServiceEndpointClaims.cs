@@ -88,9 +88,9 @@ public static partial class ClaimsExtensions
 }
 
 internal class NameRoleServiceMessageExtension(
-    ILti13NameRoleProvisioningConfigService configService,
+    INameRoleProvisioningConfigService configService,
     LinkGenerator linkGenerator)
-    : ILti13ResourceLinkMessageExtension
+    : ILtiResourceLinkMessageExtension
 {
     public async Task<object> GetMessageExtensionAsync(Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken = default)
     {

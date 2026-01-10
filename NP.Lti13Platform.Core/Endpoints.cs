@@ -29,16 +29,16 @@ public static class Endpoints
     /// Adds the LTI 1.3 platform core endpoints to the <see cref="IEndpointRouteBuilder"/>.
     /// </summary>
     /// <param name="endpointRouteBuilder">The <see cref="IEndpointRouteBuilder"/>.</param>
-    /// <param name="configure">A delegate to configure the <see cref="Lti13PlatformCoreEndpointsConfig"/>.</param>
+    /// <param name="configure">A delegate to configure the <see cref="EndpointsConfig"/>.</param>
     /// <returns>The <see cref="IEndpointRouteBuilder"/>.</returns>
-    public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<Lti13PlatformCoreEndpointsConfig, Lti13PlatformCoreEndpointsConfig>? configure = default)
+    public static IEndpointRouteBuilder UseLti13PlatformCore(this IEndpointRouteBuilder endpointRouteBuilder, Func<EndpointsConfig, EndpointsConfig>? configure = default)
     {
-        Lti13PlatformCoreEndpointsConfig config = new();
+        EndpointsConfig config = new();
         config = configure?.Invoke(config) ?? config;
 
         endpointRouteBuilder.MapGet(config.JwksUrl,
             async (ClientId clientId,
-                ILti13CoreDataService dataService,
+                ICoreDataService dataService,
                 CancellationToken cancellationToken) =>
             {
                 var keySet = new JsonWebKeySet();
@@ -53,7 +53,7 @@ public static class Endpoints
                     keySet.Keys.Add(jwk);
                 }
 
-                return Results.Json(keySet, JsonSerializerLti13MessageOptions.JSON_SERIALIZER_OPTIONS);
+                return Results.Json(keySet, JsonSerializerMessageOptions.JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
             .WithName(RouteNames.JWKS)
@@ -66,8 +66,8 @@ public static class Endpoints
             async ([FromForm] TokenRequest request,
                 LinkGenerator linkGenerator,
                 IHttpContextAccessor httpContextAccessor,
-                ILti13CoreDataService dataService,
-                ILti13TokenConfigService tokenService,
+                ICoreDataService dataService,
+                ITokenConfigService tokenService,
                 CancellationToken cancellationToken) =>
             {
                 const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
@@ -226,7 +226,7 @@ public static class Endpoints
                     TokenType = "bearer",
                     ExpiresIn = tokenConfig.AccessTokenExpirationSeconds,
                     Scope = string.Join(' ', scopes)
-                }, JsonSerializerLti13MessageOptions.JSON_SERIALIZER_OPTIONS);
+                }, JsonSerializerMessageOptions.JSON_SERIALIZER_OPTIONS);
             })
             .WithName(RouteNames.TOKEN)
             .DisableAntiforgery()
@@ -239,8 +239,8 @@ public static class Endpoints
 
         endpointRouteBuilder.MapGet(config.AuthenticationUrl,
             ([AsParameters] AuthenticationRequest queryString,
-            ILti13CoreDataService dataService,
-            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
+            ICoreDataService dataService,
+            IEnumerable<IMessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
                 HandleAuthentication(queryString, dataService, lti13MessageHandlers, cancellationToken)
             )
@@ -248,8 +248,8 @@ public static class Endpoints
 
         endpointRouteBuilder.MapPost(config.AuthenticationUrl,
             ([FromForm] AuthenticationRequest form,
-            ILti13CoreDataService dataService,
-            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
+            ICoreDataService dataService,
+            IEnumerable<IMessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
                 HandleAuthentication(form, dataService, lti13MessageHandlers, cancellationToken)
             )
@@ -260,8 +260,8 @@ public static class Endpoints
 
     private static async Task<IResult> HandleAuthentication(
         AuthenticationRequest request,
-        ILti13CoreDataService dataService,
-        IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
+        ICoreDataService dataService,
+        IEnumerable<IMessageHandler> lti13MessageHandlers,
         CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";
@@ -366,15 +366,15 @@ public static class Endpoints
         Lti13BadRequest? failedLti13MessageResult = null;
         foreach (var lti13MessageHandler in lti13MessageHandlers)
         {
-            var result = await lti13MessageHandler.HandleLti13MessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
+            var result = await lti13MessageHandler.HandleMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
 
-            if (result is Lti13MessageResult.SuccessResult successResult)
+            if (result is MessageResult.SuccessResult successResult)
             {
-                lti13Message = successResult.Lti13Message;
+                lti13Message = successResult.Message;
                 failedLti13MessageResult = null;
                 break;
             }
-            else if (result is Lti13MessageResult.ErrorResult errorResult)
+            else if (result is MessageResult.ErrorResult errorResult)
             {
                 failedLti13MessageResult = new Lti13BadRequest
                 {
@@ -403,7 +403,7 @@ public static class Endpoints
         var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
         var token = new JsonWebTokenHandler().CreateToken(
-            JsonSerializer.Serialize(lti13Message, JsonSerializerLti13MessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
+            JsonSerializer.Serialize(lti13Message, JsonSerializerMessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
             new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
         return Results.Content($@"
@@ -469,7 +469,7 @@ internal record TokenResponse
 public record LaunchPresentationOverride
 {
     /// <summary>
-    /// Gets or sets the document target. See <see cref="Lti13PresentationTargetDocuments"/> for possible values.
+    /// Gets or sets the document target. See <see cref="PresentationTargetDocuments"/> for possible values.
     /// </summary>
     public string? DocumentTarget { get; set; }
 

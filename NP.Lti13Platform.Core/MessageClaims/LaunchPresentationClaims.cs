@@ -21,7 +21,7 @@ public interface ILaunchPresentationClaims
     {
         /// <summary>
         /// Gets or sets the document target.
-        /// <see cref="Lti13PresentationTargetDocuments"/> has the list of possible values.
+        /// <see cref="PresentationTargetDocuments"/> has the list of possible values.
         /// </summary>
         [JsonPropertyName("document_target")]
         public string? DocumentTarget { get; set; }

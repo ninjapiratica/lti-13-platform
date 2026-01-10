@@ -8,14 +8,14 @@ using NP.Lti13Platform.DeepLinking.MessageHandlers;
 
 namespace NP.Lti13Platform.WebExample.Controllers;
 
-public class HomeController(ILogger<HomeController> logger, ILti13ResourceLinkRequestMessageHandler service, ILti13DeepLinkingRequestMessageHandler deepLinkUrlService) : Controller
+public class HomeController(ILogger<HomeController> logger, IResourceLinkRequestMessageHandler service, IDeepLinkingRequestMessageHandler deepLinkUrlService) : Controller
 {
     public async Task<IResult> Index(CancellationToken cancellationToken)
     {
         var deploymentId = new DeploymentId("deploymentId");
         var contextId = new ContextId("contextId");
         var userId = new UserId("userId");
-        var documentTarget = Lti13PresentationTargetDocuments.Window;
+        var documentTarget = PresentationTargetDocuments.Window;
         var height = 200;
         var width = 250;
         var locale = "en-US";
@@ -30,6 +30,7 @@ public class HomeController(ILogger<HomeController> logger, ILti13ResourceLinkRe
                 userId: userId,
                 actualUserId: null,
                 isAnonymous: false,
+                deepLinkingUrl: null,
                 deepLinkingSettingsOverride: new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
                 cancellationToken: cancellationToken))!.AsUri(),
             deepLinkForm = (await deepLinkUrlService.GetLti13LaunchAsync(
@@ -38,6 +39,7 @@ public class HomeController(ILogger<HomeController> logger, ILti13ResourceLinkRe
                 userId: userId,
                 actualUserId: null,
                 isAnonymous: false,
+                deepLinkingUrl: null,
                 deepLinkingSettingsOverride: new DeepLinkingSettingsOverride { Title = "TiTlE", Text = "TEXT", Data = "data" },
                 cancellationToken: cancellationToken))!.AsForm("form1"),
             resourceLinkUrls = DataService.ResourceLinks

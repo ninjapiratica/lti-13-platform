@@ -29,7 +29,7 @@ public static class IBaseLti13MessageExtensions
     {
         static Dictionary<string, JsonElement> ToDict(object obj)
         {
-            using var doc = JsonDocument.Parse(JsonSerializer.Serialize(obj, JsonSerializerLti13MessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS));
+            using var doc = JsonDocument.Parse(JsonSerializer.Serialize(obj, JsonSerializerMessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS));
             return doc.RootElement
                 .EnumerateObject()
                 .ToDictionary(p => p.Name, p => p.Value.Clone());

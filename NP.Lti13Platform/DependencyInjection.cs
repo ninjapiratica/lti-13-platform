@@ -20,12 +20,12 @@ public static class DependencyInjection
     /// </summary>
     /// <param name="services">The service collection to add the LTI 1.3 platform services to.</param>
     /// <returns>A builder object that allows further configuration of the LTI 1.3 platform services.</returns>
-    public static IServiceCollection AddLti13PlatformWithDefaultMessageHandlers<T>(this IServiceCollection services)
-        where T : ILti13DataService
+    public static IServiceCollection AddPlatformWithDefaultMessageHandlers<T>(this IServiceCollection services)
+        where T : IDataService
     {
         return services
-            .AddLti13Platform<T>()
-            .WithLti13PlatformDefaultMessageHandlers<T>();
+            .AddPlatform<T>()
+            .WithPlatformDefaultMessageHandlers<T>();
     }
 
     /// <summary>
@@ -35,14 +35,14 @@ public static class DependencyInjection
     /// <typeparam name="T">The type that implements the required data service for LTI 1.3 platform operations.</typeparam>
     /// <param name="services">The service collection to which the LTI 1.3 platform services will be added.</param>
     /// <returns>The service collection with the LTI 1.3 platform services registered. This enables further configuration or chaining of service registrations.</returns>
-    public static IServiceCollection AddLti13Platform<T>(this IServiceCollection services)
-        where T : ILti13RequiredDataService
+    public static IServiceCollection AddPlatform<T>(this IServiceCollection services)
+        where T : IRequiredDataService
     {
         return services
-            .AddLti13PlatformCore<T>()
-            .AddLti13PlatformDeepLinking<T>()
-            .AddLti13PlatformNameRoleProvisioningServices<T>()
-            .AddLti13PlatformAssignmentGradeServices<T>();
+            .AddPlatformCore<T>()
+            .AddPlatformDeepLinking<T>()
+            .AddPlatformNameRoleProvisioningServices<T>()
+            .AddPlatformAssignmentGradeServices<T>();
     }
 
     /// <summary>
@@ -50,14 +50,14 @@ public static class DependencyInjection
     /// </summary>
     /// <remarks>This method is typically called during application startup to configure LTI 1.3 message handling for an ASP.NET Core application.
     /// It adds both the resource link and deep linking request handlers using the specified data service type.</remarks>
-    /// <typeparam name="T">The type of the data service to use for LTI 1.3 message handling. Must implement the ILti13MessageHandlerDataService interface.</typeparam>
+    /// <typeparam name="T">The type of the data service to use for LTI 1.3 message handling. Must implement the IMessageHandlerDataService interface.</typeparam>
     /// <param name="services">The service collection to which the LTI 1.3 platform message handlers will be added.</param>
     /// <returns>The IServiceCollection instance with the default LTI 1.3 platform message handlers registered.</returns>
-    public static IServiceCollection WithLti13PlatformDefaultMessageHandlers<T>(this IServiceCollection services)
-        where T : ILti13MessageHandlerDataService
+    public static IServiceCollection WithPlatformDefaultMessageHandlers<T>(this IServiceCollection services)
+        where T : IMessageHandlerDataService
     {
         return services
-            .WithDefaultLti13ResourceLinkMessageHandler<T>()
-            .WithDefaultLti13DeepLinkingRequestMessageHandler<T>();
+            .WithDefaultResourceLinkMessageHandler<T>()
+            .WithDefaultDeepLinkingRequestMessageHandler<T>();
     }
 }
