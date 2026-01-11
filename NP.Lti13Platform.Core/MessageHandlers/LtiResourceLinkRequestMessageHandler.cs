@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
-using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
+using NP.Lti13Platform.Core.Utilities;
 using System.Text.Json;
 
 namespace NP.Lti13Platform.Core.MessageHandlers;
@@ -12,7 +12,7 @@ namespace NP.Lti13Platform.Core.MessageHandlers;
 /// </summary>
 /// <remarks>Implementations of this interface provide functionality for constructing and retrieving LTI launch data in accordance with the LTI specification.
 /// Methods support scenarios such as anonymous launches, acting on behalf of another user, and customizing launch presentation parameters.</remarks>
-public interface IResourceLinkRequestMessageHandler
+public interface ILtiResourceLinkRequestMessageHandler
 {
     /// <summary>
     /// Asynchronously retrieves the LTI launch information for the specified resource link and user context.
@@ -56,12 +56,12 @@ public interface IResourceLinkRequestMessageHandler
 /// <param name="logger">The logger used to record diagnostic and operational information for this handler.</param>
 internal class LtiResourceLinkRequestMessageHandler(
     ICoreDataService coreDataService,
-    IResourceLinkMessageDataService dataService,
+    ILtiResourceLinkMessageDataService dataService,
     ITokenConfigService tokenConfigService,
     IPlatformService platformService,
     IEnumerable<ILtiResourceLinkMessageExtension> extensions,
     ILogger<LtiResourceLinkRequestMessageHandler> logger)
-    : IResourceLinkRequestMessageHandler,
+    : ILtiResourceLinkRequestMessageHandler,
         IMessageHandler
 {
     private static readonly string MessageType = "LtiResourceLinkRequest";
@@ -193,7 +193,31 @@ internal class LtiResourceLinkRequestMessageHandler(
             ? await dataService.GetMembershipAsync(context.Id, actualUser.Id, cancellationToken)
             : null;
 
-        var lti13Message = new LtiResourceLinkRequestMessage()
+        // Extract extension message interfaces upfront
+        var extensionMessageInterfaces = extensions
+            .Select(e => e.GetType())
+            .SelectMany(t => t.GetInterfaces())
+            .Where(i => i.IsGenericType
+                && i.GetGenericTypeDefinition() == typeof(ILtiResourceLinkMessageExtension<>))
+            .Select(i => i.GetGenericArguments()[0])
+            .Distinct()
+            .ToList();
+
+        // Create dynamic type if extensions exist, otherwise use base type
+        var messageType = extensionMessageInterfaces.Count != 0
+            ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<LtiResourceLinkRequestMessage>(extensionMessageInterfaces)
+            : typeof(LtiResourceLinkRequestMessage);
+
+        // Create instance of message (dynamic or base type)
+        var lti13Message = Activator.CreateInstance(messageType)
+            ?? throw new InvalidOperationException("Failed to create message instance.");
+
+        if (lti13Message is not LtiResourceLinkRequestMessage ltiResourceLinkRequestMessage)
+        {
+            throw new InvalidOperationException("Failed to create LtiResourceLinkRequestMessage instance.");
+        }
+
+        var message = ltiResourceLinkRequestMessage
             .WithLti13MessageClaims(
                 MessageType,
                 nonce,
@@ -221,24 +245,24 @@ internal class LtiResourceLinkRequestMessageHandler(
 
         if (platform != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithPlatformInstanceClaims(platform);
         }
 
         if (ltiMessageHintRecord.LaunchPresentationOverride != null)
         {
-            lti13Message = lti13Message
+            message = message
                .WithLaunchPresentationClaims(ltiMessageHintRecord.LaunchPresentationOverride);
         }
 
         if (userMembership != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithRolesClaims(userMembership, logger);
 
             if (!loginHintRecord.IsAnonymous)
             {
-                lti13Message = lti13Message
+                message = message
                     .WithRoleScopeMentorClaims(userMembership);
             }
         }
@@ -247,19 +271,56 @@ internal class LtiResourceLinkRequestMessageHandler(
             && userPermissions != null
             && user != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithUserIdentityClaims(userPermissions, user);
         }
 
-        if (extensions.Any())
+        if (extensionMessageInterfaces.Count != 0)
         {
-            var extensionResults = await Task.WhenAll(extensions.Select(e => e.GetMessageExtensionAsync(tool, resourceLink, user, cancellationToken)));
-            var extendedMessage = lti13Message.Extend(extensionResults);
-            return MessageResult.Success(extendedMessage);
+            await InvokeExtensionsAsync(message, messageType, tool, resourceLink, user, cancellationToken);
         }
-        else
+
+        return MessageResult.Success(message);
+    }
+
+    private async Task InvokeExtensionsAsync(object message, Type messageType, Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken)
+    {
+        var extensionTasks = new List<Task>();
+
+        foreach (var extension in extensions)
         {
-            return MessageResult.Success(lti13Message);
+            var extensionType = extension.GetType();
+            var extensionInterface = extensionType
+                .GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType
+                    && i.GetGenericTypeDefinition() == typeof(ILtiResourceLinkMessageExtension<>));
+
+            if (extensionInterface == null)
+            {
+                continue;
+            }
+
+            var extensionMessageType = extensionInterface.GetGenericArguments()[0];
+
+            // Check if the message type implements the required interface
+            if (!extensionMessageType.IsAssignableFrom(messageType))
+            {
+                continue;
+            }
+
+            // Invoke ExtendMessageAsync on the message
+            var method = extensionInterface.GetMethod("ExtendMessageAsync")
+                ?? throw new InvalidOperationException($"Cannot find ExtendMessageAsync method on {extensionInterface.Name}.");
+
+            var task = (Task?)method.Invoke(extension, [message, tool, resourceLink, user, cancellationToken])
+                ?? throw new InvalidOperationException("Extension method invocation returned null task.");
+
+            extensionTasks.Add(task);
+        }
+
+        if (extensionTasks.Count > 0)
+        {
+            await Task.WhenAll(extensionTasks);
         }
     }
 

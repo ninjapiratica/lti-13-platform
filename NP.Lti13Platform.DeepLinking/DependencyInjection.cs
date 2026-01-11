@@ -70,7 +70,7 @@ public static class DependencyInjection
     /// Registers the default deep linking request message handler and associates the specified deep linking data service implementation with the resource link message data service in the dependency injection container.
     /// </summary>
     /// <remarks>This method registers <see cref="DeepLinkingRequestMessageHandler"/> as the handler for deep linking request messages
-    /// and associates the  <typeparamref name="T"/> implementation with <see cref="IResourceLinkMessageDataService"/>.
+    /// and associates the  <typeparamref name="T"/> implementation with <see cref="ILtiResourceLinkMessageDataService"/>.
     /// It also registers the handler for both <see cref="IDeepLinkingRequestMessageHandler"/> and <see cref="IMessageHandler"/> interfaces.
     /// Use this method to enable default deep linking support in an LTI 1.3 integration.</remarks>
     /// <typeparam name="T">The type that implements the deep linking data service interface used for resource link message data operations.</typeparam>

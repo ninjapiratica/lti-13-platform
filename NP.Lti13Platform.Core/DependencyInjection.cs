@@ -101,11 +101,11 @@ public static class DependencyInjection
     /// <param name="serviceCollection">The IServiceCollection to which the services are added.</param>
     /// <param name="serviceLifetime">The lifetime with which to register the IResourceLinkMessageDataService implementation. The default is ServiceLifetime.Transient.</param>
     /// <returns>The IServiceCollection instance with the LTI 1.3 resource link message handler services registered.</returns>
-    public static IServiceCollection WithDefaultResourceLinkMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-        where T : IResourceLinkMessageDataService
+    public static IServiceCollection WithDefaultLtiResourceLinkMessageHandler<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        where T : ILtiResourceLinkMessageDataService
     {
-        serviceCollection.Add(new ServiceDescriptor(typeof(IResourceLinkMessageDataService), typeof(T), serviceLifetime));
-        serviceCollection.AddTransient<IResourceLinkRequestMessageHandler, LtiResourceLinkRequestMessageHandler>();
+        serviceCollection.Add(new ServiceDescriptor(typeof(ILtiResourceLinkMessageDataService), typeof(T), serviceLifetime));
+        serviceCollection.AddTransient<ILtiResourceLinkRequestMessageHandler, LtiResourceLinkRequestMessageHandler>();
         serviceCollection.AddTransient<IMessageHandler, LtiResourceLinkRequestMessageHandler>();
         return serviceCollection;
     }
@@ -114,7 +114,8 @@ public static class DependencyInjection
     /// Registers an implementation of the IResourceLinkMessageExtension interface in the service collection with the specified service lifetime.
     /// </summary>
     /// <remarks>Use this method to enable dependency injection for LTI 1.3 Resource Link Message extensions.
-    /// This allows consumers to resolve IResourceLinkMessageExtension implementations from the service provider according to the specified lifetime.</remarks>
+    /// This allows consumers to resolve IResourceLinkMessageExtension implementations from the service provider according to the specified lifetime.
+    /// The implementation should inherit from ILtiResourceLinkMessageExtension&lt;TMessage&gt; where TMessage is an interface extending ILtiResourceLinkRequestMessage.</remarks>
     /// <typeparam name="T">The type that implements IResourceLinkMessageExtension to be registered.</typeparam>
     /// <param name="serviceCollection">The IServiceCollection to which the IResourceLinkMessageExtension implementation will be added.</param>
     /// <param name="serviceLifetime">The lifetime with which the IResourceLinkMessageExtension service will be registered. Defaults to ServiceLifetime.Transient.</param>

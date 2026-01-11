@@ -8,7 +8,7 @@ using NP.Lti13Platform.DeepLinking.MessageHandlers;
 
 namespace NP.Lti13Platform.WebExample.Controllers;
 
-public class HomeController(ILogger<HomeController> logger, IResourceLinkRequestMessageHandler service, IDeepLinkingRequestMessageHandler deepLinkUrlService) : Controller
+public class HomeController(ILogger<HomeController> logger, ILtiResourceLinkRequestMessageHandler service, IDeepLinkingRequestMessageHandler deepLinkUrlService) : Controller
 {
     public async Task<IResult> Index(CancellationToken cancellationToken)
     {

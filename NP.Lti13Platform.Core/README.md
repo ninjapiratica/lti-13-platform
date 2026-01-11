@@ -1,21 +1,22 @@
-﻿# NP.Lti13Platform.Core
+# NP.Lti13Platform.Core
 
-The IMS [Lti Core](https://www.imsglobal.org/spec/lti/v1p3/) spec defines a way that platforms can launch resources that exist in the tool. This project provides an implementation of the spec.
+The IMS [LTI 1.3 Core](https://www.imsglobal.org/spec/lti/v1p3/) spec defines the base functionality for LTI 1.3. This project provides an implementation of the spec.
 
 ## Features
 
-- Launch the links to the tool
-- Handle authentication with the tool
-- Create tokens for services
+- LTI 1.3 Launch
+- Authentication
+- Token issuance
+- JWKS endpoint
 
 ## Getting Started
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `ILti13CoreDataService` interface:
+2. Add an implementation of the `ICoreDataService` interface:
 
 ```csharp
-public class DataService: ILti13CoreDataService
+public class DataService: ICoreDataService
 {
     ...
 }
@@ -24,9 +25,7 @@ public class DataService: ILti13CoreDataService
 3. Add the required services.
 
 ```csharp
-builder.Services
-    .AddLti13PlatformCore()
-    .WithLti13CoreDataService<DataService>();
+builder.Services.AddLti13PlatformCore<DataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -35,23 +34,57 @@ builder.Services
 app.UseLti13PlatformCore();
 ```
 
-## ILti13CoreDataService
+## ICoreDataService
 
-There is no default `ILti13CoreDataService` implementation to allow each project to store the data how they see fit.
+There is no default `ICoreDataService` implementation to allow each project to store the data how they see fit.
 
-The `ILti13CoreDataService` interface is used to manage the persistance of most of the data involved in LTI communication.
+The `ICoreDataService` interface is used to manage the persistence of tools, service tokens, and keys.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
-## ILti13ToolSecurityService
+## Message Handlers
 
-Tools and platforms must exchange information out of band to establish trust. This includes keys, client ids, and deployment ids.
+LTI platforms and tools communicate via messages. LTI messages are handled by implementations of `IMessageHandler`.
 
-In order to assist with this, the `ILti13ToolSecurityService` is available to help with getting this information to send to the tool from the platform.
-This service does not guarantee it has all the information necessary to fully establish trust with the tool, it only contains the bare minimum defined in the spec.
-A tool may require additional information.
+To add a custom message handler:
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore<DataService>()
+    .WithMessageHandler<CustomMessageHandler>();
+```
 
 ## Defaults
+
+### LtiResourceLinkMessageHandler
+
+The core LTI spec includes a message for LTI Resource Links. This project includes a default handler for those messages.
+For handling LTI Resource Link launches, this default handler requires an implementation of `IResourceLinkMessageDataService`.
+
+```csharp
+public class ResourceLinkDataService: IResourceLinkMessageDataService
+{
+    ...
+}
+```
+
+Add it with:
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore<DataService>()
+    .WithDefaultLtiResourceLinkMessageHandler<ResourceLinkDataService>();
+```
+
+#### Extensions
+
+The core spec allows for extensions to the LTI Resource Link message. Extensions can be added by implementing `ILtiResourceLinkMessageExtension`.
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore<DataService>()
+    .WithResourceLinkMessageExtension<CustomExtension>();
+```
 
 ### Routing
 
@@ -59,18 +92,18 @@ Default routes are provided for all endpoints. Routes can be configured when cal
 
 ```csharp
 app.UseLti13PlatformCore(config => {
-    config.AuthenticationUrl = "/lti13/authentication";
     config.JwksUrl = "/lti13/jwks/{clientId}"; // {clientId} is required
-    config.TokenUrl = "/lti13/token";
+    config.TokenUrl = "/lti13/token"; // No parameters required
+    config.AuthenticationUrl = "/lti13/auth"; // No parameters required
     return config;
 });
 ```
 
-### ILti13PlatformService
+### IPlatformService
 
-The `ILti13PlatformService` interface is used to get the platform details to give to the tools.
+The `IPlatformService` interface is used to get the platform configuration. The config is used to tell tools about the platform.
 
-There is a default implementation of the `ILti13PlatformService` interface that uses a configuration set up on app start.
+There is a default implementation of the `IPlatformService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:Platform`.
 
@@ -87,26 +120,31 @@ Examples:
 }
 ```
 
-```csharp
-builder.Services.Configure<Platform>(x => { x.Guid = "server-id"; ... });
-```
-
-The Default implementation can be overridden by adding a new implementation of the `ILti13PlatformService` interface.
+OR
 
 ```csharp
-builder.AddLti13PlatformCore()
-	.WithLti13PlatformService<CustomPlatformService>();
+builder.Services.Configure<Platform>(x => { });
 ```
 
-### ILti13TokenConfigService
+The Default implementation can be overridden by adding a new implementation of the `IPlatformService` interface.
 
-The `ILti13TokenConfigService` interface is used to get the token details for the tools.
+```csharp
+builder.Services
+    .AddLti13PlatformCore<DataService>()
+    .WithPlatformService<CustomPlatformService>();
+```
 
-There is a default implementation of the `ILti13TokenConfigService` interface that uses a configuration set up on app start.
+### ITokenConfigService
+
+The `ITokenConfigService` interface is used to get the token configuration. The config is used to issue tokens for service calls.
+
+There is a default implementation of the `ITokenConfigService` interface that uses a configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:Token`.
 
-Examples
+***Important***: The `Issuer` is required for the default token service to load.
+
+Examples:
 
 ```json
 {
@@ -119,45 +157,23 @@ Examples
 }
 ```
 
+OR
+
 ```csharp
-builder.Services.Configure<Lti13PlatformTokenConfig>(x => { x.Issuer = "https://<mysite>"; ... });
+builder.Services.Configure<TokenConfig>(x => { });
 ```
 
-The Default implementation can be overridden by adding a new implementation of the `ILti13TokenConfigService` interface.
+The Default implementation can be overridden by adding a new implementation of the `ITokenConfigService` interface.
 
 ```csharp
-builder.AddLti13PlatformCore()
-	.WithLti13TokenConfigService<CustomTokenConfigService>();
-```
-
-***Important***: The `Issuer` is required for the default token service to load.
-
-## OpenAPI Documenatation
-
-Documentation for all endpoints are configured using `Microsoft.AspNetCore.OpenApi`. There is a convenience method to add a new document for the LTI 1.3 endpoints.
-
-```csharp
-using NP.Lti13Platform.Core;
-
-...
-
-builder.Services.AddLti13OpenApi("lti");
-```
-
-For more manual control, the individual document filters and groups are available.
-
-```csharp
-builder.Services.AddOpenApi("v2", options =>
-{
-    options.ShouldInclude = (description) => description.GroupName == NP.Lti13Platform.Core.OpenApi.GroupName;
-    options.AddDocumentTransformer<NP.Lti13Platform.Core.OpenApi.DocumentTransformer>();
-    options.AddOperationTransformer<NP.Lti13Platform.Core.OpenApi.OperationTransformer>();
-});
+builder.Services
+    .AddLti13PlatformCore<DataService>()
+    .WithTokenConfigService<TokenService>();
 ```
 
 ## Configuration
 
-### Platform
+### Platform Configuration
 
 The platform information to identify the platform server, contacts, etc.
 
@@ -203,7 +219,7 @@ Vendor product family code for the type of platform.
 
 Vendor product version for the platform.
 
-### Token Config
+### Token Configuration
 
 The configuration for handling of tokens between the platform and the tools.
 
@@ -231,64 +247,25 @@ The expiration time of the lti messages that are sent to the tools.
 
 The expiration time of the access tokens handed out to the tools.
 
-## Message Extensions
+## OpenAPI Documentation
 
-The LTI specs allow for messages to be extended with custom data. This is handled by adding `Populators` in the setup of the platform. To extend the message, create an interface with the properties that will be used to extend the message, and create a `Populator<T>` to fill those properties when the request for that message is generated.
-
-Multiple populators can be added to the same interface. Multiple interfaces can be added to the same message type. The populator interface properties support the System.Text.Json attributes for serialization. Populators must be thread safe or have a Transient Dependency Injection strategy.
+Documentation for all endpoints are configured using `Microsoft.AspNetCore.OpenApi`. There is a convenience method to add a new document for the LTI 1.3 endpoints.
 
 ```csharp
-interface ICustomMessage
-{
-    [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/custom")]
-    public IDictionary<string, string>? Custom { get; set; }
-}
+using NP.Lti13Platform.Core;
 
-class CustomPopulator: Populator<ICustomMessage>
-{
-	public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
-    {
-        obj.Custom = obj.Custom ?? new Dictionary<string, string>
-		{
-			{ "key", "value" }
-		};
-        
-        ...
-    }
-}
-
-builder.Services
-    .AddLti13PlatformCore()
-    .ExtendLti13Message<ICustomMessage, CustomPopulator>("LtiResourceLinkRequest");
+...
+builder.Services.AddLti13OpenApi("lti");
 ```
 
-## Custom Messgage Types
-
-LTI allows for message types not defined officially in any spec. A custom message type can be defined between tools and platforms. This is handled here by extending a message type name it with the interfaces and populators it needs.
+To add the endpoints to an existing document, the GroupName and the `AddLti13Authorization` extension method can be used.
 
 ```csharp
-interface ICustomMessage
+builder.Services.AddOpenApi("v2", options =>
 {
-    [JsonPropertyName("https://purl.imsglobal.org/spec/lti/claim/custom")]
-    public IDictionary<string, string>? Custom { get; set; }
-}
-
-class CustomPopulator: Populator<ICustomMessage>
-{
-	public override async Task PopulateAsync(ICustomMessage obj, MessageScope scope, CancellationToken cancellationToken = default)
-    {
-        obj.Custom = obj.Custom ?? new Dictionary<string, string>
-		{
-			{ "key", "value" }
-		};
-        
-        ...
-    }
-}
-
-builder.Services
-    .AddLti13PlatformCore()
-    .ExtendLti13Message<ICustomMessage, CustomPopulator>("CustomMessage");
+    options.ShouldInclude = (description) => description.GroupName == NP.Lti13Platform.Core.Lti13OpenApi.GroupName;
+    options.AddLti13Authorization();
+});
 ```
 
 ## Terminology

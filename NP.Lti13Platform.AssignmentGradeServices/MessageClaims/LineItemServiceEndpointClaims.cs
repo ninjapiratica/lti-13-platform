@@ -12,7 +12,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.MessageClaims;
 /// <summary>
 /// Represents the service endpoints for assignment grade services.
 /// </summary>
-public interface ILineItemServiceEndpointClaims
+public interface ILineItemServiceEndpointClaims : ILtiResourceLinkRequestMessage
 {
     /// <summary>
     /// Gets or sets the line item service endpoints.
@@ -125,9 +125,9 @@ internal class LineItemServiceMessageExtension(
     IAssignmentGradeDataService dataService,
     IAssignmentGradeConfigService configService,
     LinkGenerator linkGenerator)
-    : ILtiResourceLinkMessageExtension
+    : ILtiResourceLinkMessageExtension<ILineItemServiceEndpointClaims>
 {
-    public async Task<object> GetMessageExtensionAsync(Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken = default)
+    public async Task ExtendMessageAsync(ILineItemServiceEndpointClaims message, Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken = default)
     {
         var config = await configService.GetConfigAsync(tool.ClientId, cancellationToken);
         var lineItems = await dataService.GetLineItemsAsync(resourceLink.DeploymentId, resourceLink.ContextId, pageIndex: 0, limit: 1, cancellationToken: cancellationToken);
@@ -138,18 +138,12 @@ internal class LineItemServiceMessageExtension(
             lineItemId = lineItems.Items.First().Id;
         }
 
-        return new LineItemServiceMessage()
-            .WithLineItemServiceEndpointClaims(
-                tool,
-                resourceLink.DeploymentId,
-                resourceLink.ContextId,
-                lineItemId,
-                config,
-                linkGenerator);
-    }
-
-    private class LineItemServiceMessage : ILineItemServiceEndpointClaims
-    {
-        public ILineItemServiceEndpointClaims.LineItemServiceEndpoints? ServiceEndpoints { get; set; }
+        message.WithLineItemServiceEndpointClaims(
+            tool,
+            resourceLink.DeploymentId,
+            resourceLink.ContextId,
+            lineItemId,
+            config,
+            linkGenerator);
     }
 }

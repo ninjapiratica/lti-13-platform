@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.OpenApi;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.DeepLinking.Configs;
 using NP.Lti13Platform.DeepLinking.Constants;

@@ -33,6 +33,6 @@ public interface IRequiredDataService
 /// <remarks>This interface aggregates multiple LTI 1.3 message data service interfaces, enabling implementations to support all required message types for LTI 1.3 integrations.
 /// It is intended for use in scenarios where a unified data service is needed to manage different LTI 1.3 message flows.</remarks>
 public interface IMessageHandlerDataService
-    : IResourceLinkMessageDataService,
+    : ILtiResourceLinkMessageDataService,
     IDeepLinkingRequestDataService
 { }

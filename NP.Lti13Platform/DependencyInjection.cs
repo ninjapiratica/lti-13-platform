@@ -57,7 +57,7 @@ public static class DependencyInjection
         where T : IMessageHandlerDataService
     {
         return services
-            .WithDefaultResourceLinkMessageHandler<T>()
+            .WithDefaultLtiResourceLinkMessageHandler<T>()
             .WithDefaultDeepLinkingRequestMessageHandler<T>();
     }
 }

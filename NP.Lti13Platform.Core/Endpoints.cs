@@ -8,6 +8,7 @@ using NP.Lti13Platform.Core.Configs;
 using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.MessageHandlers;
 using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.OpenApi;
 using NP.Lti13Platform.Core.Services;
 using System.Net.Mime;
 using System.Security.Claims;

@@ -9,6 +9,7 @@ using NP.Lti13Platform.Core;
 using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.Models;
+using NP.Lti13Platform.Core.OpenApi;
 using NP.Lti13Platform.Core.Services;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Constants;

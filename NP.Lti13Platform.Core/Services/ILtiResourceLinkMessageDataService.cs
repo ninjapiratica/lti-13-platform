@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.Core.Services;
 /// <summary>
 /// Defines the contract for a service that handles LTI 1.3 core data operations.
 /// </summary>
-public interface IResourceLinkMessageDataService
+public interface ILtiResourceLinkMessageDataService
 {
     /// <summary>
     /// Gets a deployment by its ID.
