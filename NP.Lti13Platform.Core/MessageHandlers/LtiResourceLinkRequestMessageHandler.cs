@@ -277,46 +277,22 @@ internal class LtiResourceLinkRequestMessageHandler(
 
         if (extensionMessageInterfaces.Count != 0)
         {
-            await InvokeExtensionsAsync(message, messageType, tool, resourceLink, user, cancellationToken);
+            await InvokeExtensionsAsync(message, tool, resourceLink, user, cancellationToken);
         }
 
         return MessageResult.Success(message);
     }
 
-    private async Task InvokeExtensionsAsync(object message, Type messageType, Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken)
+    private async Task InvokeExtensionsAsync(
+        object message,
+        Tool tool,
+        ResourceLink resourceLink,
+        User? user,
+        CancellationToken cancellationToken)
     {
-        var extensionTasks = new List<Task>();
-
-        foreach (var extension in extensions)
-        {
-            var extensionType = extension.GetType();
-            var extensionInterface = extensionType
-                .GetInterfaces()
-                .FirstOrDefault(i => i.IsGenericType
-                    && i.GetGenericTypeDefinition() == typeof(ILtiResourceLinkMessageExtension<>));
-
-            if (extensionInterface == null)
-            {
-                continue;
-            }
-
-            var extensionMessageType = extensionInterface.GetGenericArguments()[0];
-
-            // Check if the message type implements the required interface
-            if (!extensionMessageType.IsAssignableFrom(messageType))
-            {
-                continue;
-            }
-
-            // Invoke ExtendMessageAsync on the message
-            var method = extensionInterface.GetMethod("ExtendMessageAsync")
-                ?? throw new InvalidOperationException($"Cannot find ExtendMessageAsync method on {extensionInterface.Name}.");
-
-            var task = (Task?)method.Invoke(extension, [message, tool, resourceLink, user, cancellationToken])
-                ?? throw new InvalidOperationException("Extension method invocation returned null task.");
-
-            extensionTasks.Add(task);
-        }
+        var extensionTasks = extensions
+            .Select(extension => extension.ExtendMessageAsync(message, tool, resourceLink, user, cancellationToken))
+            .ToList();
 
         if (extensionTasks.Count > 0)
         {

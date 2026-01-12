@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Extensions;
 using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.MessageHandlers;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.Services;
+using NP.Lti13Platform.Core.Utilities;
 using NP.Lti13Platform.DeepLinking.MessageClaims;
 using NP.Lti13Platform.DeepLinking.Services;
 using System.Text.Json;
@@ -222,7 +222,31 @@ internal class DeepLinkingRequestMessageHandler(
                 ? await dataService.GetMembershipAsync(context.Id, actualUser.Id, cancellationToken)
                 : null;
 
-        var lti13Message = new DeepLinkingRequestMessage()
+        // Extract extension message interfaces upfront
+        var extensionMessageInterfaces = extensions
+            .Select(e => e.GetType())
+            .SelectMany(t => t.GetInterfaces())
+            .Where(i => i.IsGenericType
+                && i.GetGenericTypeDefinition() == typeof(IDeepLinkingMessageExtension<>))
+            .Select(i => i.GetGenericArguments()[0])
+            .Distinct()
+            .ToList();
+
+        // Create dynamic type if extensions exist, otherwise use base type
+        var messageType = extensionMessageInterfaces.Count != 0
+            ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<DeepLinkingRequestMessage>(extensionMessageInterfaces)
+            : typeof(DeepLinkingRequestMessage);
+
+        // Create instance of message (dynamic or base type)
+        var lti13Message = Activator.CreateInstance(messageType)
+            ?? throw new InvalidOperationException("Failed to create message instance.");
+
+        if (lti13Message is not DeepLinkingRequestMessage deepLinkingRequestMessage)
+        {
+            throw new InvalidOperationException("Failed to create DeepLinkingRequestMessage instance.");
+        }
+
+        var message = deepLinkingRequestMessage
             .WithDeepLinkingSettingsClaims(deepLinkingConfig, linkGenerator, ltiMessageHintRecord.ContextId, ltiMessageHintRecord.DeepLinkingSettingsOverride)
             .WithLti13MessageClaims(
                 MessageType,
@@ -244,30 +268,30 @@ internal class DeepLinkingRequestMessageHandler(
 
         if (context != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithContextClaims(context);
         }
 
         if (platform != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithPlatformInstanceClaims(platform);
         }
 
         if (ltiMessageHintRecord.LaunchPresentationOverride != null)
         {
-            lti13Message = lti13Message
+            message = message
                .WithLaunchPresentationClaims(ltiMessageHintRecord.LaunchPresentationOverride);
         }
 
         if (userMembership != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithRolesClaims(userMembership, logger);
 
             if (!loginHintRecord.IsAnonymous)
             {
-                lti13Message = lti13Message
+                message = message
                     .WithRoleScopeMentorClaims(userMembership);
             }
         }
@@ -276,19 +300,34 @@ internal class DeepLinkingRequestMessageHandler(
             && userPermissions != null
             && user != null)
         {
-            lti13Message = lti13Message
+            message = message
                 .WithUserIdentityClaims(userPermissions, user);
         }
 
-        if (extensions.Any())
+        if (extensionMessageInterfaces.Count != 0)
         {
-            var extensionResults = await Task.WhenAll(extensions.Select(e => e.GetMessageExtensionAsync(tool, deployment, context, user, cancellationToken)));
-            var extendedMessage = lti13Message.Extend(extensionResults);
-            return MessageResult.Success(extendedMessage);
+            await InvokeExtensionsAsync(message, messageType, tool, deployment, context, user, cancellationToken);
         }
-        else
+
+        return MessageResult.Success(message);
+    }
+
+    private async Task InvokeExtensionsAsync(
+        object message,
+        Type messageType,
+        Tool tool,
+        Deployment deployment,
+        Context? context,
+        User? user,
+        CancellationToken cancellationToken)
+    {
+        var extensionTasks = extensions
+            .Select(extension => extension.ExtendMessageAsync(message, tool, deployment, context, user, cancellationToken))
+            .ToList();
+
+        if (extensionTasks.Count > 0)
         {
-            return MessageResult.Success(lti13Message);
+            await Task.WhenAll(extensionTasks);
         }
     }
 

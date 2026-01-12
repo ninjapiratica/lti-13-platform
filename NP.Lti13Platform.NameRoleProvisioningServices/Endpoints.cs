@@ -11,6 +11,7 @@ using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.OpenApi;
 using NP.Lti13Platform.Core.Services;
+using NP.Lti13Platform.Core.Utilities;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
 using NP.Lti13Platform.NameRoleProvisioningServices.Constants;
 using NP.Lti13Platform.NameRoleProvisioningServices.MessageClaims;
@@ -213,55 +214,60 @@ public static class Endpoints
                         ? await nrpsDataService.GetGradesAsync(lineItems.Items.First().Id, usersWithMessages.Select(x => x.User.Id), cancellationToken)
                         : usersWithMessages.Select(m => (Grade?)null);
 
+                    // Extract extension message interfaces upfront
+                    var extensionMessageInterfaces = messageExtensions
+                        .Select(e => e.GetType())
+                        .SelectMany(t => t.GetInterfaces())
+                        .Where(i => i.IsGenericType
+                            && i.GetGenericTypeDefinition() == typeof(INameRoleProvisioningServicesMessageExtension<>))
+                        .Select(i => i.GetGenericArguments()[0])
+                        .Distinct()
+                        .ToList();
+
+                    // Create dynamic type if extensions exist, otherwise use base type
+                    var messageType = extensionMessageInterfaces.Count != 0
+                        ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<NameRoleProvisioningLtiResourceLinkMessage>(extensionMessageInterfaces)
+                        : typeof(NameRoleProvisioningLtiResourceLinkMessage);
+
                     var userMessages = usersWithMessages
                         .Zip(customPermissions, (userWithMessage, customPermissions) => (userWithMessage.User, userWithMessage.Membership, CustomPermissions: customPermissions))
                         .Zip(attempts, (zip, attempt) => (zip.User, zip.Membership, zip.CustomPermissions, Attempt: attempt))
                         .Zip(grades, (zip, grade) => (zip.User, zip.Membership, zip.CustomPermissions, zip.Attempt, Grade: grade))
-                        .Select(zip => (
-                            UserId: zip.User.Id,
-                            Message: new NameRoleProvisioningLtiResourceLinkMessage()
-                                .WithCustomClaims(
-                                    zip.CustomPermissions,
-                                    tool,
-                                    deployment,
-                                    resourceLink,
-                                    zip.Membership,
-                                    zip.User,
-                                    zip.Attempt,
-                                    zip.Grade)
-                                )
-                        );
-
-                    if (messageExtensions.Any())
-                    {
-                        var messageExtensionTasks = messageExtensions.Select(e => e.GetMessageExtensionAsync(
-                            tool,
-                            resourceLink,
-                            usersWithMessages.Select(u => u.User),
-                            cancellationToken));
-                        var extensionResults = await Task.WhenAll(messageExtensionTasks);
-
-                        static IEnumerable<IEnumerable<object>> Transpose(IEnumerable<IEnumerable<object>> source)
+                        .Select(zip =>
                         {
-                            var enumerators = source.Select(s => s.GetEnumerator()).ToList();
+                            // Create instance of message (dynamic or base type)
+                            var lti13Message = Activator.CreateInstance(messageType)
+                                ?? throw new InvalidOperationException("Failed to create message instance.");
 
-                            try
+                            if (lti13Message is not NameRoleProvisioningLtiResourceLinkMessage message)
                             {
-                                while (enumerators.All(e => e.MoveNext()))
-                                    yield return enumerators.Select(e => e.Current).ToArray();
+                                throw new InvalidOperationException("Failed to create NameRoleProvisioningLtiResourceLinkMessage instance.");
                             }
-                            finally
-                            {
-                                foreach (var e in enumerators)
-                                    e.Dispose();
-                            }
-                        }
 
-                        var transposedResults = Transpose(extensionResults);
+                            return (
+                                UserId: zip.User.Id,
+                                Message: message
+                                    .WithCustomClaims(
+                                        zip.CustomPermissions,
+                                        tool,
+                                        deployment,
+                                        resourceLink,
+                                        zip.Membership,
+                                        zip.User,
+                                        zip.Attempt,
+                                        zip.Grade)
+                            );
+                        })
+                        .ToList();
 
-                        messages = userMessages
-                            .Zip(transposedResults)
-                            .ToDictionary(x => x.First.UserId, x => (IEnumerable<object>)[x.First.Message.Extend(x.Second)]);
+                    if (extensionMessageInterfaces.Count != 0)
+                    {
+                        // Create a mapping of user IDs to messages for the extensions
+                        var messageDict = userMessages.ToDictionary(x => x.UserId, x => (object)x.Message);
+                        
+                        await InvokeExtensionsAsync(messageDict, tool, resourceLink, messageExtensions, cancellationToken);
+
+                        messages = userMessages.ToDictionary(x => x.UserId, x => (IEnumerable<object>)[x.Message]);
                     }
                     else
                     {
@@ -311,6 +317,23 @@ public static class Endpoints
             .WithDescription("Gets the memberships for a context. Can be filtered by role or resourceLinkId (rlid). It is a paginated request so page size and index may be provided. Pagination information (next, previous, etc) will be returned as headers. This endpoint can also be used to get changes in membership since a specified time. If rlid is provided, messages may be returned with the memberships.");
 
         return endpointRouteBuilder;
+    }
+
+    private static async Task InvokeExtensionsAsync(
+        IDictionary<UserId, object> messageDict,
+        Tool tool,
+        ResourceLink resourceLink,
+        IEnumerable<INameRoleProvisioningServicesMessageExtension> extensions,
+        CancellationToken cancellationToken)
+    {
+        var extensionTasks = extensions
+            .Select(extension => extension.ExtendMessagesAsync(messageDict, tool, resourceLink, cancellationToken))
+            .ToList();
+
+        if (extensionTasks.Count > 0)
+        {
+            await Task.WhenAll(extensionTasks);
+        }
     }
 }
 

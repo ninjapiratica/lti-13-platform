@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using NP.Lti13Platform.Core;
 using NP.Lti13Platform.NameRoleProvisioningServices.Configs;
+using NP.Lti13Platform.NameRoleProvisioningServices.MessageClaims;
 using NP.Lti13Platform.NameRoleProvisioningServices.MessageHandlers;
 using NP.Lti13Platform.NameRoleProvisioningServices.Services;
 
@@ -26,6 +28,8 @@ public static class DependencyInjection
         serviceCollection.TryAddSingleton<INameRoleProvisioningConfigService, DefaultNameRoleProvisioningConfigService>();
 
         serviceCollection.Add(new ServiceDescriptor(typeof(INameRoleProvisioningDataService), typeof(T), serviceLifetime));
+
+        serviceCollection.WithResourceLinkMessageExtension<NameRoleServiceMessageExtension>();
 
         return serviceCollection;
     }

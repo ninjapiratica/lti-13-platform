@@ -90,23 +90,17 @@ public static partial class ClaimsExtensions
 internal class NameRoleServiceMessageExtension(
     INameRoleProvisioningConfigService configService,
     LinkGenerator linkGenerator)
-    : ILtiResourceLinkMessageExtension
+    : ILtiResourceLinkMessageExtension<INameRoleServiceEndpointClaims>
 {
-    public async Task<object> GetMessageExtensionAsync(Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken = default)
+    public async Task ExtendMessageAsync(INameRoleServiceEndpointClaims message, Tool tool, ResourceLink resourceLink, User? user, CancellationToken cancellationToken = default)
     {
         var config = await configService.GetConfigAsync(tool.ClientId, cancellationToken);
 
-        return new NameRoleServiceMessage()
-            .WithNameRoleServiceEndpointClaims(
-                tool,
-                resourceLink.DeploymentId,
-                resourceLink.ContextId,
-                config,
-                linkGenerator);
-    }
-
-    private class NameRoleServiceMessage : INameRoleServiceEndpointClaims
-    {
-        public INameRoleServiceEndpointClaims.ServiceEndpoints? NamesRoleService { get; set; }
+        message.WithNameRoleServiceEndpointClaims(
+            tool,
+            resourceLink.DeploymentId,
+            resourceLink.ContextId,
+            config,
+            linkGenerator);
     }
 }
