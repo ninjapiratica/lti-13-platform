@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -7,12 +8,18 @@ namespace NP.Lti13Platform.Core.Utilities;
 /// Provides utilities for dynamically creating types that implement multiple interfaces on top of a base type.
 /// </summary>
 /// <remarks>This utility uses reflection and dynamic code generation to create wrapper types at runtime.
-/// The generated types inherit from a base type T and implement all specified interfaces by delegating to the base type.</remarks>
+/// The generated types inherit from a base type T and implement all specified interfaces by delegating to the base type.
+/// Generated types are cached to avoid redundant reflection and IL generation on subsequent calls.</remarks>
 public static class DynamicTypeBuilder
 {
     private static readonly ModuleBuilder _moduleBuilder;
     private static int _typeCounter = 0;
     private static readonly Lock _lockObject = new();
+    
+    /// <summary>
+    /// Cache for dynamically created types, keyed by base type and interface set.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, Type> _typeCache = new();
 
     static DynamicTypeBuilder()
     {
@@ -25,6 +32,7 @@ public static class DynamicTypeBuilder
 
     /// <summary>
     /// Creates a new type that implements all specified interfaces while inheriting from the base type T.
+    /// Generated types are cached to improve performance on subsequent calls with the same base type and interface set.
     /// </summary>
     /// <remarks>
     /// The generated type will:
@@ -34,12 +42,13 @@ public static class DynamicTypeBuilder
     /// - Delegate interface implementations to the base type where applicable
     /// 
     /// This is useful for runtime scenarios where you need to compose types dynamically with multiple interface implementations.
+    /// Generated types are cached with a key based on the base type and sorted interface names to ensure consistent cache lookups.
     /// </remarks>
     /// <typeparam name="T">The base type that the generated type will inherit from.</typeparam>
     /// <param name="interfaces">A collection of interfaces that the generated type should implement.
     /// If null or empty, returns the base type T unchanged.</param>
     /// <returns>A new type that inherits from T and implements all specified interfaces.
-    /// If no interfaces are provided, returns T itself.</returns>
+    /// If no interfaces are provided, returns T itself. Results are cached for performance.</returns>
     /// <exception cref="ArgumentException">Thrown if T is sealed or if any interface is not actually an interface type.</exception>
     public static Type CreateTypeImplementingInterfaces<T>(IEnumerable<Type>? interfaces) where T : class
     {
@@ -69,6 +78,42 @@ public static class DynamicTypeBuilder
             }
         }
 
+        // Create cache key from base type and sorted interface names
+        var cacheKey = GenerateCacheKey<T>(interfaceList);
+
+        // Check cache first - if found, return immediately
+        if (_typeCache.TryGetValue(cacheKey, out var cachedType))
+        {
+            return cachedType;
+        }
+
+        // Create type if not in cache
+        var newType = CreateTypeInternal<T>(interfaceList);
+        
+        // Store in cache
+        _typeCache.TryAdd(cacheKey, newType);
+
+        return newType;
+    }
+
+    /// <summary>
+    /// Generates a cache key based on the base type and interface set.
+    /// </summary>
+    private static string GenerateCacheKey<T>(List<Type> interfaceList) where T : class
+    {
+        var baseTypeName = typeof(T).FullName ?? typeof(T).Name;
+        var interfaceNames = string.Join("|", interfaceList
+            .OrderBy(i => i.FullName ?? i.Name)
+            .Select(i => i.FullName ?? i.Name));
+
+        return $"{baseTypeName}::{interfaceNames}";
+    }
+
+    /// <summary>
+    /// Creates the dynamic type with IL generation (internal implementation).
+    /// </summary>
+    private static Type CreateTypeInternal<T>(List<Type> interfaceList) where T : class
+    {
         using (_lockObject.EnterScope())
         {
             _typeCounter++;
