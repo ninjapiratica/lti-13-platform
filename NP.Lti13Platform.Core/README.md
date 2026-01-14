@@ -54,6 +54,126 @@ builder.Services
     .WithMessageHandler<CustomMessageHandler>();
 ```
 
+### IMessageHandler
+
+The `IMessageHandler` interface defines the contract for handling LTI messages. Implementations receive details about the launch request and return a message result.
+
+#### Interface Overview
+
+```csharp
+public interface IMessageHandler
+{
+    Task<MessageResult> HandleMessageAsync(
+        string loginHint, 
+        string? ltiMessageHint, 
+        Tool tool, 
+        string nonce, 
+        CancellationToken cancellationToken = default);
+}
+```
+
+#### Parameters
+
+- **loginHint**: A unique identifier provided by the platform to correlate the login request with the user. Contains information about the user initiating the launch.
+- **ltiMessageHint**: An optional hint provided by the platform to help identify the specific LTI message or context. May be null.
+- **tool**: The tool configuration used to validate and process the LTI message. Contains the tool's client ID, name, and other configuration details.
+- **nonce**: A unique, random string used to prevent replay attacks.
+- **cancellationToken**: A token that can be used to cancel the asynchronous operation.
+
+#### Return Value
+
+The method returns a `Task<MessageResult>`, which is an abstract base class with three possible derived types:
+
+- **SuccessResult**: Indicates successful message handling. Contains the LTI message object that was processed.
+  ```csharp
+  return new MessageResult.SuccessResult(new LtiResourceLinkRequestMessage { /* ... */ });
+  ```
+
+- **ErrorResult**: Indicates that message handling failed. Contains an error message describing the failure.
+  ```csharp
+  return new MessageResult.ErrorResult("Invalid user context");
+  ```
+
+- **NoneResult**: Indicates no content or outcome is returned. Used when the loginHint and ltiMessageHint were not sufficient to determine a message to return. The two hints may be for a different message.
+  ```csharp
+  return new MessageResult.NoneResult();
+  ```
+
+#### Example Implementation
+
+```csharp
+public class CustomMessageHandler : IMessageHandler
+{
+    private readonly ICustomDataService _dataService;
+    private readonly ILogger<CustomMessageHandler> _logger;
+
+    public CustomMessageHandler(ICustomDataService dataService, ILogger<CustomMessageHandler> logger)
+    {
+        _dataService = dataService;
+        _logger = logger;
+    }
+
+    public async Task<MessageResult> HandleMessageAsync(
+        string loginHint, 
+        string? ltiMessageHint, 
+        Tool tool, 
+        string nonce, 
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Parse the ltiMessageHint to determine the type of message being handled
+            var messageType = ExtractMessageTypeFromHint(ltiMessageHint);
+
+            // This handler only processes messages of a specific type, so if the message type is not recognized, return NoneResult
+            if (string.IsNullOrEmpty(messageType))
+            {
+                return new MessageResult.NoneResult();
+            }
+
+            // Parse the loginHint to extract user information
+            var userId = ExtractUserIdFromHint(loginHint);
+            
+            // Retrieve user and context data
+            var user = await _dataService.GetUserAsync(userId, cancellationToken);
+            if (user == null)
+            {
+                return new MessageResult.ErrorResult("User not found");
+            }
+
+            // Build your custom message
+            var message = new CustomLtiMessage
+            {
+                UserId = user.Id,
+                UserEmail = user.Email,
+                // ... other message properties
+            };
+
+            return new MessageResult.SuccessResult(message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling LTI message");
+            return new MessageResult.ErrorResult($"Failed to handle message: {ex.Message}");
+        }
+    }
+
+    private string ExtractUserIdFromHint(string loginHint)
+    {
+        // Implement your logic to extract user ID from the login hint
+        // This depends on how your platform encodes the hint
+        return loginHint;
+    }
+
+    private string ExtractMessageTypeFromHint(string ltiMessageHint)
+    {
+        // Implement your logic to extract the message type from the login hint
+        // This depends on how your message handler encodes the hint
+        return ltiMessageHint;
+    }
+}
+```
+
 ## Defaults
 
 ### LtiResourceLinkMessageHandler

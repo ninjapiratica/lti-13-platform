@@ -1,20 +1,21 @@
 ﻿# NP.Lti13Platform.AssignmentGradeServices
 
-The IMS [Assignment and Grade Services](https://www.imsglobal.org/spec/lti-ags/v2p0/) spec defines a way that tools can platforms can communicate grades back and forth. This project provides an implementation of the spec.
+The IMS [Assignment and Grade Services](https://www.imsglobal.org/spec/lti-ags/v2p0/) spec defines a way that tools and platforms can communicate grades back and forth. This project provides an implementation of the spec.
 
 ## Features
 
-- Gets,creates, updates, and deletes line items
-- Gets and creates grades
+- Creates, retrieves, updates, and deletes line items
+- Creates and retrieves grades
+- Manages grade submissions and results
 
 ## Getting Started
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `ILti13AssignmentGradeDataService` interface:
+2. Add an implementation of the `IAssignmentGradeDataService` interface:
 
 ```csharp
-public class DataService: ILti13AssignmentGradeDataService
+public class AssignmentGradeDataService: IAssignmentGradeDataService
 {
     ...
 }
@@ -24,9 +25,8 @@ public class DataService: ILti13AssignmentGradeDataService
 
 ```csharp
 builder.Services
-    .AddLti13PlatformCore()
-    .AddLti13PlatformAssignmentGradeServices()
-    .WithLti13AssignmentGradeDataService<DataService>();
+    .AddLti13PlatformCore<CoreDataService>()
+    .AddPlatformAssignmentGradeServices<AssignmentGradeDataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -35,11 +35,11 @@ builder.Services
 app.UseLti13PlatformAssignmentGradeServices();
 ```
 
-## ILti13AssignmentGradeDataService
+## IAssignmentGradeDataService
 
-There is no default `ILti13AssignmentGradeDataService` implementation to allow each project to store the data how they see fit.
+There is no default `IAssignmentGradeDataService` implementation to allow each project to store the data how they see fit.
 
-The `ILti13AssignmentGradeDataService` interface is used to manage the persistance of line items and grades.
+The `IAssignmentGradeDataService` interface is used to manage the persistence of line items and grades in the platform.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
@@ -57,15 +57,16 @@ app.UseLti13PlatformAssignmentGradeServices(config => {
 });
 ```
 
-### ILti13AssignmentGradeConfigService
+### IAssignmentGradeConfigService
 
-The `ILti13AssignmentGradeConfigService` interface is used to get the config for the assignment and grade service. The config is used to tell the tools how to request the members of a context.
+The `IAssignmentGradeConfigService` interface is used to get the configuration for the assignment and grade service. The config is used to tell tools where to submit and retrieve grades.
 
-There is a default implementation of the `ILti13AssignmentGradeConfigService` interface that uses a configuration set up on app start.
+There is a default implementation of the `IAssignmentGradeConfigService` interface that uses configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:AssignmentGradeServices`.
 
 Examples:
+
 ```json
 {
     "Lti13Platform": {
@@ -76,21 +77,24 @@ Examples:
 }
 ```
 
+OR
+
 ```csharp
 builder.Services.Configure<ServicesConfig>(x => { });
 ```
 
-The Default implementation can be overridden by adding a new implementation of the `ILti13AssignmentGradeConfigService` interface.
+The Default implementation can be overridden by adding a new implementation of the `IAssignmentGradeConfigService` interface.
 This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
 ```csharp
-builder.AddLti13PlatformCore()
-    .AddLti13PlatformAssignmentGradeServices()
-    .WithLti13AssignmentGradeConfigService<ConfigService>();
+builder.Services
+    .AddLti13PlatformCore<CoreDataService>()
+    .AddPlatformAssignmentGradeServices<AssignmentGradeDataService>()
+    .WithAssignmentGradeConfigService<CustomConfigService>();
 ```
 
 ## Configuration
 
 `ServiceAddress`
 
-The base url used to tell tools where the service is located.
+The base URL used to tell tools where the service is located.

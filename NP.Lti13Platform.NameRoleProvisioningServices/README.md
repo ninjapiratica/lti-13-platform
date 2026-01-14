@@ -5,15 +5,17 @@ The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti
 ## Features
 
 - Returns the members of a context
+- Supports membership filters and pagination
+- Retrieves user information and roles
 
 ## Getting Started
 
 1. Add the nuget package to your project:
 
-2. Add an implementation of the `ILti13NameRoleProvisioningDataService` interface:
+2. Add an implementation of the `INameRoleProvisioningDataService` interface:
 
 ```csharp
-public class DataService: ILti13NameRoleProvisioningDataService
+public class NameRoleProvisioningDataService: INameRoleProvisioningDataService
 {
     ...
 }
@@ -23,9 +25,8 @@ public class DataService: ILti13NameRoleProvisioningDataService
 
 ```csharp
 builder.Services
-    .AddLti13PlatformCore()
-    .AddLti13PlatformNameRoleProvisioningServices()
-    .WithLti13NameRoleProvisioningDataService<DataService>();
+    .AddLti13PlatformCore<CoreDataService>()
+    .AddPlatformNameRoleProvisioningServices<NameRoleProvisioningDataService>();
 ```
 
 4. Setup the routing for the LTI 1.3 platform endpoints:
@@ -34,11 +35,11 @@ builder.Services
 app.UseLti13PlatformNameRoleProvisioningServices();
 ```
 
-## ILti13NameRoleProvisioningDataService
+## INameRoleProvisioningDataService
 
-There is no default `ILti13NameRoleProvisioningDataService` implementation to allow each project to store the data how they see fit.
+There is no default `INameRoleProvisioningDataService` implementation to allow each project to store the data how they see fit.
 
-The `ILti13NameRoleProvisioningDataService` interface is used to get the persisted members of a context filtered by multiple parameters.
+The `INameRoleProvisioningDataService` interface is used to retrieve members of a context with support for filtering by role, status, and pagination.
 
 All of the internal services are transient and therefore the data service may be added at any scope (Transient, Scoped, Singleton).
 
@@ -55,11 +56,11 @@ app.UseLti13PlatformNameRoleProvisioningServices(config => {
 });
 ```
 
-### ILti13NameRoleProvisioningConfigService
+### INameRoleProvisioningConfigService
 
-The `ILti13NameRoleProvisioningService` interface is used to get the config for the name and role provisioning service. The config is used to tell the tools how to request the members of a context.
+The `INameRoleProvisioningConfigService` interface is used to get the configuration for the name and role provisioning service. The config is used to tell tools how to request the members of a context.
 
-There is a default implementation of the `ILti13NameRoleProvisioningConfigService` interface that uses a configuration set up on app start.
+There is a default implementation of the `INameRoleProvisioningConfigService` interface that uses configuration set up on app start.
 It will be configured using the [`IOptions`](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration) pattern and configuration.
 The configuration path for the service is `Lti13Platform:NameRoleProvisioningServices`.
 
@@ -75,38 +76,52 @@ Examples:
 }
 ```
 
+OR
+
 ```csharp
 builder.Services.Configure<ServicesConfig>(x => { });
 ```
 
-The Default implementation can be overridden by adding a new implementation of the `ILti13NameRoleProvisioningConfigService` interface.
+The Default implementation can be overridden by adding a new implementation of the `INameRoleProvisioningConfigService` interface.
 This may be useful if the service URL is dynamic or needs to be determined at runtime.
 
 ```csharp
 builder.Services
-    .AddLti13PlatformCore()
-    .AddLti13PlatformNameRoleProvisioningServices()
-    .WithLti13NameRoleProvisioningConfigService<ConfigService>();
+    .AddLti13PlatformCore<CoreDataService>()
+    .AddPlatformNameRoleProvisioningServices<NameRoleProvisioningDataService>()
+    .WithNameRoleProvisioningConfigService<CustomConfigService>();
+```
+
+### INameRoleProvisioningServicesMessageExtension
+
+The `INameRoleProvisioningServicesMessageExtension` interface allows for adding custom extensions to name and role provisioning service messages.
+
+```csharp
+builder.Services
+    .AddLti13PlatformCore<CoreDataService>()
+    .AddPlatformNameRoleProvisioningServices<NameRoleProvisioningDataService>()
+    .WithNameRoleProvisioningServicesMessageExtension<CustomExtension>();
 ```
 
 ## Configuration
 
 `ServiceAddress`
 
-The base url used to tell tools where the service is located.
+The base URL used to tell tools where the service is located.
+
+***
 
 `SupportMembershipDifferences` Default: `true`
 
-Boolean indicating if the service supports membership differences. If true, it is expected the 'asOfDate' parameter in the `GetMemberships` data service will be used. If historical membership is not supported, this value should be set to false. 
+Boolean indicating if the service supports membership differences. If `true`, it is expected the 'asOfDate' parameter in the `GetMemberships` data service will be used. If historical membership is not supported, this value should be set to `false`. 
 
-## Member Message
+## Message Extensions
 
-The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section) spec defines a way to give tools access to the parts of LTI messages that are specific to members. This project includes the specifics for the core message and known properties defined within the spec. Additional message can be added by calling `ExtendNameRoleProvisioningMessage` on startup. This follows the same pattern as [Populators](../NP.Lti13Platform.Core/README.md#populators) from the core spec. These messages should only contain the user specific message properties of the given message. Multiple populators may be added for the same interface and multiple interfaces may be added for the same <message_type>. Populators must be thread safe or have a Transient Dependency Injection strategy.
+The IMS [Name and Role Provisioning Services](https://www.imsglobal.org/spec/lti-nrps/v2p0#message-section) spec defines member-specific claims within LTI messages. This project provides support for accessing these member-specific claims in resource link messages. Additional extensions can be added by implementing `INameRoleProvisioningServicesMessageExtension`.
 
 ```csharp
 builder.Services
-    .AddLti13PlatformCore()
-    .AddLti13PlatformNameRoleProvisioningServices()
-    .WithDefaultNameRoleProvisioningService()
-    .ExtendNameRoleProvisioningMessage<IMessage, MessagePopulator>("<message_type>");
+    .AddLti13PlatformCore<CoreDataService>()
+    .AddPlatformNameRoleProvisioningServices<NameRoleProvisioningDataService>()
+    .WithNameRoleProvisioningServicesMessageExtension<CustomMessageExtension>();
 ```
