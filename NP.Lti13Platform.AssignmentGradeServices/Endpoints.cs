@@ -55,8 +55,8 @@ public static class Endpoints
                 int? limit,
                 int? pageIndex,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -139,8 +139,8 @@ public static class Endpoints
                 ContextId contextId,
                 LineItemRequest request,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -259,8 +259,8 @@ public static class Endpoints
                 ContextId contextId,
                 LineItemId lineItemId,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -327,8 +327,8 @@ public static class Endpoints
                 LineItemId lineItemId,
                 LineItemRequest request,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -446,8 +446,8 @@ public static class Endpoints
                 ContextId contextId,
                 LineItemId lineItemId,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;
@@ -504,8 +504,8 @@ public static class Endpoints
                 int? limit,
                 int? pageIndex,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
             {
@@ -593,8 +593,8 @@ public static class Endpoints
                 LineItemId lineItemId,
                 ScoreRequest request,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                IAssignmentGradeDataService assignmentGradeDataService,
+                ILti13CoreDataService coreDataService,
+                ILti13AssignmentGradeDataService assignmentGradeDataService,
                 CancellationToken cancellationToken) =>
             {
                 var httpContext = httpContextAccessor.HttpContext!;

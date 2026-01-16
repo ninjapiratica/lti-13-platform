@@ -18,7 +18,7 @@ namespace NP.Lti13Platform.Core;
 /// <param name="options">The authentication scheme options.</param>
 /// <param name="logger">The logger factory.</param>
 /// <param name="encoder">The URL encoder.</param>
-public class ServicesAuthHandler(ICoreDataService dataService, ITokenConfigService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+public class ServicesAuthHandler(ILti13CoreDataService dataService, ILti13TokenConfigService tokenService, IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     /// <summary>

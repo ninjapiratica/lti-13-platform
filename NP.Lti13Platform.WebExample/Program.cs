@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddPlatformWithDefaultMessageHandlers<DataService>();
+    .AddLti13PlatformWithDefaultMessageHandlers<DataService>();
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -79,9 +79,9 @@ namespace NP.Lti13Platform.WebExample
     using System.Security.Cryptography;
 
     /// <summary>
-    /// A sample implementation of the <see cref="ILti13DataService"/> for demonstration purposes.
+    /// A sample implementation of the <see cref="ILti13PlatformDataServiceWithDefaultHandlers"/> for demonstration purposes.
     /// </summary>
-    public class DataService : IDataService
+    public class DataService : ILti13PlatformDataServiceWithDefaultHandlers
     {
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
@@ -242,7 +242,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
 
-        Task IAssignmentGradeDataService.SaveGradeAsync(Grade grade, CancellationToken cancellationToken)
+        Task ILti13AssignmentGradeDataService.SaveGradeAsync(Grade grade, CancellationToken cancellationToken)
         {
             var existingGrade = Grades.SingleOrDefault(x => x.LineItemId == grade.LineItemId && x.UserId == grade.UserId);
             if (existingGrade != null)

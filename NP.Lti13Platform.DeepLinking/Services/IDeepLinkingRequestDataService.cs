@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.DeepLinking.Services;
 /// <summary>
 /// Defines a service for managing deep linking data in an LTI 1.3 platform.
 /// </summary>
-public interface IDeepLinkingRequestDataService
+public interface ILti13DeepLinkingRequestDataService
 {
     /// <summary>
     /// Gets a deployment by its ID.

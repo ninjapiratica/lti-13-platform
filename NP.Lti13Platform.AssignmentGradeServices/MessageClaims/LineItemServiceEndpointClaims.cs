@@ -122,8 +122,8 @@ public static partial class ClaimsExtensions
 }
 
 internal class LineItemServiceMessageExtension(
-    IAssignmentGradeDataService dataService,
-    IAssignmentGradeConfigService configService,
+    ILti13AssignmentGradeDataService dataService,
+    ILti13AssignmentGradeConfigService configService,
     LinkGenerator linkGenerator)
     : ILtiResourceLinkMessageExtension<ILineItemServiceEndpointClaims>
 {

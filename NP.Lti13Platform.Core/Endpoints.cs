@@ -39,7 +39,7 @@ public static class Endpoints
 
         endpointRouteBuilder.MapGet(config.JwksUrl,
             async (ClientId clientId,
-                ICoreDataService dataService,
+                ILti13CoreDataService dataService,
                 CancellationToken cancellationToken) =>
             {
                 var keySet = new JsonWebKeySet();
@@ -67,8 +67,8 @@ public static class Endpoints
             async ([FromForm] TokenRequest request,
                 LinkGenerator linkGenerator,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService dataService,
-                ITokenConfigService tokenService,
+                ILti13CoreDataService dataService,
+                ILti13TokenConfigService tokenService,
                 CancellationToken cancellationToken) =>
             {
                 const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
@@ -240,8 +240,8 @@ public static class Endpoints
 
         endpointRouteBuilder.MapGet(config.AuthenticationUrl,
             ([AsParameters] AuthenticationRequest queryString,
-            ICoreDataService dataService,
-            IEnumerable<IMessageHandler> lti13MessageHandlers,
+            ILti13CoreDataService dataService,
+            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
                 HandleAuthentication(queryString, dataService, lti13MessageHandlers, cancellationToken)
             )
@@ -249,8 +249,8 @@ public static class Endpoints
 
         endpointRouteBuilder.MapPost(config.AuthenticationUrl,
             ([FromForm] AuthenticationRequest form,
-            ICoreDataService dataService,
-            IEnumerable<IMessageHandler> lti13MessageHandlers,
+            ILti13CoreDataService dataService,
+            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
                 HandleAuthentication(form, dataService, lti13MessageHandlers, cancellationToken)
             )
@@ -261,8 +261,8 @@ public static class Endpoints
 
     private static async Task<IResult> HandleAuthentication(
         AuthenticationRequest request,
-        ICoreDataService dataService,
-        IEnumerable<IMessageHandler> lti13MessageHandlers,
+        ILti13CoreDataService dataService,
+        IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
         CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";

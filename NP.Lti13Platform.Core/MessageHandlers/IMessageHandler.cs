@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.Core.MessageHandlers;
 /// <summary>
 /// Defines a contract for handling Learning Tools Interoperability (LTI) messages asynchronously and returning the result of the message processing operation.
 /// </summary>
-public interface IMessageHandler
+public interface ILti13MessageHandler
 {
     /// <summary>
     /// Processes an LTI (Learning Tools Interoperability) message asynchronously and returns the result of the message handling operation.

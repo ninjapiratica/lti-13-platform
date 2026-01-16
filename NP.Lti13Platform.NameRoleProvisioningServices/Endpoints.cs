@@ -62,9 +62,9 @@ public static class Endpoints
                 long? since,
                 IServiceProvider serviceProvider,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                INameRoleProvisioningDataService nrpsDataService,
-                IEnumerable<INameRoleProvisioningServicesMessageExtension> messageExtensions,
+                ILti13CoreDataService coreDataService,
+                ILti13NameRoleProvisioningDataService nrpsDataService,
+                IEnumerable<ILti13NameRoleProvisioningServicesMessageExtension> messageExtensions,
                 IOptionsMonitor<ServicesConfig> config,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
@@ -323,7 +323,7 @@ public static class Endpoints
         IDictionary<UserId, object> messageDict,
         Tool tool,
         ResourceLink resourceLink,
-        IEnumerable<INameRoleProvisioningServicesMessageExtension> extensions,
+        IEnumerable<ILti13NameRoleProvisioningServicesMessageExtension> extensions,
         CancellationToken cancellationToken)
     {
         var extensionTasks = extensions

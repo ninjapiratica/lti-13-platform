@@ -7,7 +7,7 @@ namespace NP.Lti13Platform.Core.Services;
 /// <summary>
 /// Defines the contract for a service that provides token configuration for LTI 1.3 integrations.
 /// </summary>
-public interface ITokenConfigService
+public interface ILti13TokenConfigService
 {
     /// <summary>
     /// Gets the token configuration for a specific client.
@@ -18,7 +18,7 @@ public interface ITokenConfigService
     Task<TokenConfig> GetTokenConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultTokenConfigService(IOptionsMonitor<TokenConfig> config) : ITokenConfigService
+internal class DefaultTokenConfigService(IOptionsMonitor<TokenConfig> config) : ILti13TokenConfigService
 {
     public async Task<TokenConfig> GetTokenConfigAsync(ClientId clientId, CancellationToken cancellationToken = default) => await Task.FromResult(config.CurrentValue);
 }

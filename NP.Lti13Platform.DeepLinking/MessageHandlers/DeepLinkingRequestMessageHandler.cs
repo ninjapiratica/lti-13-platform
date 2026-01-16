@@ -71,16 +71,16 @@ public interface IDeepLinkingRequestMessageHandler
 }
 
 internal class DeepLinkingRequestMessageHandler(
-    ICoreDataService coreDataService,
-    IDeepLinkingRequestDataService dataService,
-    IDeepLinkingConfigService deepLinkingConfigService,
-    ITokenConfigService tokenConfigService,
-    IPlatformService platformService,
-    IEnumerable<IDeepLinkingMessageExtension> extensions,
+    ILti13CoreDataService coreDataService,
+    ILti13DeepLinkingRequestDataService dataService,
+    ILti13DeepLinkingConfigService deepLinkingConfigService,
+    ILti13TokenConfigService tokenConfigService,
+    ILti13PlatformService platformService,
+    IEnumerable<ILti13DeepLinkingMessageExtension> extensions,
     ILogger<DeepLinkingRequestMessageHandler> logger,
     LinkGenerator linkGenerator)
     : IDeepLinkingRequestMessageHandler,
-        IMessageHandler
+        ILti13MessageHandler
 {
     public static readonly string MessageType = "LtiDeepLinkingRequest";
 

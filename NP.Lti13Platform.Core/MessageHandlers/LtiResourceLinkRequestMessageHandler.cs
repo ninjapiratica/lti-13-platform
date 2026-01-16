@@ -55,14 +55,14 @@ public interface ILtiResourceLinkRequestMessageHandler
 /// <param name="extensions">A collection of extensions that can augment or customize the LTI Resource Link Request message.</param>
 /// <param name="logger">The logger used to record diagnostic and operational information for this handler.</param>
 internal class LtiResourceLinkRequestMessageHandler(
-    ICoreDataService coreDataService,
+    ILti13CoreDataService coreDataService,
     ILtiResourceLinkMessageDataService dataService,
-    ITokenConfigService tokenConfigService,
-    IPlatformService platformService,
+    ILti13TokenConfigService tokenConfigService,
+    ILti13PlatformService platformService,
     IEnumerable<ILtiResourceLinkMessageExtension> extensions,
     ILogger<LtiResourceLinkRequestMessageHandler> logger)
     : ILtiResourceLinkRequestMessageHandler,
-        IMessageHandler
+        ILti13MessageHandler
 {
     private static readonly string MessageType = "LtiResourceLinkRequest";
 

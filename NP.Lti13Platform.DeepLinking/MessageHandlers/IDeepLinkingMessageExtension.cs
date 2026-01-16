@@ -7,7 +7,7 @@ namespace NP.Lti13Platform.DeepLinking.MessageHandlers;
 /// </summary>
 /// <remarks>This interface provides a non-generic entry point for invoking message extensions without reflection.
 /// Implementations should also inherit from IDeepLinkingMessageExtension&lt;TMessage&gt; for strongly-typed access.</remarks>
-public interface IDeepLinkingMessageExtension
+public interface ILti13DeepLinkingMessageExtension
 {
     /// <summary>
     /// Asynchronously extends the specified message with additional properties for the given tool and deployment.
@@ -30,7 +30,7 @@ public interface IDeepLinkingMessageExtension
 /// The extension receives a message instance and can populate or modify its properties to extend the base LTI deep linking message.
 /// The extension does not need to know about the full message contract, only the properties it needs to extend.</remarks>
 /// <typeparam name="TMessage">The type representing the message that can be extended.</typeparam>
-public interface IDeepLinkingMessageExtension<TMessage> : IDeepLinkingMessageExtension
+public interface IDeepLinkingMessageExtension<TMessage> : ILti13DeepLinkingMessageExtension
 {
     /// <summary>
     /// Asynchronously extends the specified message with additional properties for the given tool and deployment.
@@ -45,7 +45,7 @@ public interface IDeepLinkingMessageExtension<TMessage> : IDeepLinkingMessageExt
     Task ExtendMessageAsync(TMessage message, Tool tool, Deployment deployment, Context? context, User? user, CancellationToken cancellationToken = default);
 
     // Explicit implementation of the non-generic interface method
-    async Task IDeepLinkingMessageExtension.ExtendMessageAsync(object message, Tool tool, Deployment deployment, Context? context, User? user, CancellationToken cancellationToken)
+    async Task ILti13DeepLinkingMessageExtension.ExtendMessageAsync(object message, Tool tool, Deployment deployment, Context? context, User? user, CancellationToken cancellationToken)
     {
         if (message is not TMessage typedMessage)
         {

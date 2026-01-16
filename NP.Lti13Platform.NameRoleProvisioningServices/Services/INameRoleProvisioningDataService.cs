@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Services;
 /// <summary>
 /// Defines a service for accessing name and role provisioning data in an LTI 1.3 platform.
 /// </summary>
-public interface INameRoleProvisioningDataService
+public interface ILti13NameRoleProvisioningDataService
 {
     /// <summary>
     /// Retrieves a collection of memberships based on the specified deployment, context, role, resource link, and optional date.

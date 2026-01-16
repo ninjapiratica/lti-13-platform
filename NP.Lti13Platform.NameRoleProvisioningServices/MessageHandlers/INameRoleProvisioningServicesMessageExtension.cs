@@ -7,7 +7,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.MessageHandlers;
 /// </summary>
 /// <remarks>This interface provides a non-generic entry point for invoking message extensions without reflection.
 /// Implementations should also inherit from INameRoleProvisioningServicesMessageExtension&lt;TMessage&gt; for strongly-typed access.</remarks>
-public interface INameRoleProvisioningServicesMessageExtension
+public interface ILti13NameRoleProvisioningServicesMessageExtension
 {
     /// <summary>
     /// Asynchronously extends the specified messages with additional properties for the given tool and resource link.
@@ -28,7 +28,7 @@ public interface INameRoleProvisioningServicesMessageExtension
 /// The extension receives message instances per user (indexed by user ID) and can populate or modify their properties to extend the base LTI message.
 /// The extension does not need to know about the full message contract, only the properties it needs to extend.</remarks>
 /// <typeparam name="TMessage">The type representing the message that can be extended.</typeparam>
-public interface INameRoleProvisioningServicesMessageExtension<TMessage> : INameRoleProvisioningServicesMessageExtension
+public interface INameRoleProvisioningServicesMessageExtension<TMessage> : ILti13NameRoleProvisioningServicesMessageExtension
 {
     /// <summary>
     /// Asynchronously extends the specified messages with additional properties for the given tool and resource link.
@@ -41,7 +41,7 @@ public interface INameRoleProvisioningServicesMessageExtension<TMessage> : IName
     Task ExtendMessagesAsync(IDictionary<UserId, TMessage> messages, Tool tool, ResourceLink resourceLink, CancellationToken cancellationToken = default);
 
     // Explicit implementation of the non-generic interface method
-    async Task INameRoleProvisioningServicesMessageExtension.ExtendMessagesAsync(IDictionary<UserId, object> messages, Tool tool, ResourceLink resourceLink, CancellationToken cancellationToken)
+    async Task ILti13NameRoleProvisioningServicesMessageExtension.ExtendMessagesAsync(IDictionary<UserId, object> messages, Tool tool, ResourceLink resourceLink, CancellationToken cancellationToken)
     {
         // Cast the dictionary to the typed version
         var typedMessages = new Dictionary<UserId, TMessage>();
