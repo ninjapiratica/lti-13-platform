@@ -135,19 +135,19 @@ internal class LtiResourceLinkRequestMessageHandler(
         var resourceLink = await dataService.GetResourceLinkAsync(ltiMessageHintRecord.ResourceLinkId, cancellationToken);
         if (resourceLink == null)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("resource link not found");
         }
 
         var context = await dataService.GetContextAsync(resourceLink.ContextId, cancellationToken);
         if (context == null)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("context not found");
         }
 
         var deployment = await dataService.GetDeploymentAsync(resourceLink.DeploymentId, cancellationToken);
         if (deployment == null || deployment.ClientId != tool.ClientId)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("deployment not found or clientId mismatch");
         }
 
         User? user = null;
@@ -156,7 +156,7 @@ internal class LtiResourceLinkRequestMessageHandler(
             user = await dataService.GetUserAsync(loginHintRecord.UserId.Value, cancellationToken);
             if (user == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("user not found");
             }
         }
 
@@ -166,7 +166,7 @@ internal class LtiResourceLinkRequestMessageHandler(
             actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId.Value, cancellationToken);
             if (actualUser == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("actual user not found");
             }
         }
 
