@@ -219,9 +219,7 @@ internal class DeepLinkingRequestMessageHandler(
             .ToList();
 
         // Create dynamic type if extensions exist, otherwise use base type
-        var messageType = extensionMessageInterfaces.Count != 0
-            ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<DeepLinkingRequestMessage>(extensionMessageInterfaces)
-            : typeof(DeepLinkingRequestMessage);
+        var messageType = DynamicTypeBuilder.CreateTypeImplementingInterfaces<DeepLinkingRequestMessage>(extensionMessageInterfaces);
 
         // Create instance of message (dynamic or base type)
         var lti13Message = Activator.CreateInstance(messageType)

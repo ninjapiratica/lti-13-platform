@@ -204,9 +204,7 @@ internal class LtiResourceLinkRequestMessageHandler(
             .ToList();
 
         // Create dynamic type if extensions exist, otherwise use base type
-        var messageType = extensionMessageInterfaces.Count != 0
-            ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<LtiResourceLinkRequestMessage>(extensionMessageInterfaces)
-            : typeof(LtiResourceLinkRequestMessage);
+        var messageType = DynamicTypeBuilder.CreateTypeImplementingInterfaces<LtiResourceLinkRequestMessage>(extensionMessageInterfaces);
 
         // Create instance of message (dynamic or base type)
         var lti13Message = Activator.CreateInstance(messageType)

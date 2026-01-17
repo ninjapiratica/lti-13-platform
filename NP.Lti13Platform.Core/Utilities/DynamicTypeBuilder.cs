@@ -40,26 +40,32 @@ public static class DynamicTypeBuilder
     /// - Implement all interfaces in the provided list
     /// - Preserve all public members from the base type
     /// - Delegate interface implementations to the base type where applicable
+    /// - Copy attributes from all interfaces (both provided and already implemented by T)
     /// 
     /// This is useful for runtime scenarios where you need to compose types dynamically with multiple interface implementations.
     /// Generated types are cached with a key based on the base type and sorted interface names to ensure consistent cache lookups.
+    /// 
+    /// Even if no new interfaces are provided, a dynamic type will be created if the base type already implements interfaces,
+    /// allowing their attributes to be copied to the dynamic type.
     /// </remarks>
     /// <typeparam name="T">The base type that the generated type will inherit from.</typeparam>
     /// <param name="interfaces">A collection of interfaces that the generated type should implement.
-    /// If null or empty, returns the base type T unchanged.</param>
-    /// <returns>A new type that inherits from T and implements all specified interfaces.
-    /// If no interfaces are provided, returns T itself. Results are cached for performance.</returns>
+    /// If null or empty and T has no existing interfaces, returns the base type T unchanged.</param>
+    /// <returns>A new type that inherits from T and implements all specified interfaces,
+    /// with attributes copied from all interface members. Returns T unchanged only if both
+    /// no new interfaces are provided and T implements no interfaces.</returns>
     /// <exception cref="ArgumentException">Thrown if T is sealed or if any interface is not actually an interface type.</exception>
     public static Type CreateTypeImplementingInterfaces<T>(IEnumerable<Type>? interfaces) where T : class
     {
-        if (interfaces == null)
+        var interfaceList = interfaces?.ToList() ?? [];
+        
+        // Check if we need to create a dynamic type:
+        // 1. If new interfaces are being added, OR
+        // 2. If the base type already implements interfaces (to copy their attributes)
+        var baseTypeInterfaces = typeof(T).GetInterfaces();
+        if (interfaceList.Count == 0 && baseTypeInterfaces.Length == 0)
         {
-            return typeof(T);
-        }
-
-        var interfaceList = interfaces.ToList();
-        if (interfaceList.Count == 0)
-        {
+            // No new interfaces and no existing interfaces to process
             return typeof(T);
         }
 
@@ -88,7 +94,7 @@ public static class DynamicTypeBuilder
         }
 
         // Create type if not in cache
-        var newType = CreateTypeInternal<T>(interfaceList);
+        var newType = CreateTypeInternal<T>([.. baseTypeInterfaces, .. interfaceList]);
         
         // Store in cache
         _typeCache.TryAdd(cacheKey, newType);
@@ -112,7 +118,7 @@ public static class DynamicTypeBuilder
     /// <summary>
     /// Creates the dynamic type with IL generation (internal implementation).
     /// </summary>
-    private static Type CreateTypeInternal<T>(List<Type> interfaceList) where T : class
+    private static Type CreateTypeInternal<T>(HashSet<Type> allInterfaces) where T : class
     {
         using (_lockObject.EnterScope())
         {
@@ -123,7 +129,7 @@ public static class DynamicTypeBuilder
                 typeName,
                 TypeAttributes.Public,
                 typeof(T),
-                [.. interfaceList]);
+                [.. allInterfaces]);
 
             // Create a default constructor that calls the base constructor
             var constructorBuilder = typeBuilder.DefineConstructor(
@@ -139,8 +145,8 @@ public static class DynamicTypeBuilder
                     $"Base type {typeof(T).Name} must have a parameterless constructor."));
             constructorIL.Emit(OpCodes.Ret);
 
-            // Implement all interface members
-            foreach (var interfaceType in interfaceList)
+            // Implement all interface members through a unified flow
+            foreach (var interfaceType in allInterfaces)
             {
                 ImplementInterface(typeBuilder, typeof(T), interfaceType);
             }
@@ -148,6 +154,82 @@ public static class DynamicTypeBuilder
             return typeBuilder.CreateType()
                 ?? throw new InvalidOperationException("Failed to create dynamic type.");
         }
+    }
+
+    /// <summary>
+    /// Copies custom attributes from a source member to a target builder using the provided setter action.
+    /// </summary>
+    private static void CopyCustomAttributes(ICustomAttributeProvider source, Action<CustomAttributeBuilder> setAttributeAction)
+    {
+        var customAttributes = source.GetCustomAttributes(false);
+        foreach (var customAttribute in customAttributes)
+        {
+            try
+            {
+                var attributeType = customAttribute.GetType();
+                
+                // Use reflection to get the actual constructor and arguments used
+                var customAttributeDataList = GetCustomAttributeData(source);
+                if (customAttributeDataList.Count == 0)
+                    continue;
+
+                var customAttributeData = customAttributeDataList[0];
+                var constructor = customAttributeData.Constructor;
+                var constructorArgs = customAttributeData.ConstructorArguments.Select(ca => ca.Value).ToArray();
+
+                var namedProperties = customAttributeData.NamedArguments
+                    .Where(na => na.MemberInfo is PropertyInfo)
+                    .Select(na => (PropertyInfo)na.MemberInfo)
+                    .ToArray();
+                var propertyValues = customAttributeData.NamedArguments
+                    .Where(na => na.MemberInfo is PropertyInfo)
+                    .Select(na => na.TypedValue.Value)
+                    .ToArray();
+                var namedFields = customAttributeData.NamedArguments
+                    .Where(na => na.MemberInfo is FieldInfo)
+                    .Select(na => (FieldInfo)na.MemberInfo)
+                    .ToArray();
+                var fieldValues = customAttributeData.NamedArguments
+                    .Where(na => na.MemberInfo is FieldInfo)
+                    .Select(na => na.TypedValue.Value)
+                    .ToArray();
+
+                var attributeBuilder = new CustomAttributeBuilder(
+                    constructor,
+                    constructorArgs,
+                    namedProperties,
+                    propertyValues,
+                    namedFields,
+                    fieldValues);
+
+                setAttributeAction(attributeBuilder);
+            }
+            catch
+            {
+                // Skip attributes that cannot be copied (e.g., attributes with complex types)
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets custom attribute data for a given attribute type from a member.
+    /// </summary>
+    private static List<CustomAttributeData> GetCustomAttributeData(ICustomAttributeProvider source)
+    {
+        if (source is MethodInfo methodInfo)
+            return [.. CustomAttributeData.GetCustomAttributes(methodInfo)];
+        if (source is PropertyInfo propertyInfo)
+            return [.. CustomAttributeData.GetCustomAttributes(propertyInfo)];
+        if (source is FieldInfo fieldInfo)
+            return [.. CustomAttributeData.GetCustomAttributes(fieldInfo)];
+        if (source is Type typeInfo)
+            return [.. CustomAttributeData.GetCustomAttributes(typeInfo)];
+        if (source is Assembly assemblyInfo)
+            return [.. CustomAttributeData.GetCustomAttributes(assemblyInfo)];
+        if (source is ParameterInfo parameterInfo)
+            return [.. CustomAttributeData.GetCustomAttributes(parameterInfo)];
+
+        return [];
     }
 
     private static void ImplementInterface(TypeBuilder typeBuilder, Type baseType, Type interfaceType)
@@ -201,6 +283,9 @@ public static class DynamicTypeBuilder
             MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot,
             interfaceMethod.ReturnType,
             parameterTypes);
+
+        // Copy attributes from the interface method
+        CopyCustomAttributes(interfaceMethod, attr => methodBuilder.SetCustomAttribute(attr));
 
         var methodIL = methodBuilder.GetILGenerator();
 
@@ -265,6 +350,9 @@ public static class DynamicTypeBuilder
             interfaceProperty.PropertyType,
             null);
 
+        // Copy attributes from the interface property
+        CopyCustomAttributes(interfaceProperty, attr => propertyBuilder.SetCustomAttribute(attr));
+
         // If base type has this property, delegate to it
         if (baseProperty != null && baseProperty.PropertyType == interfaceProperty.PropertyType)
         {
@@ -275,6 +363,13 @@ public static class DynamicTypeBuilder
                     MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
                     interfaceProperty.PropertyType,
                     Type.EmptyTypes);
+
+                // Copy attributes from the interface property's getter
+                var interfaceGetMethod = interfaceProperty.GetGetMethod();
+                if (interfaceGetMethod != null)
+                {
+                    CopyCustomAttributes(interfaceGetMethod, attr => getMethodBuilder.SetCustomAttribute(attr));
+                }
 
                 var getIL = getMethodBuilder.GetILGenerator();
                 getIL.Emit(OpCodes.Ldarg_0);
@@ -294,6 +389,13 @@ public static class DynamicTypeBuilder
                     MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
                     null,
                     [interfaceProperty.PropertyType]);
+
+                // Copy attributes from the interface property's setter
+                var interfaceSetMethod = interfaceProperty.GetSetMethod();
+                if (interfaceSetMethod != null)
+                {
+                    CopyCustomAttributes(interfaceSetMethod, attr => setMethodBuilder.SetCustomAttribute(attr));
+                }
 
                 var setIL = setMethodBuilder.GetILGenerator();
                 setIL.Emit(OpCodes.Ldarg_0);
@@ -325,6 +427,13 @@ public static class DynamicTypeBuilder
                     interfaceProperty.PropertyType,
                     Type.EmptyTypes);
 
+                // Copy attributes from the interface property's getter
+                var interfaceGetMethod = interfaceProperty.GetGetMethod();
+                if (interfaceGetMethod != null)
+                {
+                    CopyCustomAttributes(interfaceGetMethod, attr => getMethodBuilder.SetCustomAttribute(attr));
+                }
+
                 var getIL = getMethodBuilder.GetILGenerator();
                 getIL.Emit(OpCodes.Ldarg_0);
                 getIL.Emit(OpCodes.Ldfld, backingField);
@@ -343,6 +452,13 @@ public static class DynamicTypeBuilder
                     MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
                     null,
                     [interfaceProperty.PropertyType]);
+
+                // Copy attributes from the interface property's setter
+                var interfaceSetMethod = interfaceProperty.GetSetMethod();
+                if (interfaceSetMethod != null)
+                {
+                    CopyCustomAttributes(interfaceSetMethod, attr => setMethodBuilder.SetCustomAttribute(attr));
+                }
 
                 var setIL = setMethodBuilder.GetILGenerator();
                 setIL.Emit(OpCodes.Ldarg_0);

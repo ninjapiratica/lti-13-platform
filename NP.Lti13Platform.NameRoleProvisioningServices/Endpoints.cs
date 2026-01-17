@@ -225,9 +225,7 @@ public static class Endpoints
                         .ToList();
 
                     // Create dynamic type if extensions exist, otherwise use base type
-                    var messageType = extensionMessageInterfaces.Count != 0
-                        ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<NameRoleProvisioningLtiResourceLinkMessage>(extensionMessageInterfaces)
-                        : typeof(NameRoleProvisioningLtiResourceLinkMessage);
+                    var messageType = DynamicTypeBuilder.CreateTypeImplementingInterfaces<NameRoleProvisioningLtiResourceLinkMessage>(extensionMessageInterfaces);
 
                     var userMessages = usersWithMessages
                         .Zip(customPermissions, (userWithMessage, customPermissions) => (userWithMessage.User, userWithMessage.Membership, CustomPermissions: customPermissions))
