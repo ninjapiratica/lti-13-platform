@@ -1,7 +1,7 @@
-﻿using System.Collections;
+﻿using NP.Lti13Platform.Core.Utilities;
+using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 
 namespace NP.Lti13Platform.Core.Constants;
 
@@ -18,16 +18,22 @@ public static class JsonSerializerMessageOptions
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new JsonStringEnumConverter() },
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver
+        Converters = {
+            new JsonStringEnumConverter()
+        },
+        TypeInfoResolver = new InterfaceAttributeJsonTypeInfoResolver
         {
             Modifiers =
             {
                 (typeInfo) =>
                 {
-                    foreach(var prop in typeInfo.Properties.Where(p => p.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(p.PropertyType)))
+                    foreach(var prop in typeInfo.Properties.Where(p => 
+                        p.PropertyType != typeof(string) 
+                        && typeof(IEnumerable).IsAssignableFrom(p.PropertyType)))
                     {
-                        prop.ShouldSerialize = (obj, val) => val is IEnumerable e && e.GetEnumerator().MoveNext();
+                        prop.ShouldSerialize = (obj, val) => 
+                            val is IEnumerable e 
+                            && e.GetEnumerator().MoveNext();
                     }
                 }
             }

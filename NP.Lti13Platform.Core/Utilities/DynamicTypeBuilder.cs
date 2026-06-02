@@ -181,19 +181,28 @@ public static class DynamicTypeBuilder
             interfaceProperty.Name,
             BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
+        var hasDefaultImplementation = getMethod?.GetMethodBody() is not null
+            || setMethod?.GetMethodBody() is not null;
+
+        // If the base type already has this property with the same type,
+        // do NOT create a new PropertyBuilder to avoid shadowing/duplicate JSON properties.
+        // Interface attributes will be applied via InterfaceAttributeJsonTypeInfoResolver instead.
+        if (!hasDefaultImplementation
+            && baseProperty is not null
+            && baseProperty.PropertyType == interfaceProperty.PropertyType)
+        {
+            return;
+        }
+
         var propertyBuilder = typeBuilder.DefineProperty(
             interfaceProperty.Name,
             PropertyAttributes.None,
             interfaceProperty.PropertyType,
             null);
 
-        // Always copy attributes from the interface property
-        // This is essential for System.Text.Json to find attributes on the actual type
         CopyCustomAttributes(interfaceProperty, attr => propertyBuilder.SetCustomAttribute(attr));
         implementedMembers.Properties[propSig] = propertyBuilder;
 
-        var hasDefaultImplementation = getMethod?.GetMethodBody() is not null
-            || setMethod?.GetMethodBody() is not null;
         if (hasDefaultImplementation)
         {
             CreateDelegatingPropertyAccessors(
@@ -204,12 +213,11 @@ public static class DynamicTypeBuilder
             return;
         }
 
-        // For abstract properties, implement them based on whether the base type has them
-        if (baseProperty is null
-            || baseProperty.PropertyType != interfaceProperty.PropertyType)
-        {
-            CreateBackingFieldPropertyAccessors(typeBuilder, propertyBuilder, interfaceProperty);
-        }
+        // No base property (or type mismatch) — create backing field
+        CreateBackingFieldPropertyAccessors(
+            typeBuilder,
+            propertyBuilder,
+            interfaceProperty);
     }
 
     private static void CreateDelegatingPropertyAccessors(
@@ -382,8 +390,8 @@ public static class DynamicTypeBuilder
 
     private class ImplementedMembers
     {
-        public HashSet<string> Methods { get; } = new();
-        public Dictionary<string, PropertyBuilder> Properties { get; } = new();
+        public HashSet<string> Methods { get; } = [];
+        public Dictionary<string, PropertyBuilder> Properties { get; } = [];
     }
 }
 
