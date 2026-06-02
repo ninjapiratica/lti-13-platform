@@ -363,51 +363,27 @@ public static class Endpoints
             });
         }
 
-        object? lti13Message = null;
-        Lti13BadRequest? failedLti13MessageResult = null;
+        var lastResult = MessageResult.None();
         foreach (var lti13MessageHandler in lti13MessageHandlers)
         {
             var result = await lti13MessageHandler.HandleMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
 
+            if (result is MessageResult.NoneResult)
+            {
+                continue;
+            }
+
+            lastResult = result;
+
             if (result is MessageResult.SuccessResult successResult)
             {
-                lti13Message = successResult.Message;
-                failedLti13MessageResult = null;
-                break;
-            }
-            else if (result is MessageResult.ErrorResult errorResult)
-            {
-                failedLti13MessageResult = new Lti13BadRequest
-                {
-                    Error = INVALID_REQUEST,
-                    Error_Description = errorResult.ErrorMessage,
-                    Error_Uri = "https://www.1edtech.org/standards/lti"
-                };
-            }
-        }
+                var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
-        if (failedLti13MessageResult != null)
-        {
-            return Results.BadRequest(failedLti13MessageResult);
-        }
+                var token = new JsonWebTokenHandler().CreateToken(
+                    JsonSerializer.Serialize(successResult.Message, JsonSerializerMessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
+                    new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
-        if (lti13Message == null)
-        {
-            return Results.BadRequest(new Lti13BadRequest
-            {
-                Error = INVALID_REQUEST,
-                Error_Description = "unsupported message type",
-                Error_Uri = "https://www.1edtech.org/standards/lti"
-            });
-        }
-
-        var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
-
-        var token = new JsonWebTokenHandler().CreateToken(
-            JsonSerializer.Serialize(lti13Message, JsonSerializerMessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
-            new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
-
-        return Results.Content($@"
+                return Results.Content($@"
 <!DOCTYPE html>
 <html>
 <body>
@@ -419,8 +395,27 @@ public static class Endpoints
         document.getElementsByTagName('form')[0].submit();
     </script>
 </body>
-</html>".TrimStart(),
-            MediaTypeNames.Text.Html);
+</html>",
+                    MediaTypeNames.Text.Html);
+            }
+        }
+
+        if (lastResult is MessageResult.ErrorResult errorResult)
+        {
+            return Results.BadRequest(new Lti13BadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = errorResult.ErrorMessage,
+                Error_Uri = "https://www.1edtech.org/standards/lti"
+            });
+        }
+
+        return Results.BadRequest(new Lti13BadRequest
+        {
+            Error = INVALID_REQUEST,
+            Error_Description = "unsupported message type",
+            Error_Uri = "https://www.1edtech.org/standards/lti"
+        });
     }
 
     private static RouteHandlerBuilder ConfigureAuthenticationEndpoint(this RouteHandlerBuilder routeHandlerBuilder, string routeName)
