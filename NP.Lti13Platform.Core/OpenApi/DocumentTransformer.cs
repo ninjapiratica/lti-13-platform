@@ -19,6 +19,7 @@ public class DocumentTransformer : IOpenApiDocumentTransformer
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, OpenApiSecurityScheme>();
 
         if (!document.Components.SecuritySchemes.ContainsKey(Lti13OpenApi.SecuritySchemeId))
         {

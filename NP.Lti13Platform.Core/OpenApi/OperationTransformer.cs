@@ -17,14 +17,19 @@ public class OperationTransformer : IOpenApiOperationTransformer
     /// <param name="context">The context containing metadata about the current operation, including the action descriptor.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task completes when the transformation is finished.</returns>
-    public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    public Task TransformAsync(
+        OpenApiOperation operation,
+        OpenApiOperationTransformerContext context,
+        CancellationToken cancellationToken)
     {
         if (context.Description.GroupName == Lti13OpenApi.GroupName &&
             context.Description.ActionDescriptor.EndpointMetadata.OfType<AuthorizeAttribute>().Any())
         {
+            operation.Security ??= [];
+
             operation.Security.Add(new OpenApiSecurityRequirement
             {
-                [new OpenApiSecurityScheme { Reference = new OpenApiReference { Id = Lti13OpenApi.SecuritySchemeId, Type = ReferenceType.SecurityScheme } }] = Array.Empty<string>()
+                [new OpenApiSecurityScheme { Reference = new() { Id = Lti13OpenApi.SecuritySchemeId, Type = ReferenceType.SecurityScheme } }] = []
             });
         }
 
