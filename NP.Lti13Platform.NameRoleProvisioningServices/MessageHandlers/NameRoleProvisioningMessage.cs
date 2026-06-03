@@ -21,10 +21,16 @@ public interface INameRoleProvisioningMessage
 /// <summary>
 /// Represents a message used in the Name and Role Provisioning Services for LTI 1.3.
 /// </summary>
-internal class NameRoleProvisioningLtiResourceLinkMessage
+public class NameRoleProvisioningLtiResourceLinkMessage
     : INameRoleProvisioningMessage
 {
+    /// <summary>
+    /// Gets or sets the type of the message.
+    /// </summary>
     public IDictionary<string, string>? Custom { get; set; }
 
+    /// <summary>
+    /// Gets or sets the type of the message.
+    /// </summary>
     public string MessageType { get; set; } = "LtiResourceLinkRequest";
 }

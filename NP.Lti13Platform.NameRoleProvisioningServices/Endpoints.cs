@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.JsonWebTokens;
 using NP.Lti13Platform.Core;
-using NP.Lti13Platform.Core.Extensions;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.MessageClaims;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.OpenApi;
@@ -29,15 +29,6 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices;
 /// </summary>
 public static class Endpoints
 {
-    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new JsonStringEnumConverter() },
-    };
-    private static readonly Dictionary<string, MessageType> MessageTypes = [];
-    private static readonly Dictionary<MessageType, Type> LtiMessageTypes = [];
-
     /// <summary>
     /// Configures the endpoint for LTI 1.3 Name and Role Provisioning Services.
     /// </summary>
@@ -62,9 +53,9 @@ public static class Endpoints
                 long? since,
                 IServiceProvider serviceProvider,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService coreDataService,
-                INameRoleProvisioningDataService nrpsDataService,
-                IEnumerable<INameRoleProvisioningServicesMessageExtension> messageExtensions,
+                ILti13CoreDataService coreDataService,
+                ILti13NameRoleProvisioningDataService nrpsDataService,
+                IEnumerable<ILti13NameRoleProvisioningServicesMessageExtension> messageExtensions,
                 IOptionsMonitor<ServicesConfig> config,
                 LinkGenerator linkGenerator,
                 CancellationToken cancellationToken) =>
@@ -225,9 +216,7 @@ public static class Endpoints
                         .ToList();
 
                     // Create dynamic type if extensions exist, otherwise use base type
-                    var messageType = extensionMessageInterfaces.Count != 0
-                        ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<NameRoleProvisioningLtiResourceLinkMessage>(extensionMessageInterfaces)
-                        : typeof(NameRoleProvisioningLtiResourceLinkMessage);
+                    var messageType = DynamicTypeBuilder.CreateTypeImplementingInterfaces<NameRoleProvisioningLtiResourceLinkMessage>(extensionMessageInterfaces);
 
                     var userMessages = usersWithMessages
                         .Zip(customPermissions, (userWithMessage, customPermissions) => (userWithMessage.User, userWithMessage.Membership, CustomPermissions: customPermissions))
@@ -246,7 +235,7 @@ public static class Endpoints
 
                             return (
                                 UserId: zip.User.Id,
-                                Message: message
+                                Message: (object)message
                                     .WithCustomClaims(
                                         zip.CustomPermissions,
                                         tool,
@@ -264,7 +253,7 @@ public static class Endpoints
                     {
                         // Create a mapping of user IDs to messages for the extensions
                         var messageDict = userMessages.ToDictionary(x => x.UserId, x => (object)x.Message);
-                        
+
                         await InvokeExtensionsAsync(messageDict, tool, resourceLink, messageExtensions, cancellationToken);
 
                         messages = userMessages.ToDictionary(x => x.UserId, x => (IEnumerable<object>)[x.Message]);
@@ -299,7 +288,9 @@ public static class Endpoints
                             Message = messages.TryGetValue(x.User.Id, out var userMessages) ? userMessages : null
                         };
                     })
-                }, JSON_SERIALIZER_OPTIONS, contentType: Lti13ContentTypes.MembershipContainer);
+                },
+                JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS,
+                contentType: Lti13ContentTypes.MembershipContainer);
             })
             .WithName(RouteNames.GET_MEMBERSHIPS)
             .RequireAuthorization(policy =>
@@ -323,7 +314,7 @@ public static class Endpoints
         IDictionary<UserId, object> messageDict,
         Tool tool,
         ResourceLink resourceLink,
-        IEnumerable<INameRoleProvisioningServicesMessageExtension> extensions,
+        IEnumerable<ILti13NameRoleProvisioningServicesMessageExtension> extensions,
         CancellationToken cancellationToken)
     {
         var extensionTasks = extensions

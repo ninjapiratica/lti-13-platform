@@ -88,7 +88,7 @@ public static partial class ClaimsExtensions
 }
 
 internal class NameRoleServiceMessageExtension(
-    INameRoleProvisioningConfigService configService,
+    ILti13NameRoleProvisioningConfigService configService,
     LinkGenerator linkGenerator)
     : ILtiResourceLinkMessageExtension<INameRoleServiceEndpointClaims>
 {

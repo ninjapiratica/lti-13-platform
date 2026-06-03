@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.8.34309.116
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11408.102 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Core", "NP.Lti13Platform.Core\NP.Lti13Platform.Core.csproj", "{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.Test", "NP.Lti13Platform.Test\NP.Lti13Platform.Test.csproj", "{FFA6228F-50F4-4D72-A644-CD64A7F549FF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NP.Lti13Platform.WebExample", "NP.Lti13Platform.WebExample\NP.Lti13Platform.WebExample.csproj", "{EA964601-16BF-447B-B4B1-AE510F1E3A94}"
 EndProject
@@ -44,10 +42,6 @@ Global
 		{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3EF9C6CA-39BB-4F18-A8C1-8CCDFE2023D5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FFA6228F-50F4-4D72-A644-CD64A7F549FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FFA6228F-50F4-4D72-A644-CD64A7F549FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FFA6228F-50F4-4D72-A644-CD64A7F549FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FFA6228F-50F4-4D72-A644-CD64A7F549FF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA964601-16BF-447B-B4B1-AE510F1E3A94}.Release|Any CPU.ActiveCfg = Release|Any CPU

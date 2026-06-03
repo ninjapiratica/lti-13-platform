@@ -5,7 +5,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services;
 /// <summary>
 /// Defines the contract for a service that manages assignment and grade data for LTI 1.3 integrations.
 /// </summary>
-public interface IAssignmentGradeDataService
+public interface ILti13AssignmentGradeDataService
 {
     /// <summary>
     /// Retrieves a line item by its identifier.

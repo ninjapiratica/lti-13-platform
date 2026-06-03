@@ -71,16 +71,16 @@ public interface IDeepLinkingRequestMessageHandler
 }
 
 internal class DeepLinkingRequestMessageHandler(
-    ICoreDataService coreDataService,
-    IDeepLinkingRequestDataService dataService,
-    IDeepLinkingConfigService deepLinkingConfigService,
-    ITokenConfigService tokenConfigService,
-    IPlatformService platformService,
-    IEnumerable<IDeepLinkingMessageExtension> extensions,
+    ILti13CoreDataService coreDataService,
+    ILti13DeepLinkingRequestDataService dataService,
+    ILti13DeepLinkingConfigService deepLinkingConfigService,
+    ILti13TokenConfigService tokenConfigService,
+    ILti13PlatformService platformService,
+    IEnumerable<ILti13DeepLinkingMessageExtension> extensions,
     ILogger<DeepLinkingRequestMessageHandler> logger,
     LinkGenerator linkGenerator)
     : IDeepLinkingRequestMessageHandler,
-        IMessageHandler
+        ILti13MessageHandler
 {
     public static readonly string MessageType = "LtiDeepLinkingRequest";
 
@@ -126,24 +126,10 @@ internal class DeepLinkingRequestMessageHandler(
         LaunchPresentationOverride? launchPresentationOverride = null,
         DeepLinkingSettingsOverride? deepLinkingSettingsOverride = null)
     {
-        var loginHint = new LoginHint(userId, actualUserId, isAnonymous);
+        var loginHint = new LoginHint(userId ?? UserId.Empty, actualUserId ?? UserId.Empty, isAnonymous);
         var ltiMessageHint = new LtiMessageHint(deploymentId, contextId, launchPresentationOverride, deepLinkingSettingsOverride);
 
         return new Lti13Launch(tool, issuer, deepLinkingUrl ?? tool.LaunchUrl, deploymentId, loginHint.ToString(), ltiMessageHint.ToString());
-    }
-
-    private static bool TryDeserialize<T>(string jsonString, out T? deserilalized)
-    {
-        try
-        {
-            deserilalized = JsonSerializer.Deserialize<T>(jsonString);
-            return true;
-        }
-        catch (JsonException)
-        {
-            deserilalized = default;
-            return false;
-        }
     }
 
     public async Task<MessageResult> HandleMessageAsync(
@@ -167,7 +153,7 @@ internal class DeepLinkingRequestMessageHandler(
         var deployment = await dataService.GetDeploymentAsync(ltiMessageHintRecord.DeploymentId, cancellationToken);
         if (deployment == null || deployment.ClientId != tool.ClientId)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("deployment not found or clientId mismatch");
         }
 
         Context? context = null;
@@ -178,27 +164,27 @@ internal class DeepLinkingRequestMessageHandler(
 
             if (context == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("context not found");
             }
         }
 
         User? user = null;
-        if (loginHintRecord.UserId != null)
+        if (loginHintRecord.UserId != UserId.Empty)
         {
-            user = await dataService.GetUserAsync(loginHintRecord.UserId.Value, cancellationToken);
+            user = await dataService.GetUserAsync(loginHintRecord.UserId, cancellationToken);
             if (user == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("user not found");
             }
         }
 
         User? actualUser = null;
-        if (loginHintRecord.ActualUserId != null)
+        if (loginHintRecord.ActualUserId != UserId.Empty)
         {
-            actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId.Value, cancellationToken);
+            actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId, cancellationToken);
             if (actualUser == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("actual user not found");
             }
         }
 
@@ -233,9 +219,7 @@ internal class DeepLinkingRequestMessageHandler(
             .ToList();
 
         // Create dynamic type if extensions exist, otherwise use base type
-        var messageType = extensionMessageInterfaces.Count != 0
-            ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<DeepLinkingRequestMessage>(extensionMessageInterfaces)
-            : typeof(DeepLinkingRequestMessage);
+        var messageType = DynamicTypeBuilder.CreateTypeImplementingInterfaces<DeepLinkingRequestMessage>(extensionMessageInterfaces);
 
         // Create instance of message (dynamic or base type)
         var lti13Message = Activator.CreateInstance(messageType)
@@ -306,7 +290,7 @@ internal class DeepLinkingRequestMessageHandler(
 
         if (extensionMessageInterfaces.Count != 0)
         {
-            await InvokeExtensionsAsync(message, messageType, tool, deployment, context, user, cancellationToken);
+            await InvokeExtensionsAsync(message, tool, deployment, context, user, cancellationToken);
         }
 
         return MessageResult.Success(message);
@@ -314,7 +298,6 @@ internal class DeepLinkingRequestMessageHandler(
 
     private async Task InvokeExtensionsAsync(
         object message,
-        Type messageType,
         Tool tool,
         Deployment deployment,
         Context? context,
@@ -335,13 +318,8 @@ internal class DeepLinkingRequestMessageHandler(
     {
         public override string ToString()
         {
-            var launchPresentationOverrideString = LaunchPresentationOverride != null
-                ? JsonSerializer.Serialize(LaunchPresentationOverride)
-                : string.Empty;
-
-            var deepLinkingSettingsOverrideString = DeepLinkingSettingsOverride != null
-                ? JsonSerializer.Serialize(DeepLinkingSettingsOverride)
-                : string.Empty;
+            var launchPresentationOverrideString = Serialize(LaunchPresentationOverride);
+            var deepLinkingSettingsOverrideString = Serialize(DeepLinkingSettingsOverride);
 
             return $"{MessageType}|{DeploymentId}|{ContextId}|{launchPresentationOverrideString}|{deepLinkingSettingsOverrideString}";
         }
@@ -364,9 +342,36 @@ internal class DeepLinkingRequestMessageHandler(
             ltiMessageHint = new LtiMessageHint(deploymentId, contextId, launchPresentationOverride, deepLinkingSettingsOverride);
             return true;
         }
+
+        private static bool TryDeserialize<T>(string jsonString, out T? deserilalized)
+        {
+            if (jsonString == string.Empty)
+            {
+                deserilalized = default;
+                return true;
+            }
+
+            try
+            {
+                deserilalized = JsonSerializer.Deserialize<T>(jsonString);
+                return true;
+            }
+            catch (JsonException)
+            {
+                deserilalized = default;
+                return false;
+            }
+        }
+
+        private static string Serialize<T>(T? obj)
+        {
+            return obj != null
+                ? JsonSerializer.Serialize(obj)
+                : string.Empty;
+        }
     }
 
-    private record LoginHint(UserId? UserId, UserId? ActualUserId, bool IsAnonymous)
+    private record LoginHint(UserId UserId, UserId ActualUserId, bool IsAnonymous)
     {
         public override string ToString()
         {
@@ -378,11 +383,11 @@ internal class DeepLinkingRequestMessageHandler(
             if (loginHintString.Split('|', 3, StringSplitOptions.TrimEntries) is not [var userIdString, var actualUserIdString, var isAnonymousString]
                 || !bool.TryParse(isAnonymousString, out var isAnonymous))
             {
-                loginHint = new LoginHint(null, null, true);
+                loginHint = new LoginHint(UserId.Empty, UserId.Empty, true);
                 return false;
             }
 
-            loginHint = new LoginHint(new UserId(userIdString), new UserId(actualUserIdString), isAnonymous);
+            loginHint = new LoginHint(UserId.Parse(userIdString), UserId.Parse(actualUserIdString), isAnonymous);
             return true;
         }
     }

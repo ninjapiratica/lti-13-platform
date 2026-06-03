@@ -7,18 +7,16 @@ namespace NP.Lti13Platform.Core.Utilities;
 /// <summary>
 /// Provides utilities for dynamically creating types that implement multiple interfaces on top of a base type.
 /// </summary>
-/// <remarks>This utility uses reflection and dynamic code generation to create wrapper types at runtime.
-/// The generated types inherit from a base type T and implement all specified interfaces by delegating to the base type.
-/// Generated types are cached to avoid redundant reflection and IL generation on subsequent calls.</remarks>
+/// <remarks>
+/// This utility uses reflection and dynamic code generation to create wrapper types at runtime.
+/// Generated types inherit from base type T and implement all specified interfaces by delegating to the base type.
+/// Generated types are cached to avoid redundant reflection and IL generation on subsequent calls.
+/// </remarks>
 public static class DynamicTypeBuilder
 {
     private static readonly ModuleBuilder _moduleBuilder;
     private static int _typeCounter = 0;
     private static readonly Lock _lockObject = new();
-    
-    /// <summary>
-    /// Cache for dynamically created types, keyed by base type and interface set.
-    /// </summary>
     private static readonly ConcurrentDictionary<string, Type> _typeCache = new();
 
     static DynamicTypeBuilder()
@@ -39,33 +37,52 @@ public static class DynamicTypeBuilder
     /// - Inherit from the base type T
     /// - Implement all interfaces in the provided list
     /// - Preserve all public members from the base type
-    /// - Delegate interface implementations to the base type where applicable
+    /// - Delegate interface implementations to the base type where it already has them
+    /// - Copy attributes from all interface members (both methods and properties)
     /// 
-    /// This is useful for runtime scenarios where you need to compose types dynamically with multiple interface implementations.
-    /// Generated types are cached with a key based on the base type and sorted interface names to ensure consistent cache lookups.
+    /// If no new interfaces are provided but T already implements interfaces, a dynamic type is still created
+    /// to allow their attributes to be copied to the dynamic type.
+    /// Returns T unchanged only if both no new interfaces are provided and T implements no interfaces.
     /// </remarks>
     /// <typeparam name="T">The base type that the generated type will inherit from.</typeparam>
     /// <param name="interfaces">A collection of interfaces that the generated type should implement.
-    /// If null or empty, returns the base type T unchanged.</param>
-    /// <returns>A new type that inherits from T and implements all specified interfaces.
-    /// If no interfaces are provided, returns T itself. Results are cached for performance.</returns>
+    /// If null or empty and T has no existing interfaces, returns the base type T unchanged.</param>
+    /// <returns>A new type that inherits from T and implements all specified interfaces,
+    /// with attributes copied from all interface members. Returns T unchanged only if both
+    /// no new interfaces are provided and T implements no interfaces.</returns>
     /// <exception cref="ArgumentException">Thrown if T is sealed or if any interface is not actually an interface type.</exception>
     public static Type CreateTypeImplementingInterfaces<T>(IEnumerable<Type>? interfaces) where T : class
     {
-        if (interfaces == null)
+        var interfaceList = interfaces?.ToList() ?? [];
+        var baseType = typeof(T);
+        var baseTypeInterfaces = baseType.GetInterfaces();
+
+        // No need to create a dynamic type if no new interfaces and no existing interfaces
+        if (interfaceList.Count == 0 && baseTypeInterfaces.Length == 0)
         {
-            return typeof(T);
+            return baseType;
         }
 
-        var interfaceList = interfaces.ToList();
-        if (interfaceList.Count == 0)
+        ValidateInputs<T>(baseType, interfaceList);
+
+        var cacheKey = GenerateCacheKey<T>(interfaceList);
+        if (_typeCache.TryGetValue(cacheKey, out var cachedType))
         {
-            return typeof(T);
+            return cachedType;
         }
 
-        if (typeof(T).IsSealed)
+        var allInterfaces = new HashSet<Type>([.. baseTypeInterfaces, .. interfaceList]);
+        var newType = CreateTypeInternal<T>(allInterfaces);
+        _typeCache.TryAdd(cacheKey, newType);
+
+        return newType;
+    }
+
+    private static void ValidateInputs<T>(Type baseType, List<Type> interfaceList) where T : class
+    {
+        if (baseType.IsSealed)
         {
-            throw new ArgumentException($"Base type {typeof(T).Name} cannot be sealed.", nameof(T));
+            throw new ArgumentException($"Base type {baseType.Name} cannot be sealed.", nameof(T));
         }
 
         foreach (var interfaceType in interfaceList)
@@ -74,45 +91,21 @@ public static class DynamicTypeBuilder
             {
                 throw new ArgumentException(
                     $"Type {interfaceType.Name} is not an interface.",
-                    nameof(interfaces));
+                    nameof(interfaceList));
             }
         }
-
-        // Create cache key from base type and sorted interface names
-        var cacheKey = GenerateCacheKey<T>(interfaceList);
-
-        // Check cache first - if found, return immediately
-        if (_typeCache.TryGetValue(cacheKey, out var cachedType))
-        {
-            return cachedType;
-        }
-
-        // Create type if not in cache
-        var newType = CreateTypeInternal<T>(interfaceList);
-        
-        // Store in cache
-        _typeCache.TryAdd(cacheKey, newType);
-
-        return newType;
     }
 
-    /// <summary>
-    /// Generates a cache key based on the base type and interface set.
-    /// </summary>
     private static string GenerateCacheKey<T>(List<Type> interfaceList) where T : class
     {
         var baseTypeName = typeof(T).FullName ?? typeof(T).Name;
         var interfaceNames = string.Join("|", interfaceList
             .OrderBy(i => i.FullName ?? i.Name)
             .Select(i => i.FullName ?? i.Name));
-
         return $"{baseTypeName}::{interfaceNames}";
     }
 
-    /// <summary>
-    /// Creates the dynamic type with IL generation (internal implementation).
-    /// </summary>
-    private static Type CreateTypeInternal<T>(List<Type> interfaceList) where T : class
+    private static Type CreateTypeInternal<T>(HashSet<Type> allInterfaces) where T : class
     {
         using (_lockObject.EnterScope())
         {
@@ -123,26 +116,14 @@ public static class DynamicTypeBuilder
                 typeName,
                 TypeAttributes.Public,
                 typeof(T),
-                [.. interfaceList]);
+                [.. allInterfaces]);
 
-            // Create a default constructor that calls the base constructor
-            var constructorBuilder = typeBuilder.DefineConstructor(
-                MethodAttributes.Public,
-                CallingConventions.Standard,
-                Type.EmptyTypes);
+            CreateDefaultConstructor<T>(typeBuilder);
 
-            var constructorIL = constructorBuilder.GetILGenerator();
-            constructorIL.Emit(OpCodes.Ldarg_0);
-            constructorIL.Emit(OpCodes.Call,
-                typeof(T).GetConstructor(Type.EmptyTypes)
-                ?? throw new InvalidOperationException(
-                    $"Base type {typeof(T).Name} must have a parameterless constructor."));
-            constructorIL.Emit(OpCodes.Ret);
-
-            // Implement all interface members
-            foreach (var interfaceType in interfaceList)
+            var implementedMembers = new ImplementedMembers();
+            foreach (var interfaceType in allInterfaces)
             {
-                ImplementInterface(typeBuilder, typeof(T), interfaceType);
+                ImplementInterfaceMembers(typeBuilder, typeof(T), interfaceType, implementedMembers);
             }
 
             return typeBuilder.CreateType()
@@ -150,114 +131,68 @@ public static class DynamicTypeBuilder
         }
     }
 
-    private static void ImplementInterface(TypeBuilder typeBuilder, Type baseType, Type interfaceType)
+    private static void CreateDefaultConstructor<T>(TypeBuilder typeBuilder) where T : class
     {
-        var interfaceMethods = interfaceType.GetMethods(
-            BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        var constructorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public,
+            CallingConventions.Standard,
+            Type.EmptyTypes);
 
-        foreach (var interfaceMethod in interfaceMethods)
+        var il = constructorBuilder.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Call,
+            typeof(T).GetConstructor(Type.EmptyTypes)
+            ?? throw new InvalidOperationException(
+                $"Base type {typeof(T).Name} must have a parameterless constructor."));
+        il.Emit(OpCodes.Ret);
+    }
+
+    private static void ImplementInterfaceMembers(
+        TypeBuilder typeBuilder,
+        Type baseType,
+        Type interfaceType,
+        ImplementedMembers implementedMembers)
+    {
+        foreach (var property in interfaceType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase))
         {
-            // Skip if the base type already implements this method
-            var baseMethod = baseType.GetMethod(
-                interfaceMethod.Name,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
-                null,
-                [.. interfaceMethod.GetParameters().Select(p => p.ParameterType)],
-                null);
-
-            if (baseMethod != null && baseMethod.ReturnType == interfaceMethod.ReturnType)
-            {
-                continue; // Base type already implements this method
-            }
-
-            ImplementMethod(typeBuilder, baseType, interfaceMethod);
-        }
-
-        var interfaceProperties = interfaceType.GetProperties(
-            BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-
-        foreach (var interfaceProperty in interfaceProperties)
-        {
-            var baseProperty = baseType.GetProperty(
-                interfaceProperty.Name,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-
-            if (baseProperty != null && baseProperty.PropertyType == interfaceProperty.PropertyType)
-            {
-                continue; // Base type already implements this property
-            }
-
-            ImplementProperty(typeBuilder, baseType, interfaceProperty);
+            ImplementInterfaceProperty(typeBuilder, baseType, property, implementedMembers);
         }
     }
 
-    private static void ImplementMethod(TypeBuilder typeBuilder, Type baseType, MethodInfo interfaceMethod)
+    private static void ImplementInterfaceProperty(
+        TypeBuilder typeBuilder,
+        Type baseType,
+        PropertyInfo interfaceProperty,
+        ImplementedMembers implementedMembers)
     {
-        var parameters = interfaceMethod.GetParameters();
-        var parameterTypes = parameters.Select(p => p.ParameterType).ToArray();
+        var getMethod = interfaceProperty.GetGetMethod();
+        var setMethod = interfaceProperty.GetSetMethod();
 
-        var methodBuilder = typeBuilder.DefineMethod(
-            interfaceMethod.Name,
-            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot,
-            interfaceMethod.ReturnType,
-            parameterTypes);
+        var propSig = GetPropertySignature(interfaceProperty);
 
-        var methodIL = methodBuilder.GetILGenerator();
-
-        // Load 'this'
-        methodIL.Emit(OpCodes.Ldarg_0);
-
-        // Load all parameters
-        for (int i = 0; i < parameters.Length; i++)
+        // If already implemented in this dynamic type, just copy additional attributes
+        if (implementedMembers.Properties.TryGetValue(propSig, out var existingPropertyBuilder))
         {
-            switch (i)
-            {
-                case 0:
-                    methodIL.Emit(OpCodes.Ldarg_1);
-                    break;
-                case 1:
-                    methodIL.Emit(OpCodes.Ldarg_2);
-                    break;
-                case 2:
-                    methodIL.Emit(OpCodes.Ldarg_3);
-                    break;
-                default:
-                    methodIL.Emit(OpCodes.Ldarg, i + 1);
-                    break;
-            }
+            CopyCustomAttributes(interfaceProperty, attr => existingPropertyBuilder.SetCustomAttribute(attr));
+            return;
         }
 
-        // Try to call the base type's implementation
-        var baseImplementation = baseType.GetMethod(
-            interfaceMethod.Name,
-            BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
-            null,
-            parameterTypes,
-            null);
-
-        if (baseImplementation != null)
-        {
-            methodIL.Emit(OpCodes.Callvirt, baseImplementation);
-        }
-        else
-        {
-            // If base type doesn't implement it, throw NotImplementedException
-            var notImplementedConstructor = typeof(NotImplementedException).GetConstructor(Type.EmptyTypes)
-                ?? throw new InvalidOperationException("Cannot find NotImplementedException constructor.");
-            methodIL.Emit(OpCodes.Newobj, notImplementedConstructor);
-            methodIL.Emit(OpCodes.Throw);
-        }
-
-        methodIL.Emit(OpCodes.Ret);
-
-        typeBuilder.DefineMethodOverride(methodBuilder, interfaceMethod);
-    }
-
-    private static void ImplementProperty(TypeBuilder typeBuilder, Type baseType, PropertyInfo interfaceProperty)
-    {
         var baseProperty = baseType.GetProperty(
             interfaceProperty.Name,
             BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
+        var hasDefaultImplementation = getMethod?.GetMethodBody() is not null
+            || setMethod?.GetMethodBody() is not null;
+
+        // If the base type already has this property with the same type,
+        // do NOT create a new PropertyBuilder to avoid shadowing/duplicate JSON properties.
+        // Interface attributes will be applied via InterfaceAttributeJsonTypeInfoResolver instead.
+        if (!hasDefaultImplementation
+            && baseProperty is not null
+            && baseProperty.PropertyType == interfaceProperty.PropertyType)
+        {
+            return;
+        }
 
         var propertyBuilder = typeBuilder.DefineProperty(
             interfaceProperty.Name,
@@ -265,95 +200,198 @@ public static class DynamicTypeBuilder
             interfaceProperty.PropertyType,
             null);
 
-        // If base type has this property, delegate to it
-        if (baseProperty != null && baseProperty.PropertyType == interfaceProperty.PropertyType)
+        CopyCustomAttributes(interfaceProperty, attr => propertyBuilder.SetCustomAttribute(attr));
+        implementedMembers.Properties[propSig] = propertyBuilder;
+
+        if (hasDefaultImplementation)
         {
-            if (interfaceProperty.CanRead && baseProperty.CanRead)
-            {
-                var getMethodBuilder = typeBuilder.DefineMethod(
-                    $"get_{interfaceProperty.Name}",
-                    MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
-                    interfaceProperty.PropertyType,
-                    Type.EmptyTypes);
+            CreateDelegatingPropertyAccessors(
+                typeBuilder,
+                propertyBuilder,
+                interfaceProperty);
 
-                var getIL = getMethodBuilder.GetILGenerator();
-                getIL.Emit(OpCodes.Ldarg_0);
-                getIL.Emit(OpCodes.Callvirt, baseProperty.GetGetMethod()
-                    ?? throw new InvalidOperationException($"Cannot find getter for property {baseProperty.Name}."));
-                getIL.Emit(OpCodes.Ret);
-
-                propertyBuilder.SetGetMethod(getMethodBuilder);
-                typeBuilder.DefineMethodOverride(getMethodBuilder, interfaceProperty.GetGetMethod()
-                    ?? throw new InvalidOperationException("Cannot find interface get method."));
-            }
-
-            if (interfaceProperty.CanWrite && baseProperty.CanWrite)
-            {
-                var setMethodBuilder = typeBuilder.DefineMethod(
-                    $"set_{interfaceProperty.Name}",
-                    MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
-                    null,
-                    [interfaceProperty.PropertyType]);
-
-                var setIL = setMethodBuilder.GetILGenerator();
-                setIL.Emit(OpCodes.Ldarg_0);
-                setIL.Emit(OpCodes.Ldarg_1);
-                setIL.Emit(OpCodes.Callvirt, baseProperty.GetSetMethod()
-                    ?? throw new InvalidOperationException($"Cannot find setter for property {baseProperty.Name}."));
-                setIL.Emit(OpCodes.Ret);
-
-                propertyBuilder.SetSetMethod(setMethodBuilder);
-                typeBuilder.DefineMethodOverride(setMethodBuilder, interfaceProperty.GetSetMethod()
-                    ?? throw new InvalidOperationException("Cannot find interface set method."));
-            }
+            return;
         }
-        else
+
+        // No base property (or type mismatch) — create backing field
+        CreateBackingFieldPropertyAccessors(
+            typeBuilder,
+            propertyBuilder,
+            interfaceProperty);
+    }
+
+    private static void CreateDelegatingPropertyAccessors(
+        TypeBuilder typeBuilder,
+        PropertyBuilder propertyBuilder,
+        PropertyInfo interfaceProperty)
+    {
+        if (interfaceProperty.GetMethod is { IsAbstract: false } getter)
         {
-            // Create a backing field for the property
-            var backingFieldName = $"<{interfaceProperty.Name}>k__BackingField";
-            var backingField = typeBuilder.DefineField(
-                backingFieldName,
+            var getterBuilder = typeBuilder.DefineMethod(
+                getter.Name,
+                MethodAttributes.Public |
+                MethodAttributes.SpecialName |
+                MethodAttributes.HideBySig,
+                getter.ReturnType,
+                Type.EmptyTypes);
+
+            var il = getterBuilder.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, getter);
+            il.Emit(OpCodes.Ret);
+
+            propertyBuilder.SetGetMethod(getterBuilder);
+        }
+
+        if (interfaceProperty.SetMethod is { IsAbstract: false } setter)
+        {
+            var setterBuilder = typeBuilder.DefineMethod(
+                setter.Name,
+                MethodAttributes.Public |
+                MethodAttributes.SpecialName |
+                MethodAttributes.HideBySig,
+                null,
+                [interfaceProperty.PropertyType]);
+
+            var il = setterBuilder.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Call, setter);
+            il.Emit(OpCodes.Ret);
+
+            propertyBuilder.SetSetMethod(setterBuilder);
+        }
+    }
+
+    private static void CreateBackingFieldPropertyAccessors(
+        TypeBuilder typeBuilder,
+        PropertyBuilder propertyBuilder,
+        PropertyInfo interfaceProperty)
+    {
+        var backingField = typeBuilder.DefineField(
+            $"<{interfaceProperty.Name}>k__BackingField",
+            interfaceProperty.PropertyType,
+            FieldAttributes.Private);
+
+        if (interfaceProperty.CanRead)
+        {
+            var getMethodBuilder = typeBuilder.DefineMethod(
+                $"get_{interfaceProperty.Name}",
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.NewSlot,
                 interfaceProperty.PropertyType,
-                FieldAttributes.Private);
+                Type.EmptyTypes);
 
-            // Create getter
-            if (interfaceProperty.CanRead)
+            var interfaceGetter = interfaceProperty.GetGetMethod();
+            if (interfaceGetter != null)
             {
-                var getMethodBuilder = typeBuilder.DefineMethod(
-                    $"get_{interfaceProperty.Name}",
-                    MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
-                    interfaceProperty.PropertyType,
-                    Type.EmptyTypes);
-
-                var getIL = getMethodBuilder.GetILGenerator();
-                getIL.Emit(OpCodes.Ldarg_0);
-                getIL.Emit(OpCodes.Ldfld, backingField);
-                getIL.Emit(OpCodes.Ret);
-
-                propertyBuilder.SetGetMethod(getMethodBuilder);
-                typeBuilder.DefineMethodOverride(getMethodBuilder, interfaceProperty.GetGetMethod()
-                    ?? throw new InvalidOperationException("Cannot find interface get method."));
+                CopyCustomAttributes(interfaceGetter, attr => getMethodBuilder.SetCustomAttribute(attr));
             }
 
-            // Create setter
-            if (interfaceProperty.CanWrite)
+            var il = getMethodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, backingField);
+            il.Emit(OpCodes.Ret);
+
+            propertyBuilder.SetGetMethod(getMethodBuilder);
+            typeBuilder.DefineMethodOverride(getMethodBuilder, interfaceGetter
+                ?? throw new InvalidOperationException("Cannot find interface get method."));
+        }
+
+        if (interfaceProperty.CanWrite)
+        {
+            var setMethodBuilder = typeBuilder.DefineMethod(
+                $"set_{interfaceProperty.Name}",
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.NewSlot,
+                null,
+                [interfaceProperty.PropertyType]);
+
+            var interfaceSetter = interfaceProperty.GetSetMethod();
+            if (interfaceSetter != null)
             {
-                var setMethodBuilder = typeBuilder.DefineMethod(
-                    $"set_{interfaceProperty.Name}",
-                    MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.NewSlot,
-                    null,
-                    [interfaceProperty.PropertyType]);
+                CopyCustomAttributes(interfaceSetter, attr => setMethodBuilder.SetCustomAttribute(attr));
+            }
 
-                var setIL = setMethodBuilder.GetILGenerator();
-                setIL.Emit(OpCodes.Ldarg_0);
-                setIL.Emit(OpCodes.Ldarg_1);
-                setIL.Emit(OpCodes.Stfld, backingField);
-                setIL.Emit(OpCodes.Ret);
+            var il = setMethodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Stfld, backingField);
+            il.Emit(OpCodes.Ret);
 
-                propertyBuilder.SetSetMethod(setMethodBuilder);
-                typeBuilder.DefineMethodOverride(setMethodBuilder, interfaceProperty.GetSetMethod()
-                    ?? throw new InvalidOperationException("Cannot find interface set method."));
+            propertyBuilder.SetSetMethod(setMethodBuilder);
+            typeBuilder.DefineMethodOverride(setMethodBuilder, interfaceSetter
+                ?? throw new InvalidOperationException("Cannot find interface set method."));
+        }
+    }
+
+    private static void CopyCustomAttributes(ICustomAttributeProvider source, Action<CustomAttributeBuilder> setAttributeAction)
+    {
+        foreach (var attributeData in GetCustomAttributeData(source))
+        {
+            try
+            {
+                var constructor = attributeData.Constructor;
+                var constructorArgs = attributeData.ConstructorArguments.Select(ca => ca.Value).ToArray();
+
+                var namedProperties = attributeData.NamedArguments
+                    .Where(na => na.MemberInfo is PropertyInfo)
+                    .Select(na => (PropertyInfo)na.MemberInfo)
+                    .ToArray();
+                var propertyValues = attributeData.NamedArguments
+                    .Where(na => na.MemberInfo is PropertyInfo)
+                    .Select(na => na.TypedValue.Value)
+                    .ToArray();
+
+                var namedFields = attributeData.NamedArguments
+                    .Where(na => na.MemberInfo is FieldInfo)
+                    .Select(na => (FieldInfo)na.MemberInfo)
+                    .ToArray();
+                var fieldValues = attributeData.NamedArguments
+                    .Where(na => na.MemberInfo is FieldInfo)
+                    .Select(na => na.TypedValue.Value)
+                    .ToArray();
+
+                var attributeBuilder = new CustomAttributeBuilder(
+                    constructor,
+                    constructorArgs,
+                    namedProperties,
+                    propertyValues,
+                    namedFields,
+                    fieldValues);
+
+                setAttributeAction(attributeBuilder);
+            }
+            catch
+            {
+                // Skip attributes that cannot be copied (e.g., attributes with complex types)
             }
         }
     }
+
+    private static List<CustomAttributeData> GetCustomAttributeData(ICustomAttributeProvider source)
+    {
+        return source switch
+        {
+            MethodInfo methodInfo => [.. CustomAttributeData.GetCustomAttributes(methodInfo)],
+            PropertyInfo propertyInfo => [.. CustomAttributeData.GetCustomAttributes(propertyInfo)],
+            FieldInfo fieldInfo => [.. CustomAttributeData.GetCustomAttributes(fieldInfo)],
+            Type typeInfo => [.. CustomAttributeData.GetCustomAttributes(typeInfo)],
+            Assembly assemblyInfo => [.. CustomAttributeData.GetCustomAttributes(assemblyInfo)],
+            ParameterInfo parameterInfo => [.. CustomAttributeData.GetCustomAttributes(parameterInfo)],
+            _ => []
+        };
+    }
+
+    private static string GetPropertySignature(PropertyInfo property)
+    {
+        return $"{property.Name}:{property.PropertyType.FullName ?? property.PropertyType.Name}";
+    }
+
+    private class ImplementedMembers
+    {
+        public HashSet<string> Methods { get; } = [];
+        public Dictionary<string, PropertyBuilder> Properties { get; } = [];
+    }
 }
+

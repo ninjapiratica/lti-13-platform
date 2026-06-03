@@ -39,7 +39,7 @@ public static class Endpoints
 
         endpointRouteBuilder.MapGet(config.JwksUrl,
             async (ClientId clientId,
-                ICoreDataService dataService,
+                ILti13CoreDataService dataService,
                 CancellationToken cancellationToken) =>
             {
                 var keySet = new JsonWebKeySet();
@@ -54,7 +54,7 @@ public static class Endpoints
                     keySet.Keys.Add(jwk);
                 }
 
-                return Results.Json(keySet, JsonSerializerMessageOptions.JSON_SERIALIZER_OPTIONS);
+                return Results.Json(keySet, JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
             .WithName(RouteNames.JWKS)
@@ -67,8 +67,8 @@ public static class Endpoints
             async ([FromForm] TokenRequest request,
                 LinkGenerator linkGenerator,
                 IHttpContextAccessor httpContextAccessor,
-                ICoreDataService dataService,
-                ITokenConfigService tokenService,
+                ILti13CoreDataService dataService,
+                ILti13TokenConfigService tokenService,
                 CancellationToken cancellationToken) =>
             {
                 const string AUTH_SPEC_URI = "https://www.imsglobal.org/spec/security/v1p0/#using-json-web-tokens-with-oauth-2-0-client-credentials-grant";
@@ -227,7 +227,7 @@ public static class Endpoints
                     TokenType = "bearer",
                     ExpiresIn = tokenConfig.AccessTokenExpirationSeconds,
                     Scope = string.Join(' ', scopes)
-                }, JsonSerializerMessageOptions.JSON_SERIALIZER_OPTIONS);
+                }, JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS);
             })
             .WithName(RouteNames.TOKEN)
             .DisableAntiforgery()
@@ -240,8 +240,8 @@ public static class Endpoints
 
         endpointRouteBuilder.MapGet(config.AuthenticationUrl,
             ([AsParameters] AuthenticationRequest queryString,
-            ICoreDataService dataService,
-            IEnumerable<IMessageHandler> lti13MessageHandlers,
+            ILti13CoreDataService dataService,
+            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
                 HandleAuthentication(queryString, dataService, lti13MessageHandlers, cancellationToken)
             )
@@ -249,8 +249,8 @@ public static class Endpoints
 
         endpointRouteBuilder.MapPost(config.AuthenticationUrl,
             ([FromForm] AuthenticationRequest form,
-            ICoreDataService dataService,
-            IEnumerable<IMessageHandler> lti13MessageHandlers,
+            ILti13CoreDataService dataService,
+            IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
             CancellationToken cancellationToken) =>
                 HandleAuthentication(form, dataService, lti13MessageHandlers, cancellationToken)
             )
@@ -261,8 +261,8 @@ public static class Endpoints
 
     private static async Task<IResult> HandleAuthentication(
         AuthenticationRequest request,
-        ICoreDataService dataService,
-        IEnumerable<IMessageHandler> lti13MessageHandlers,
+        ILti13CoreDataService dataService,
+        IEnumerable<ILti13MessageHandler> lti13MessageHandlers,
         CancellationToken cancellationToken)
     {
         const string INVALID_REQUEST = "invalid_request";
@@ -363,51 +363,27 @@ public static class Endpoints
             });
         }
 
-        object? lti13Message = null;
-        Lti13BadRequest? failedLti13MessageResult = null;
+        var lastResult = MessageResult.None();
         foreach (var lti13MessageHandler in lti13MessageHandlers)
         {
             var result = await lti13MessageHandler.HandleMessageAsync(request.Login_Hint, request.Lti_Message_Hint, tool, request.Nonce, cancellationToken);
 
+            if (result is MessageResult.NoneResult)
+            {
+                continue;
+            }
+
+            lastResult = result;
+
             if (result is MessageResult.SuccessResult successResult)
             {
-                lti13Message = successResult.Message;
-                failedLti13MessageResult = null;
-                break;
-            }
-            else if (result is MessageResult.ErrorResult errorResult)
-            {
-                failedLti13MessageResult = new Lti13BadRequest
-                {
-                    Error = INVALID_REQUEST,
-                    Error_Description = errorResult.ErrorMessage,
-                    Error_Uri = "https://www.1edtech.org/standards/lti"
-                };
-            }
-        }
+                var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
-        if (failedLti13MessageResult != null)
-        {
-            return Results.BadRequest(failedLti13MessageResult);
-        }
+                var token = new JsonWebTokenHandler().CreateToken(
+                    JsonSerializer.Serialize(successResult.Message, JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS),
+                    new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
-        if (lti13Message == null)
-        {
-            return Results.BadRequest(new Lti13BadRequest
-            {
-                Error = INVALID_REQUEST,
-                Error_Description = "unsupported message type",
-                Error_Uri = "https://www.1edtech.org/standards/lti"
-            });
-        }
-
-        var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
-
-        var token = new JsonWebTokenHandler().CreateToken(
-            JsonSerializer.Serialize(lti13Message, JsonSerializerMessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
-            new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
-
-        return Results.Content($@"
+                return Results.Content($@"
 <!DOCTYPE html>
 <html>
 <body>
@@ -419,8 +395,27 @@ public static class Endpoints
         document.getElementsByTagName('form')[0].submit();
     </script>
 </body>
-</html>".TrimStart(),
-            MediaTypeNames.Text.Html);
+</html>",
+                    MediaTypeNames.Text.Html);
+            }
+        }
+
+        if (lastResult is MessageResult.ErrorResult errorResult)
+        {
+            return Results.BadRequest(new Lti13BadRequest
+            {
+                Error = INVALID_REQUEST,
+                Error_Description = errorResult.ErrorMessage,
+                Error_Uri = "https://www.1edtech.org/standards/lti"
+            });
+        }
+
+        return Results.BadRequest(new Lti13BadRequest
+        {
+            Error = INVALID_REQUEST,
+            Error_Description = "unsupported message type",
+            Error_Uri = "https://www.1edtech.org/standards/lti"
+        });
     }
 
     private static RouteHandlerBuilder ConfigureAuthenticationEndpoint(this RouteHandlerBuilder routeHandlerBuilder, string routeName)

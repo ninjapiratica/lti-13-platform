@@ -16,7 +16,7 @@ public interface IDeepLinkingSettingsClaims
     /// Gets or sets the deep linking settings.
     /// </summary>
     [JsonPropertyName("https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings")]
-    DeepLinkingSettingsClaim DeepLinkSettings { get; set; }
+    DeepLinkingSettingsClaim DeepLinkingSettings { get; set; }
 
     /// <summary>
     /// Represents the settings for a deep linking operation.
@@ -117,7 +117,7 @@ public static partial class ClaimsExtensions
         DeepLinkingSettingsOverride? deepLinkingSettings)
         where T : IDeepLinkingSettingsClaims
     {
-        obj.DeepLinkSettings = new IDeepLinkingSettingsClaims.DeepLinkingSettingsClaim
+        obj.DeepLinkingSettings = new IDeepLinkingSettingsClaims.DeepLinkingSettingsClaim
         {
             AcceptPresentationDocumentTargets = deepLinkingSettings?.AcceptPresentationDocumentTargets ?? config.AcceptPresentationDocumentTargets,
             AcceptTypes = deepLinkingSettings?.AcceptTypes ?? config.AcceptTypes,

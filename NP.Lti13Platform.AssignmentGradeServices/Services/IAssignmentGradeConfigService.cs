@@ -8,7 +8,7 @@ namespace NP.Lti13Platform.AssignmentGradeServices.Services;
 /// <summary>
 /// Defines the contract for a service that provides assignment and grade configuration for LTI 1.3 integrations.
 /// </summary>
-public interface IAssignmentGradeConfigService
+public interface ILti13AssignmentGradeConfigService
 {
     /// <summary>
     /// Gets the assignment and grade services configuration for a specific client.
@@ -19,7 +19,7 @@ public interface IAssignmentGradeConfigService
     Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultAssignmentGradeConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : IAssignmentGradeConfigService
+internal class DefaultAssignmentGradeConfigService(IOptionsMonitor<ServicesConfig> config, IHttpContextAccessor httpContextAccessor) : ILti13AssignmentGradeConfigService
 {
     public async Task<ServicesConfig> GetConfigAsync(ClientId clientId, CancellationToken cancellationToken = default)
     {

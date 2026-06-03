@@ -35,7 +35,7 @@ public interface IToolSecurityService
     Task<ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri authenticationBaseUrl, Uri tokenBaseUrl, Uri jwksBaseUrl, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultToolSecurityService(ITokenConfigService tokenConfigService, LinkGenerator linkGenerator) : IToolSecurityService
+internal class DefaultToolSecurityService(ILti13TokenConfigService tokenConfigService, LinkGenerator linkGenerator) : IToolSecurityService
 {
     public Task<ToolSecurity> GetToolSecurityAsync(ClientId clientId, Uri baseUrl, CancellationToken cancellationToken)
         => GetToolSecurityAsync(clientId, baseUrl, baseUrl, baseUrl, cancellationToken);

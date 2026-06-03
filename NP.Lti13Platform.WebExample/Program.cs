@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddPlatformWithDefaultMessageHandlers<DataService>();
+    .AddLti13PlatformWithDefaultMessageHandlers<DataService>();
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -79,9 +79,9 @@ namespace NP.Lti13Platform.WebExample
     using System.Security.Cryptography;
 
     /// <summary>
-    /// A sample implementation of the <see cref="ILti13DataService"/> for demonstration purposes.
+    /// A sample implementation of the <see cref="ILti13PlatformDataServiceWithDefaultHandlers"/> for demonstration purposes.
     /// </summary>
-    public class DataService : IDataService
+    public class DataService : ILti13PlatformDataServiceWithDefaultHandlers
     {
         private static readonly CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new() { CacheSignatureProviders = false };
 
@@ -133,7 +133,7 @@ namespace NP.Lti13Platform.WebExample
                 ClientId = new ClientId("clientId"),
                 OidcInitiationUrl = new Uri("https://saltire.lti.app/tool"),
                 LaunchUrl = new Uri("https://saltire.lti.app/tool"),
-                Jwks = "https://saltire.lti.app/tool/jwks/s8cd1a33052f22f98e58369762c6373aa",
+                Jwks = "https://saltire.lti.app/tool/jwks/sc518e6810758c83a6fc9809b8cafdb7b",
                 ServiceScopes =
                 [
                     NP.Lti13Platform.AssignmentGradeServices.Constants.ServiceScopes.LineItem,
@@ -166,7 +166,7 @@ namespace NP.Lti13Platform.WebExample
             Memberships.Add(new Membership
             {
                 ContextId = new ContextId("contextId"),
-                Roles = [],
+                Roles = [Lti13ContextRoles.Learner],
                 Status = MembershipStatus.Active,
                 UserId = new UserId("userId"),
                 MentoredUserIds = []
@@ -242,7 +242,7 @@ namespace NP.Lti13Platform.WebExample
             return Task.FromResult(Grades.SingleOrDefault(g => g.LineItemId == lineItemId && g.UserId == userId));
         }
 
-        Task IAssignmentGradeDataService.SaveGradeAsync(Grade grade, CancellationToken cancellationToken)
+        Task ILti13AssignmentGradeDataService.SaveGradeAsync(Grade grade, CancellationToken cancellationToken)
         {
             var existingGrade = Grades.SingleOrDefault(x => x.LineItemId == grade.LineItemId && x.UserId == grade.UserId);
             if (existingGrade != null)

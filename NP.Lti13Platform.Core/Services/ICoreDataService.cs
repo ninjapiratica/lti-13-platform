@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.Core.Services;
 /// <summary>
 /// Defines the contract for a service that handles LTI 1.3 core data operations.
 /// </summary>
-public interface ICoreDataService
+public interface ILti13CoreDataService
 {
     /// <summary>
     /// Gets a tool by its client ID.

@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.Core.Services;
 /// <summary>
 /// Defines the contract for a service that retrieves LTI platform information.
 /// </summary>
-public interface IPlatformService
+public interface ILti13PlatformService
 {
     /// <summary>
     /// Asynchronously retrieves platform details based on the tool identifier.
@@ -17,7 +17,7 @@ public interface IPlatformService
     Task<Platform?> GetPlatformAsync(ClientId clientId, CancellationToken cancellationToken = default);
 }
 
-internal class DefaultPlatformService(IOptionsMonitor<Platform> config) : IPlatformService
+internal class DefaultPlatformService(IOptionsMonitor<Platform> config) : ILti13PlatformService
 {
     public async Task<Platform?> GetPlatformAsync(ClientId clientId, CancellationToken cancellationToken = default) => await Task.FromResult(!string.IsNullOrWhiteSpace(config.CurrentValue.Guid) ? config.CurrentValue : null);
 }

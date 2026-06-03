@@ -6,7 +6,7 @@ namespace NP.Lti13Platform.NameRoleProvisioningServices.Services;
 /// <summary>
 /// Defines a service for retrieving configuration settings for the name and role provisioning service in an LTI 1.3 platform.
 /// </summary>
-public interface INameRoleProvisioningConfigService
+public interface ILti13NameRoleProvisioningConfigService
 {
     /// <summary>
     /// Gets the configuration for name and role provisioning services.

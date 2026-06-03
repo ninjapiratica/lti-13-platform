@@ -55,14 +55,14 @@ public interface ILtiResourceLinkRequestMessageHandler
 /// <param name="extensions">A collection of extensions that can augment or customize the LTI Resource Link Request message.</param>
 /// <param name="logger">The logger used to record diagnostic and operational information for this handler.</param>
 internal class LtiResourceLinkRequestMessageHandler(
-    ICoreDataService coreDataService,
+    ILti13CoreDataService coreDataService,
     ILtiResourceLinkMessageDataService dataService,
-    ITokenConfigService tokenConfigService,
-    IPlatformService platformService,
+    ILti13TokenConfigService tokenConfigService,
+    ILti13PlatformService platformService,
     IEnumerable<ILtiResourceLinkMessageExtension> extensions,
     ILogger<LtiResourceLinkRequestMessageHandler> logger)
     : ILtiResourceLinkRequestMessageHandler,
-        IMessageHandler
+        ILti13MessageHandler
 {
     private static readonly string MessageType = "LtiResourceLinkRequest";
 
@@ -135,38 +135,38 @@ internal class LtiResourceLinkRequestMessageHandler(
         var resourceLink = await dataService.GetResourceLinkAsync(ltiMessageHintRecord.ResourceLinkId, cancellationToken);
         if (resourceLink == null)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("resource link not found");
         }
 
         var context = await dataService.GetContextAsync(resourceLink.ContextId, cancellationToken);
         if (context == null)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("context not found");
         }
 
         var deployment = await dataService.GetDeploymentAsync(resourceLink.DeploymentId, cancellationToken);
         if (deployment == null || deployment.ClientId != tool.ClientId)
         {
-            return MessageResult.Error("");
+            return MessageResult.Error("deployment not found or clientId mismatch");
         }
 
         User? user = null;
-        if (loginHintRecord.UserId != null)
+        if (loginHintRecord.UserId is not null)
         {
             user = await dataService.GetUserAsync(loginHintRecord.UserId.Value, cancellationToken);
             if (user == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("user not found");
             }
         }
 
         User? actualUser = null;
-        if (loginHintRecord.ActualUserId != null)
+        if (loginHintRecord.ActualUserId is not null)
         {
             actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId.Value, cancellationToken);
             if (actualUser == null)
             {
-                return MessageResult.Error("");
+                return MessageResult.Error("actual user not found");
             }
         }
 
@@ -204,9 +204,7 @@ internal class LtiResourceLinkRequestMessageHandler(
             .ToList();
 
         // Create dynamic type if extensions exist, otherwise use base type
-        var messageType = extensionMessageInterfaces.Count != 0
-            ? DynamicTypeBuilder.CreateTypeImplementingInterfaces<LtiResourceLinkRequestMessage>(extensionMessageInterfaces)
-            : typeof(LtiResourceLinkRequestMessage);
+        var messageType = DynamicTypeBuilder.CreateTypeImplementingInterfaces<LtiResourceLinkRequestMessage>(extensionMessageInterfaces);
 
         // Create instance of message (dynamic or base type)
         var lti13Message = Activator.CreateInstance(messageType)
@@ -343,7 +341,10 @@ internal class LtiResourceLinkRequestMessageHandler(
                 return false;
             }
 
-            loginHint = new LoginHint(new UserId(userIdString), new UserId(actualUserIdString), isAnonymous);
+            loginHint = new LoginHint(
+                string.IsNullOrEmpty(userIdString) ? null : new UserId(userIdString),
+                string.IsNullOrEmpty(actualUserIdString) ? null : new UserId(actualUserIdString),
+                isAnonymous);
             return true;
         }
     }

@@ -36,7 +36,7 @@ public record DeepLinkingRequestMessage
     : IDeepLinkingRequestMessage
 {
     /// <inheritdoc/>
-    public IDeepLinkingSettingsClaims.DeepLinkingSettingsClaim DeepLinkSettings { get; set; } = null!;
+    public IDeepLinkingSettingsClaims.DeepLinkingSettingsClaim DeepLinkingSettings { get; set; } = null!;
     /// <inheritdoc/>
     public string Issuer { get; set; } = string.Empty;
     /// <inheritdoc/>

@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.MessageClaims;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.MessageHandlers;
 
 namespace NP.Lti13Platform.AssignmentGradeServices;
 
@@ -16,38 +16,39 @@ namespace NP.Lti13Platform.AssignmentGradeServices;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Adds LTI 1.3 platform assignment grade services to the specified service collection, including configuration and required dependencies.
+    /// Adds LTI 1.3 platform assignment grade services to the specified builder, including configuration and required dependencies.
     /// </summary>
     /// <remarks>This method configures assignment grade services for LTI 1.3 platform integration, including binding configuration settings and registering required service implementations.
     /// It should be called during application startup to enable assignment grade functionality.</remarks>
-    /// <typeparam name="T">The type that implements the assignment grade data service interface. Must implement <see cref="IAssignmentGradeDataService"/>.</typeparam>
-    /// <param name="serviceCollection">The service collection to which the assignment grade services will be added.</param>
+    /// <typeparam name="TService">The type that implements the assignment grade data service interface. Must implement <see cref="ILti13AssignmentGradeDataService"/>.</typeparam>
+    /// <param name="builder">The platform core builder to which the assignment grade services will be added.</param>
     /// <param name="serviceLifetime">The lifetime with which the assignment grade data service will be registered. Defaults to <see cref="ServiceLifetime.Transient"/>.</param>
-    /// <returns>The same <see cref="IServiceCollection"/> instance, with assignment grade services registered.</returns>
-    public static IServiceCollection AddPlatformAssignmentGradeServices<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
-        where T : IAssignmentGradeDataService
+    /// <returns>The builder instance, enabling fluent configuration of additional services.</returns>
+    public static ILti13CoreBuilder AddAssignmentGradeServices<TService>(this ILti13CoreBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        where TService : ILti13AssignmentGradeDataService
     {
-        serviceCollection.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:AssignmentGradeServices");
-        serviceCollection.TryAddSingleton<IAssignmentGradeConfigService, DefaultAssignmentGradeConfigService>();
+        builder.WithResourceLinkMessageExtension<LineItemServiceMessageExtension>();
+        builder.WithAssignmentGradeConfigService<DefaultAssignmentGradeConfigService>(ServiceLifetime.Singleton);
 
-        serviceCollection.Add(new ServiceDescriptor(typeof(IAssignmentGradeDataService), typeof(T), serviceLifetime));
-        serviceCollection.WithResourceLinkMessageExtension<LineItemServiceMessageExtension>();
+        builder.Services.AddOptions<ServicesConfig>().BindConfiguration("Lti13Platform:AssignmentGradeServices");
 
-        return serviceCollection;
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeDataService), typeof(TService), serviceLifetime));
+        builder.Services.Add(new ServiceDescriptor(typeof(ILtiResourceLinkMessageExtension), typeof(LineItemServiceMessageExtension), ServiceLifetime.Transient));
+
+        return builder;
     }
 
     /// <summary>
-    /// Adds an implementation of the IAssignmentGradeConfigService interface to the service collection with the specified service lifetime.
+    /// Registers an implementation of IAssignmentGradeConfigService with the specified service lifetime.
     /// </summary>
-    /// <remarks>Use this method to register a custom implementation of IAssignmentGradeConfigService for dependency injection.
-    /// This enables consuming components to resolve IAssignmentGradeConfigService from the service provider according to the specified lifetime.</remarks>
-    /// <typeparam name="T">The type that implements IAssignmentGradeConfigService to be registered.</typeparam>
-    /// <param name="serviceCollection">The IServiceCollection to which the IAssignmentGradeConfigService implementation will be added.</param>
-    /// <param name="serviceLifetime">The lifetime with which the service will be registered. Defaults to ServiceLifetime.Transient.</param>
-    /// <returns>The IServiceCollection instance with the IAssignmentGradeConfigService implementation registered.</returns>
-    public static IServiceCollection WithAssignmentGradeConfigService<T>(this IServiceCollection serviceCollection, ServiceLifetime serviceLifetime = ServiceLifetime.Transient) where T : IAssignmentGradeConfigService
+    /// <typeparam name="TService">The type that implements ILti13AssignmentGradeConfigService.</typeparam>
+    /// <param name="builder">The core builder to extend.</param>
+    /// <param name="serviceLifetime">The lifetime with which to register the service.</param>
+    /// <returns>The same builder instance, enabling fluent method chaining.</returns>
+    public static ILti13CoreBuilder WithAssignmentGradeConfigService<TService>(this ILti13CoreBuilder builder, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        where TService : ILti13AssignmentGradeConfigService
     {
-        serviceCollection.Add(new ServiceDescriptor(typeof(IAssignmentGradeConfigService), typeof(T), serviceLifetime));
-        return serviceCollection;
+        builder.Services.Add(new ServiceDescriptor(typeof(ILti13AssignmentGradeConfigService), typeof(TService), serviceLifetime));
+        return builder;
     }
 }
