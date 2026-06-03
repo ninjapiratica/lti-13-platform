@@ -54,7 +54,7 @@ public static class Endpoints
                     keySet.Keys.Add(jwk);
                 }
 
-                return Results.Json(keySet, JsonSerializerMessageOptions.JSON_SERIALIZER_OPTIONS);
+                return Results.Json(keySet, JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS);
             })
             .Produces<JsonWebKeySet>(contentType: MediaTypeNames.Application.Json)
             .WithName(RouteNames.JWKS)
@@ -227,7 +227,7 @@ public static class Endpoints
                     TokenType = "bearer",
                     ExpiresIn = tokenConfig.AccessTokenExpirationSeconds,
                     Scope = string.Join(' ', scopes)
-                }, JsonSerializerMessageOptions.JSON_SERIALIZER_OPTIONS);
+                }, JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS);
             })
             .WithName(RouteNames.TOKEN)
             .DisableAntiforgery()
@@ -380,7 +380,7 @@ public static class Endpoints
                 var privateKey = await dataService.GetPrivateKeyAsync(tool.ClientId, cancellationToken);
 
                 var token = new JsonWebTokenHandler().CreateToken(
-                    JsonSerializer.Serialize(successResult.Message, JsonSerializerMessageOptions.LTI_13_MESSAGE_JSON_SERIALIZER_OPTIONS),
+                    JsonSerializer.Serialize(successResult.Message, JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS),
                     new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = CRYPTO_PROVIDER_FACTORY });
 
                 return Results.Content($@"

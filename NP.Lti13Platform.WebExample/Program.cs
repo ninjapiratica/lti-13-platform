@@ -166,7 +166,7 @@ namespace NP.Lti13Platform.WebExample
             Memberships.Add(new Membership
             {
                 ContextId = new ContextId("contextId"),
-                Roles = [],
+                Roles = [Lti13ContextRoles.Learner],
                 Status = MembershipStatus.Active,
                 UserId = new UserId("userId"),
                 MentoredUserIds = []

@@ -7,6 +7,7 @@ using NP.Lti13Platform.AssignmentGradeServices.Configs;
 using NP.Lti13Platform.AssignmentGradeServices.Constants;
 using NP.Lti13Platform.AssignmentGradeServices.Services;
 using NP.Lti13Platform.Core;
+using NP.Lti13Platform.Core.Constants;
 using NP.Lti13Platform.Core.Models;
 using NP.Lti13Platform.Core.OpenApi;
 using NP.Lti13Platform.Core.Services;
@@ -25,13 +26,6 @@ namespace NP.Lti13Platform.AssignmentGradeServices;
 /// </summary>
 public static class Endpoints
 {
-    private static readonly JsonSerializerOptions JSON_SERIALIZER_OPTIONS = new()
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     /// <summary>
     /// Configures the endpoint route builder for assignment grade services.
     /// </summary>
@@ -116,7 +110,7 @@ public static class Endpoints
                     ResourceLinkId = i.ResourceLinkId,
                     GradesReleased = i.GradesReleased,
                 }),
-                options: JSON_SERIALIZER_OPTIONS,
+                options: JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItemContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEMS)
@@ -235,7 +229,7 @@ public static class Endpoints
                     StartDateTime = request.StartDateTime?.UtcDateTime,
                     EndDateTime = request.EndDateTime?.UtcDateTime,
                 },
-                options: JSON_SERIALIZER_OPTIONS,
+                options: JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS,
                 statusCode: (int)HttpStatusCode.Created);
             })
             .RequireAuthorization(policy =>
@@ -303,7 +297,7 @@ public static class Endpoints
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime,
                 },
-                options: JSON_SERIALIZER_OPTIONS,
+                options: JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItem);
             })
             .WithName(RouteNames.GET_LINE_ITEM)
@@ -422,7 +416,7 @@ public static class Endpoints
                     StartDateTime = lineItem.StartDateTime,
                     EndDateTime = lineItem.EndDateTime
                 },
-                options: JSON_SERIALIZER_OPTIONS,
+                options: JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.LineItem);
             })
             .RequireAuthorization(policy =>
@@ -569,7 +563,7 @@ public static class Endpoints
                     ScoringUserId = i.ScoringUserId,
                     Comment = i.Comment
                 }),
-                options: JSON_SERIALIZER_OPTIONS,
+                options: JsonSerializerMessageOptions.LTI_13_JSON_SERIALIZER_OPTIONS,
                 contentType: ContentTypes.ResultContainer);
             })
             .WithName(RouteNames.GET_LINE_ITEM_RESULTS)
@@ -726,7 +720,7 @@ public static class Endpoints
 
 internal record LineItemRequest(decimal ScoreMaximum, string Label, ResourceLinkId? ResourceLinkId, string? ResourceId, string? Tag, bool? GradesReleased, DateTimeOffset? StartDateTime, DateTimeOffset? EndDateTime);
 
-internal record ScoreRequest(UserId UserId, UserId ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
+internal record ScoreRequest(UserId UserId, UserId? ScoringUserId, decimal? ScoreGiven, decimal? ScoreMaximum, string Comment, ScoreSubmissionRequest? Submission, DateTimeOffset TimeStamp, ActivityProgress ActivityProgress, GradingProgress GradingProgress);
 
 internal record ScoreSubmissionRequest(DateTimeOffset? StartedAt, DateTimeOffset? SubmittedAt);
 

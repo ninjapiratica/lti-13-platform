@@ -54,7 +54,7 @@ public class HomeController(ILogger<HomeController> logger, ILtiResourceLinkRequ
                         Width = width,
                         Locale = locale
                     },
-                    cancellationToken: cancellationToken))!.AsForm("form1"))
+                    cancellationToken: cancellationToken))!.AsUri())
                 .Select(t => t.Result)
         });
     }

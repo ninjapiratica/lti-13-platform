@@ -151,7 +151,7 @@ internal class LtiResourceLinkRequestMessageHandler(
         }
 
         User? user = null;
-        if (loginHintRecord.UserId != null)
+        if (loginHintRecord.UserId is not null)
         {
             user = await dataService.GetUserAsync(loginHintRecord.UserId.Value, cancellationToken);
             if (user == null)
@@ -161,7 +161,7 @@ internal class LtiResourceLinkRequestMessageHandler(
         }
 
         User? actualUser = null;
-        if (loginHintRecord.ActualUserId != null)
+        if (loginHintRecord.ActualUserId is not null)
         {
             actualUser = await dataService.GetUserAsync(loginHintRecord.ActualUserId.Value, cancellationToken);
             if (actualUser == null)
@@ -341,7 +341,10 @@ internal class LtiResourceLinkRequestMessageHandler(
                 return false;
             }
 
-            loginHint = new LoginHint(new UserId(userIdString), new UserId(actualUserIdString), isAnonymous);
+            loginHint = new LoginHint(
+                string.IsNullOrEmpty(userIdString) ? null : new UserId(userIdString),
+                string.IsNullOrEmpty(actualUserIdString) ? null : new UserId(actualUserIdString),
+                isAnonymous);
             return true;
         }
     }

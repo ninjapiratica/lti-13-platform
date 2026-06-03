@@ -141,7 +141,15 @@ public static class Endpoints
                             .Select((x, ix) =>
                             {
                                 var type = JsonDocument.Parse(x.Value).RootElement.GetProperty("type").GetString() ?? "unknown";
-                                return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
+                                try
+                                {
+                                    return (ContentItem)JsonSerializer.Deserialize(x.Value, deepLinkingConfig.ContentItemTypes[(tool.ClientId, type)])!;
+                                }
+                                catch (Exception ex)
+                                {
+                                    logger.LogWarning(ex, "Failed to deserialize content item of type {Type}. Value: {Value}", type, x.Value);
+                                    return JsonSerializer.Deserialize<DefaultContentItem>(x.Value)!;
+                                }
                             })
                     ];
 
